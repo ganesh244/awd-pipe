@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { AWDPipe, Installation, MonitoringRecord, EstablishmentMethod, IrrigationSource, PlotUnit, GPSData } from '../types';
+import { AWDPipe, Installation, MonitoringRecord, EstablishmentMethod, IrrigationSource, PlotUnit, GPSData, User } from '../types';
 import { PipeInfoCard } from './PipeInfoCard';
 import { MonitoringForm } from './MonitoringForm';
 import { CameraCapture } from './CameraCapture';
@@ -13,6 +13,7 @@ interface MobileRegistrationAppProps {
   installations: Installation[];
   monitoringList: MonitoringRecord[];
   activePipeId: string;
+  currentUser?: User;
   setActivePipeId: (id: string) => void;
   onRegisterSuccess: (installation: Installation, updatedPipe: AWDPipe) => void;
   onAddMonitoring: (record: MonitoringRecord) => void;
@@ -23,6 +24,7 @@ export const MobileRegistrationApp: React.FC<MobileRegistrationAppProps> = ({
   installations,
   monitoringList,
   activePipeId,
+  currentUser,
   setActivePipeId,
   onRegisterSuccess,
   onAddMonitoring,
@@ -38,7 +40,7 @@ export const MobileRegistrationApp: React.FC<MobileRegistrationAppProps> = ({
   const [mobile, setMobile] = useState('');
   const [village, setVillage] = useState('');
   const [mandal, setMandal] = useState('');
-  const [district, setDistrict] = useState('');
+  const [district, setDistrict] = useState(currentUser?.district || 'West Godavari');
   const [farmerId, setFarmerId] = useState('');
   const [surveyNo, setSurveyNo] = useState('');
   const [plotSize, setPlotSize] = useState<string>('2.0');
@@ -51,7 +53,7 @@ export const MobileRegistrationApp: React.FC<MobileRegistrationAppProps> = ({
   const [irrigationSource, setIrrigationSource] = useState<IrrigationSource>('Borewell');
   const [irrigationSourceOther, setIrrigationSourceOther] = useState('');
   const [installationDate, setInstallationDate] = useState(today);
-  const [installedBy, setInstalledBy] = useState('K. Rajesh (Field Agricultural Extension Officer)');
+  const [installedBy, setInstalledBy] = useState(currentUser ? `${currentUser.name} (${currentUser.role})` : 'K. Rajesh (Field Facilitator)');
   const [remarks, setRemarks] = useState('');
   const [photoUrl, setPhotoUrl] = useState<string | undefined>(undefined);
 
@@ -218,6 +220,7 @@ export const MobileRegistrationApp: React.FC<MobileRegistrationAppProps> = ({
       Village: village.trim(),
       Mandal: mandal.trim(),
       District: district.trim(),
+      State: currentUser?.state || 'Andhra Pradesh',
       Survey_No: surveyNo.trim() || undefined,
       Plot_Size: Number(plotSize),
       Plot_Size_Unit: plotSizeUnit,
@@ -233,6 +236,8 @@ export const MobileRegistrationApp: React.FC<MobileRegistrationAppProps> = ({
       GPS_Accuracy: gpsData.accuracy,
       Location_Link: locationLink,
       Installed_By: installedBy.trim(),
+      Registered_By_User_ID: currentUser?.id,
+      Area_Manager_User_ID: (currentUser?.role === 'CF' || currentUser?.role === 'JCF') ? currentUser?.reportsToId : (currentUser?.role === 'Area Manager' ? currentUser?.id : undefined),
       Photo_URL: photoUrl,
       Remarks: remarks.trim() || undefined,
     };
@@ -243,6 +248,8 @@ export const MobileRegistrationApp: React.FC<MobileRegistrationAppProps> = ({
       Installation_Date: installationDate,
       Farmer_Name: farmerName.trim(),
       Village: village.trim(),
+      State: currentUser?.state || 'Andhra Pradesh',
+      District: district.trim(),
     };
 
     setTimeout(() => {
@@ -842,6 +849,7 @@ export const MobileRegistrationApp: React.FC<MobileRegistrationAppProps> = ({
         isOpen={isMonitoringModalOpen}
         onClose={() => setIsMonitoringModalOpen(false)}
         onSubmit={onAddMonitoring}
+        currentUser={currentUser}
       />
 
       {/* QR CODE SCANNER MODAL */}

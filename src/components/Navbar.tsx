@@ -1,64 +1,116 @@
 import React from 'react';
-import { Smartphone, BarChart3, Box, Printer, Code2, Sprout, MapPin, Plus, Sparkles, ClipboardCheck } from 'lucide-react';
+import { BarChart3, Box, Printer, Code2, Sprout, MapPin, Plus, ClipboardCheck, Network } from 'lucide-react';
+import { User } from '../types';
+import { UserProfileBadge } from './UserProfileBadge';
 
 interface NavbarProps {
   activeTab: string;
   setActiveTab: (tab: string) => void;
   activePipeId: string;
+  currentUser: User;
+  onLogout: () => void;
   onOpenGenerateModal?: () => void;
 }
 
-export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, activePipeId, onOpenGenerateModal }) => {
-  const navItems = [
-    { id: 'mobile', label: 'Registration & Operations', icon: ClipboardCheck, badge: activePipeId ? activePipeId : undefined },
-    { id: 'map', label: 'Interactive Map View', icon: MapPin },
-    { id: 'dashboard', label: 'Analytics Dashboard', icon: BarChart3 },
-    { id: 'inventory', label: 'Pipe Inventory', icon: Box },
-    { id: 'labels', label: 'Print QR Labels', icon: Printer },
-    { id: 'code', label: 'Google Apps Script', icon: Code2 },
-  ];
+interface NavItem {
+  id: string;
+  label: string;
+  icon: React.FC<any>;
+  badge?: string;
+}
+
+export const Navbar: React.FC<NavbarProps> = ({
+  activeTab,
+  setActiveTab,
+  activePipeId,
+  currentUser,
+  onLogout,
+  onOpenGenerateModal,
+}) => {
+  const role = currentUser.role;
+
+  // Registration tab is available to everyone
+  const regTab: NavItem = {
+    id: 'mobile',
+    label: 'Registration & Field Ops',
+    icon: ClipboardCheck,
+    badge: activePipeId || undefined,
+  };
+
+  // Map tab — CF/JCF and above
+  const mapTab: NavItem = { id: 'map', label: 'Field Map View', icon: MapPin };
+
+  // Dashboard — Area Manager and above
+  const dashboardTab: NavItem = { id: 'dashboard', label: 'Analytics Dashboard', icon: BarChart3 };
+
+  // Inventory & Labels — State Manager and Admin
+  const inventoryTab: NavItem = { id: 'inventory', label: 'Pipe Inventory', icon: Box };
+  const labelsTab: NavItem = { id: 'labels', label: 'Print QR Labels', icon: Printer };
+
+  // Hierarchy — District Manager and above
+  const hierarchyTab: NavItem = { id: 'hierarchy', label: 'Team & Hierarchy', icon: Network };
+
+  // Code — Admin only
+  const codeTab: NavItem = { id: 'code', label: 'Apps Script', icon: Code2 };
+
+  let navItems: NavItem[] = [];
+
+  if (role === 'CF' || role === 'JCF') {
+    navItems = [regTab];
+  } else if (role === 'Area Manager') {
+    navItems = [regTab, mapTab];
+  } else if (role === 'District Manager') {
+    navItems = [regTab, mapTab, dashboardTab, hierarchyTab];
+  } else if (role === 'State Manager') {
+    navItems = [regTab, mapTab, dashboardTab, inventoryTab, hierarchyTab];
+  } else {
+    // Admin — full access
+    navItems = [regTab, mapTab, dashboardTab, inventoryTab, labelsTab, hierarchyTab, codeTab];
+  }
 
   return (
     <header className="bg-slate-900 text-white border-b border-slate-800 sticky top-0 z-40 shadow-md">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        
+
         {/* BRAND TOP ROW */}
-        <div className="flex items-center justify-between h-16 border-b border-slate-800/80">
-          
+        <div className="flex items-center justify-between h-16 border-b border-slate-800/80 gap-3">
+
           {/* Logo & Title */}
           <div
             onClick={() => setActiveTab('mobile')}
-            className="flex items-center gap-3 cursor-pointer group"
+            className="flex items-center gap-3 cursor-pointer group shrink-0"
           >
             <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-[#2d4a2d] via-emerald-600 to-[#88b04b] flex items-center justify-center text-white shadow-md shadow-emerald-950/50 group-hover:scale-105 transition-transform">
               <Sprout className="w-6 h-6 text-white" />
             </div>
-            <div>
+            <div className="hidden sm:block">
               <div className="flex items-center gap-2">
                 <span className="font-extrabold text-base tracking-tight text-white uppercase">
                   AWD Pipe Registry
                 </span>
-                <span className="bg-emerald-500/10 text-emerald-400 text-[10px] font-semibold px-2 py-0.5 rounded-md border border-emerald-500/20">
-                  Field Operations
+                <span className="bg-emerald-500/10 text-emerald-400 text-[10px] font-semibold px-2 py-0.5 rounded-md border border-emerald-500/20 hidden md:inline">
+                  Field Ops
                 </span>
               </div>
               <p className="text-[11px] text-slate-400 font-medium">
-                Alternate Wetting & Drying Water Tracking Platform
+                Alternate Wetting & Drying Management
               </p>
             </div>
           </div>
 
-          {/* Top Right Action Button */}
-          {onOpenGenerateModal && (
-            <button
-              onClick={onOpenGenerateModal}
-              className="bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white font-extrabold text-xs px-3.5 py-2 rounded-xl transition shadow-md shadow-emerald-950/30 flex items-center gap-1.5 uppercase tracking-wider border border-emerald-400/40 cursor-pointer"
-            >
-              <Plus className="w-4 h-4 text-emerald-200" />
-              <span>Mint QR Batch</span>
-            </button>
-          )}
-
+          {/* Right controls */}
+          <div className="flex items-center gap-3">
+            {onOpenGenerateModal && (role === 'Admin' || role === 'State Manager') && (
+              <button
+                onClick={onOpenGenerateModal}
+                className="hidden sm:flex bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white font-extrabold text-xs px-3.5 py-2 rounded-xl transition shadow-md shadow-emerald-950/30 items-center gap-1.5 uppercase tracking-wider border border-emerald-400/40 cursor-pointer"
+              >
+                <Plus className="w-4 h-4 text-emerald-200" />
+                <span>Mint QR Batch</span>
+              </button>
+            )}
+            <UserProfileBadge currentUser={currentUser} onLogout={onLogout} />
+          </div>
         </div>
 
         {/* SEGMENTED TAB CONTROLLER BAR */}
@@ -79,7 +131,6 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, activeP
                 >
                   <Icon className={`w-4 h-4 ${isActive ? 'text-emerald-200' : 'text-slate-400'}`} />
                   <span>{item.label}</span>
-
                   {item.badge && (
                     <span
                       className={`text-[10px] font-mono font-extrabold px-1.5 py-0.5 rounded-md border ${
@@ -101,4 +152,3 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, activeP
     </header>
   );
 };
-

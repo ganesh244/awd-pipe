@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { MonitoringRecord, CropStage, AWDFollowed, PipeCondition } from '../types';
+import { MonitoringRecord, CropStage, AWDFollowed, PipeCondition, User } from '../types';
 import { CameraCapture } from './CameraCapture';
 import { X, Calendar, Droplet, UserCheck, AlertCircle, MapPin } from 'lucide-react';
 
@@ -8,6 +8,7 @@ interface MonitoringFormProps {
   isOpen: boolean;
   onClose: () => void;
   onSubmit: (record: MonitoringRecord) => void;
+  currentUser?: User;
 }
 
 export const MonitoringForm: React.FC<MonitoringFormProps> = ({
@@ -15,6 +16,7 @@ export const MonitoringForm: React.FC<MonitoringFormProps> = ({
   isOpen,
   onClose,
   onSubmit,
+  currentUser,
 }) => {
   const today = new Date().toISOString().substring(0, 10);
 
@@ -23,7 +25,7 @@ export const MonitoringForm: React.FC<MonitoringFormProps> = ({
   const [cropStage, setCropStage] = useState<CropStage>('Tillering');
   const [awdFollowed, setAwdFollowed] = useState<AWDFollowed>('Yes');
   const [pipeCondition, setPipeCondition] = useState<PipeCondition>('Good');
-  const [visitedBy, setVisitedBy] = useState('M. Srinivas (Field Officer)');
+  const [visitedBy, setVisitedBy] = useState(currentUser ? `${currentUser.name} (${currentUser.role})` : 'M. Srinivas (Field Officer)');
   const [remarks, setRemarks] = useState('');
   const [photoUrl, setPhotoUrl] = useState<string | undefined>(undefined);
   const [gpsCaptured, setGpsCaptured] = useState<{ lat: number; lng: number } | null>(null);
@@ -61,6 +63,7 @@ export const MonitoringForm: React.FC<MonitoringFormProps> = ({
       AWD_Followed: awdFollowed,
       Pipe_Condition: pipeCondition,
       Visited_By: visitedBy,
+      Visited_By_User_ID: currentUser?.id,
       Latitude: gpsCaptured ? gpsCaptured.lat : 18.6184,
       Longitude: gpsCaptured ? gpsCaptured.lng : 79.3783,
       Photo_URL: photoUrl,
@@ -71,6 +74,7 @@ export const MonitoringForm: React.FC<MonitoringFormProps> = ({
     setPhotoUrl(undefined);
     onClose();
   };
+
 
   return (
     <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fadeIn">

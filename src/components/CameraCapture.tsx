@@ -56,6 +56,39 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({
     }
   };
 
+  // Helper: Compress image to max 600px dimension and 0.6 JPEG quality (~30-50KB) to preserve 512MB MongoDB free tier limit
+  const compressImage = (dataUrl: string): Promise<string> => {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => {
+        const maxDim = 600;
+        let width = img.width;
+        let height = img.height;
+        if (width > maxDim || height > maxDim) {
+          if (width > height) {
+            height = Math.round((height * maxDim) / width);
+            width = maxDim;
+          } else {
+            width = Math.round((width * maxDim) / height);
+            height = maxDim;
+          }
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          ctx.drawImage(img, 0, 0, width, height);
+          resolve(canvas.toDataURL('image/jpeg', 0.6));
+        } else {
+          resolve(dataUrl);
+        }
+      };
+      img.onerror = () => resolve(dataUrl);
+      img.src = dataUrl;
+    });
+  };
+
   const captureSnapshot = () => {
     if (!videoRef.current) return;
     const video = videoRef.current;
@@ -72,9 +105,11 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({
       ctx.font = 'bold 14px sans-serif';
       ctx.fillText(`AWD FIELD VERIFIED • ${new Date().toLocaleDateString()}`, 20, canvas.height - 20);
 
-      const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
-      onPhotoCaptured(dataUrl);
-      stopCameraStream();
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+      compressImage(dataUrl).then((compressed) => {
+        onPhotoCaptured(compressed);
+        stopCameraStream();
+      });
     }
   };
 
@@ -84,7 +119,7 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({
       const reader = new FileReader();
       reader.onload = (event) => {
         const result = event.target?.result as string;
-        onPhotoCaptured(result);
+        compressImage(result).then((compressed) => onPhotoCaptured(compressed));
       };
       reader.readAsDataURL(file);
     }
@@ -162,8 +197,8 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({
       ctx.font = 'bold 12px sans-serif';
       ctx.fillText(`🌱 AWD FIELD INSPECTION PHOTO • LOGGED AT ${new Date().toLocaleTimeString()}`, 30, 370);
 
-      const sampleUrl = canvas.toDataURL('image/jpeg', 0.85);
-      onPhotoCaptured(sampleUrl);
+      const sampleUrl = canvas.toDataURL('image/jpeg', 0.65);
+      compressImage(sampleUrl).then((compressed) => onPhotoCaptured(compressed));
     }
   };
 
