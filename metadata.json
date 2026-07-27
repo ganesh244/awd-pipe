@@ -1,0 +1,6 @@
+{
+  "name": "AWD Pipe QR Registration & Monitoring System",
+  "description": "Alternate Wetting and Drying (AWD) Pipe QR-based registration, GPS tracking, monitoring, and Google Apps Script deployment code.",
+  "requestFramePermissions": ["geolocation", "camera"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
