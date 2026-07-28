@@ -30,7 +30,7 @@ const UserSchema = new mongoose.Schema({
   id: { type: String, required: true, unique: true },
   name: { type: String, required: true },
   role: { type: String, required: true },
-  mobile: { type: String, required: true },
+  mobile: { type: String },
   state: { type: String },
   district: { type: String },
   area: { type: String },
