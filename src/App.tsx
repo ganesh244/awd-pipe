@@ -13,6 +13,7 @@ import { GenerateBatchModal } from './components/GenerateBatchModal';
 import { HierarchyManager } from './components/HierarchyManager';
 import { LoginScreen } from './components/auth/LoginScreen';
 import { ReportsExport } from './components/ReportsExport';
+import { FarmerProfiles } from './components/FarmerProfiles';
 
 export default function App() {
   const [pipes, setPipes] = useState<AWDPipe[]>(INITIAL_PIPES);
@@ -327,6 +328,15 @@ export default function App() {
             onUpdateUser={handleUpdateUser}
             onDeleteUser={handleDeleteUser}
             currentUser={currentUser}
+          />
+        )}
+
+        {activeTab === 'farmers' && (
+          <FarmerProfiles
+            currentUser={currentUser}
+            installations={scopedInstallations}
+            monitoringList={scopedMonitoringList}
+            pipes={pipes}
           />
         )}
 

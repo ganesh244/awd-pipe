@@ -1,5 +1,5 @@
 import React from 'react';
-import { BarChart3, Box, Printer, Code2, Sprout, MapPin, Plus, ClipboardCheck, Network, FileDown } from 'lucide-react';
+import { BarChart3, Box, Printer, Code2, Sprout, MapPin, Plus, ClipboardCheck, Network, FileDown, Users } from 'lucide-react';
 import { User } from '../types';
 import { UserProfileBadge } from './UserProfileBadge';
 
@@ -53,22 +53,25 @@ export const Navbar: React.FC<NavbarProps> = ({
   // Code — Admin only
   const codeTab: NavItem = { id: 'code', label: 'Apps Script', icon: Code2 };
 
+  // Farmer Profiles — all roles
+  const farmerProfilesTab: NavItem = { id: 'farmers', label: 'Farmer Profiles', icon: Users };
+
   // Reports & Export — all roles
   const reportsTab: NavItem = { id: 'reports', label: 'Reports & Export', icon: FileDown };
 
   let navItems: NavItem[] = [];
 
   if (role === 'CF' || role === 'JCF') {
-    navItems = [regTab, reportsTab];
+    navItems = [regTab, farmerProfilesTab, reportsTab];
   } else if (role === 'Area Manager') {
-    navItems = [regTab, mapTab, reportsTab];
+    navItems = [regTab, mapTab, farmerProfilesTab, reportsTab];
   } else if (role === 'District Manager') {
-    navItems = [regTab, mapTab, dashboardTab, hierarchyTab, reportsTab];
+    navItems = [regTab, mapTab, dashboardTab, hierarchyTab, farmerProfilesTab, reportsTab];
   } else if (role === 'State Manager') {
-    navItems = [regTab, mapTab, dashboardTab, inventoryTab, hierarchyTab, reportsTab];
+    navItems = [regTab, mapTab, dashboardTab, inventoryTab, hierarchyTab, farmerProfilesTab, reportsTab];
   } else {
     // Admin — full access
-    navItems = [regTab, mapTab, dashboardTab, inventoryTab, labelsTab, hierarchyTab, codeTab, reportsTab];
+    navItems = [regTab, mapTab, dashboardTab, inventoryTab, labelsTab, hierarchyTab, codeTab, farmerProfilesTab, reportsTab];
   }
 
   return (
