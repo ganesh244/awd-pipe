@@ -288,6 +288,25 @@ app.delete('/api/users/:id', async (req, res) => {
   }
 });
 
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Serve static frontend assets built by Vite in production (Render deployment)
+app.use(express.static(path.join(__dirname, 'dist')));
+
+app.get('*', (req, res, next) => {
+  if (req.path.startsWith('/api')) return next();
+  const indexPath = path.join(__dirname, 'dist', 'index.html');
+  res.sendFile(indexPath, (err) => {
+    if (err) {
+      res.status(200).send('API Server Running. Build frontend with npm run build for SPA view.');
+    }
+  });
+});
+
 app.listen(PORT, () => {
-  console.log(`🚀 AWD Pipe Backend API running on http://localhost:${PORT}`);
+  console.log(`🚀 AWD Pipe Backend API running on port ${PORT}`);
 });
