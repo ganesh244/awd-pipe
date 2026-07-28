@@ -139,6 +139,9 @@ connectDB();
 // 1. GET /api/init -> Load all initial data for frontend
 app.get('/api/init', async (req, res) => {
   try {
+    if (!isMongoConnected) {
+      await connectDB();
+    }
     if (isMongoConnected) {
       const users = await User.find({}).lean();
       const pipes = await Pipe.find({}).sort({ createdAt: -1 }).lean();
