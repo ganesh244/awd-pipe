@@ -1,4 +1,4 @@
-import { User, StateNode, DistrictNode, AreaNode } from '../types';
+import { User, StateNode, DistrictNode, AreaNode } from '../types.ts';
 
 export const INITIAL_STATES: StateNode[] = [
   { id: 'st-1', name: 'Andhra Pradesh', code: 'AP', managerId: 'usr-sm-1', managerName: 'Ramesh Varma' },

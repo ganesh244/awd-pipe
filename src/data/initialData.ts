@@ -1,4 +1,4 @@
-import { AWDPipe, Installation, MonitoringRecord } from '../types';
+import { AWDPipe, Installation, MonitoringRecord } from '../types.ts';
 
 export const INITIAL_PIPES: AWDPipe[] = [
   { Pipe_ID: 'AWD-0001', Batch_No: 'BATCH-2026-01', QR_URL: '?id=AWD-0001', Status: 'Installed', Installation_Date: '2026-06-15', Farmer_Name: 'Ramesh Patel', Village: 'Peddapalli', State: 'Andhra Pradesh', District: 'West Godavari' },
