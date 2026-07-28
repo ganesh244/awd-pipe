@@ -12,6 +12,7 @@ import { AppsScriptCodeViewer } from './components/AppsScriptCodeViewer';
 import { GenerateBatchModal } from './components/GenerateBatchModal';
 import { HierarchyManager } from './components/HierarchyManager';
 import { LoginScreen } from './components/auth/LoginScreen';
+import { ReportsExport } from './components/ReportsExport';
 
 export default function App() {
   const [pipes, setPipes] = useState<AWDPipe[]>(INITIAL_PIPES);
@@ -326,6 +327,15 @@ export default function App() {
             onUpdateUser={handleUpdateUser}
             onDeleteUser={handleDeleteUser}
             currentUser={currentUser}
+          />
+        )}
+
+        {activeTab === 'reports' && (
+          <ReportsExport
+            currentUser={currentUser}
+            users={users}
+            installations={scopedInstallations}
+            monitoringList={scopedMonitoringList}
           />
         )}
 
