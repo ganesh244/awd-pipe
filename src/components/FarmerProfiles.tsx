@@ -2,9 +2,210 @@ import React, { useState, useMemo } from 'react';
 import {
   Search, User, Phone, MapPin, Sprout, Droplet, ClipboardList,
   CheckCircle2, AlertTriangle, ChevronDown, ChevronUp, Eye,
-  BarChart3, Layers, Calendar, Ruler, Camera, X, Printer, ArrowRight
+  BarChart3, Layers, Calendar, Ruler, Camera, X, Printer, ArrowRight,
+  ArrowDownToLine, FileText
 } from 'lucide-react';
 import { Installation, MonitoringRecord, User as UserType, AWDPipe } from '../types';
+
+// ── Download Helpers ──────────────────────────────────────────────────────────
+
+const downloadCSV = (filename: string, rows: string[][], headers: string[]) => {
+  const escape = (v: any) => {
+    const s = String(v ?? '');
+    return s.includes(',') || s.includes('"') || s.includes('\n') ? `"${s.replace(/"/g, '""')}"` : s;
+  };
+  const BOM = '\uFEFF';
+  const content = BOM + [headers, ...rows].map((r) => r.map(escape).join(',')).join('\r\n');
+  const blob = new Blob([content], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+};
+
+const downloadFarmerCSV = (
+  farmerName: string,
+  installations: Installation[],
+  monitoringList: MonitoringRecord[]
+) => {
+  // Sheet 1 — Installations (one row per pipe)
+  const instHeaders = [
+    'Pipe ID', 'Farmer Name', 'Mobile', 'Farmer ID', 'Village', 'Mandal', 'District', 'State',
+    'Survey No', 'Plot Size', 'Plot Unit', 'Crop', 'Variety', 'Establishment Method',
+    'Sowing Date', 'Irrigation Source', 'Installation Date', 'Installed By',
+    'GPS Lat', 'GPS Lng', 'GPS Accuracy (m)', 'Map Link', 'Remarks',
+  ];
+  const instRows = installations.map((i) => [
+    i.Pipe_ID, i.Farmer_Name, i.Mobile, i.Farmer_ID ?? '',
+    i.Village, i.Mandal, i.District, i.State ?? '',
+    i.Survey_No ?? '', i.Plot_Size, i.Plot_Size_Unit,
+    i.Crop, i.Variety ?? '', i.Establishment_Method,
+    i.Sowing_Transplantation_Date, i.Irrigation_Source,
+    i.Installation_Date, i.Installed_By,
+    i.Latitude, i.Longitude, i.GPS_Accuracy, i.Location_Link,
+    String(i.Remarks ?? ''),
+  ] as string[]);
+
+  // Sheet 2 — Monitoring visits (one row per visit)
+  const allPipeIds = new Set(installations.map((i) => i.Pipe_ID));
+  const visits = monitoringList.filter((m) => allPipeIds.has(m.Pipe_ID));
+  const visitHeaders = [
+    'Pipe ID', 'Farmer Name', 'Visit Date', 'Water Level (cm)', 'Crop Stage',
+    'AWD Followed', 'Pipe Condition', 'Visited By', 'GPS Lat', 'GPS Lng', 'Remarks',
+  ];
+  const visitRows = visits.map((v) => [
+    v.Pipe_ID, farmerName, v.Visit_Date, v.Water_Level, v.Crop_Stage,
+    v.AWD_Followed, v.Pipe_Condition, v.Visited_By,
+    String(v.Latitude), String(v.Longitude), v.Remarks ?? '',
+  ] as string[]);
+
+  // Combine both into one CSV with separator
+  const separator = [[''], ['=== MONITORING VISITS ==='], ['']];
+  downloadCSV(
+    `Farmer_Report_${farmerName.replace(/\s+/g, '_')}_${new Date().toISOString().slice(0, 10)}.csv`,
+    [...instRows, ...separator, visitHeaders.map((_) => ''), ...visitRows],
+    instHeaders
+  );
+};
+
+const printFarmerFullReport = (
+  farmerName: string,
+  installations: Installation[],
+  monitoringList: MonitoringRecord[],
+  totalAcres: number,
+  awdPct: number | null
+) => {
+  const allPipeIds = new Set(installations.map((i) => i.Pipe_ID));
+  const allVisits = monitoringList.filter((m) => allPipeIds.has(m.Pipe_ID));
+  const rep = installations[0];
+  const fmtDate = (d?: string) => d ? new Date(d).toLocaleDateString('en-IN') : '—';
+
+  const pipeSections = installations.map((inst, idx) => {
+    const visits = monitoringList.filter((m) => m.Pipe_ID === inst.Pipe_ID);
+    return `
+      <div class="pipe-card">
+        <div class="pipe-header">
+          <span class="pipe-id">${inst.Pipe_ID}</span>
+          <span class="tag">${inst.Crop} • ${inst.Plot_Size} ${inst.Plot_Size_Unit}</span>
+          <span class="tag">${inst.Village}, ${inst.Mandal}</span>
+        </div>
+        <div class="kv-grid">
+          <div class="kv"><span class="k">Survey No.</span><span class="v">${inst.Survey_No ?? '—'}</span></div>
+          <div class="kv"><span class="k">Method</span><span class="v">${inst.Establishment_Method}</span></div>
+          <div class="kv"><span class="k">Irrigation</span><span class="v">${inst.Irrigation_Source}</span></div>
+          <div class="kv"><span class="k">Sowing Date</span><span class="v">${fmtDate(inst.Sowing_Transplantation_Date)}</span></div>
+          <div class="kv"><span class="k">Install Date</span><span class="v">${fmtDate(inst.Installation_Date)}</span></div>
+          <div class="kv"><span class="k">Installed By</span><span class="v">${inst.Installed_By}</span></div>
+          <div class="kv"><span class="k">GPS</span><span class="v"><a href="${inst.Location_Link}" target="_blank">${inst.Latitude}, ${inst.Longitude}</a></span></div>
+          <div class="kv"><span class="k">Variety</span><span class="v">${inst.Variety ?? '—'}</span></div>
+        </div>
+        ${inst.Photo_URL ? `<div class="photo-row"><img src="${inst.Photo_URL}" class="field-photo" alt="Field Photo"/></div>` : ''}
+        <div class="visit-section">
+          <div class="visit-title">📋 Monitoring Visits (${visits.length})</div>
+          ${
+            visits.length === 0
+              ? '<p class="no-visits">No monitoring visits recorded yet.</p>'
+              : `<table class="visit-table">
+                  <thead><tr>
+                    <th>Visit Date</th><th>Water Level</th><th>Crop Stage</th>
+                    <th>AWD Followed</th><th>Pipe Condition</th><th>Visited By</th><th>Remarks</th>
+                  </tr></thead>
+                  <tbody>
+                    ${visits.map((v) => `
+                      <tr>
+                        <td>${fmtDate(v.Visit_Date)}</td>
+                        <td>${v.Water_Level} cm</td>
+                        <td>${v.Crop_Stage}</td>
+                        <td class="${v.AWD_Followed === 'Yes' ? 'good' : 'warn'}">${v.AWD_Followed}</td>
+                        <td class="${v.Pipe_Condition === 'Good' ? 'good' : 'bad'}">${v.Pipe_Condition}</td>
+                        <td>${v.Visited_By}</td>
+                        <td>${v.Remarks ?? '—'}</td>
+                      </tr>`).join('')}
+                  </tbody>
+                </table>`
+          }
+        </div>
+      </div>`;
+  }).join('');
+
+  const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <title>Farmer Complete Report — ${farmerName}</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', Arial, sans-serif; font-size: 12px; color: #1e293b; background: #fff; padding: 24px; }
+    .header { display: flex; align-items: center; gap: 16px; border-bottom: 3px solid #16a34a; padding-bottom: 12px; margin-bottom: 20px; }
+    .logo { width: 48px; height: 48px; background: linear-gradient(135deg, #14532d, #16a34a, #84cc16); border-radius: 10px; display: flex; align-items: center; justify-content: center; color: white; font-size: 22px; }
+    .header-text h1 { font-size: 17px; font-weight: 800; color: #14532d; }
+    .farmer-hero { background: linear-gradient(135deg, #14532d, #166534); color: white; border-radius: 12px; padding: 20px 24px; margin-bottom: 16px; }
+    .farmer-hero h2 { font-size: 22px; font-weight: 900; }
+    .farmer-hero p { font-size: 12px; opacity: 0.85; margin-top: 6px; }
+    .stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 16px; }
+    .stat-card { border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px; text-align: center; }
+    .stat-num { font-size: 20px; font-weight: 900; color: #0f172a; }
+    .stat-lbl { font-size: 10px; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 2px; }
+    .pipe-card { border: 1px solid #e2e8f0; border-radius: 8px; margin-bottom: 14px; overflow: hidden; page-break-inside: avoid; }
+    .pipe-header { background: #f8fafc; padding: 8px 12px; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid #e2e8f0; }
+    .pipe-id { font-family: monospace; font-weight: 800; font-size: 13px; color: #14532d; }
+    .tag { background: #e2e8f0; color: #475569; font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 20px; }
+    .kv-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0; }
+    .kv { padding: 6px 10px; border-bottom: 1px solid #f1f5f9; border-right: 1px solid #f1f5f9; }
+    .k { font-size: 10px; color: #64748b; display: block; }
+    .v { font-weight: 700; font-size: 11px; color: #0f172a; }
+    .v a { color: #2563eb; text-decoration: none; font-size: 10px; }
+    .photo-row { padding: 10px; background: #f8fafc; border-bottom: 1px solid #e2e8f0; }
+    .field-photo { width: 100%; max-height: 160px; object-fit: cover; border-radius: 6px; }
+    .visit-section { padding: 10px 12px; }
+    .visit-title { font-size: 11px; font-weight: 800; color: #475569; text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 8px; }
+    .no-visits { color: #94a3b8; font-size: 11px; padding: 8px; }
+    .visit-table { width: 100%; border-collapse: collapse; }
+    .visit-table th { background: #f1f5f9; padding: 5px 8px; text-align: left; font-size: 10px; color: #475569; text-transform: uppercase; border-bottom: 2px solid #e2e8f0; }
+    .visit-table td { padding: 5px 8px; border-bottom: 1px solid #f1f5f9; font-size: 11px; }
+    .good { color: #15803d; font-weight: 700; }
+    .warn { color: #b45309; font-weight: 700; }
+    .bad { color: #dc2626; font-weight: 700; }
+    .footer { margin-top: 16px; padding-top: 8px; border-top: 1px solid #e2e8f0; font-size: 10px; color: #94a3b8; display: flex; justify-content: space-between; }
+    @media print { body { padding: 0; } }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="logo">🌱</div>
+    <div class="header-text">
+      <h1>AWD Pipe — Complete Farmer Field Report</h1>
+      <p>Alternate Wetting &amp; Drying Paddy Water Management System</p>
+    </div>
+  </div>
+
+  <div class="farmer-hero">
+    <h2>🧑‍🌾 ${farmerName}</h2>
+    <p>📞 ${rep.Mobile} &nbsp;|&nbsp; 📍 ${rep.Village}, ${rep.Mandal}, ${rep.District}, ${rep.State ?? ''} &nbsp;|&nbsp; Farmer ID: ${rep.Farmer_ID ?? '—'}</p>
+  </div>
+
+  <div class="stats-row">
+    <div class="stat-card"><div class="stat-num">${installations.length}</div><div class="stat-lbl">AWD Pipes</div></div>
+    <div class="stat-card"><div class="stat-num">${totalAcres.toFixed(2)} Ac</div><div class="stat-lbl">Total Area</div></div>
+    <div class="stat-card"><div class="stat-num">${allVisits.length}</div><div class="stat-lbl">Monitoring Visits</div></div>
+    <div class="stat-card"><div class="stat-num">${awdPct !== null ? awdPct + '%' : '—'}</div><div class="stat-lbl">AWD Compliance</div></div>
+  </div>
+
+  ${pipeSections}
+
+  <div class="footer">
+    <span>Generated: ${new Date().toLocaleString('en-IN')} | AWD Pipe System</span>
+    <span>Confidential Farmer Field Report</span>
+  </div>
+  <script>window.onload = () => window.print();</script>
+</body>
+</html>`;
+
+  const win = window.open('', '_blank');
+  if (win) { win.document.write(html); win.document.close(); }
+};
 
 interface FarmerProfilesProps {
   currentUser: UserType;
@@ -209,13 +410,31 @@ const FarmerFullProfile: React.FC<{
 
   return (
     <div className="space-y-5 animate-fadeIn">
-      {/* Back button */}
-      <button
-        onClick={onBack}
-        className="flex items-center gap-1.5 text-sm font-semibold text-slate-500 hover:text-slate-800 transition"
-      >
-        ← Back to search
-      </button>
+      {/* Back button + Download buttons */}
+      <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+        <button
+          onClick={onBack}
+          className="flex items-center gap-1.5 text-sm font-semibold text-slate-500 hover:text-slate-800 transition"
+        >
+          ← Back to search
+        </button>
+        <div className="flex gap-2 sm:ml-auto flex-wrap">
+          <button
+            onClick={() => downloadFarmerCSV(farmerName, farmerInsts, monitoringList)}
+            className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-3.5 py-2 rounded-xl shadow transition"
+          >
+            <ArrowDownToLine className="w-3.5 h-3.5" />
+            Download CSV Report
+          </button>
+          <button
+            onClick={() => printFarmerFullReport(farmerName, farmerInsts, monitoringList, totalAcres, awdPct)}
+            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold px-3.5 py-2 rounded-xl shadow transition"
+          >
+            <Printer className="w-3.5 h-3.5" />
+            Print / Save PDF
+          </button>
+        </div>
+      </div>
 
       {/* Profile Header Card */}
       <div className="bg-gradient-to-br from-emerald-700 to-emerald-900 text-white rounded-2xl p-6 shadow-xl relative overflow-hidden">
