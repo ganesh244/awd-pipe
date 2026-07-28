@@ -33,6 +33,8 @@ export default function App() {
   const [dbStatus, setDbStatus] = useState<'cloud' | 'local' | 'loading'>('loading');
 
   const [activeTab, setActiveTab] = useState<string>('mobile');
+  const [analyticsSubTab, setAnalyticsSubTab] = useState<'overview' | 'reports'>('overview');
+  const [inventorySubTab, setInventorySubTab] = useState<'inventory' | 'labels'>('inventory');
   const [activePipeId, setActivePipeId] = useState<string>('AWD-0004'); // Defaults to an available unregistered pipe
   const [isGenerateModalOpen, setIsGenerateModalOpen] = useState<boolean>(false);
 
@@ -291,31 +293,106 @@ export default function App() {
           />
         )}
 
-        {activeTab === 'dashboard' && (
-          <Dashboard
-            pipes={scopedPipes}
-            installations={scopedInstallations}
-            monitoringList={scopedMonitoringList}
-          />
-        )}
+        {/* ── ANALYTICS & REPORTS (merged tab) ── */}
+        {activeTab === 'analytics' && (() => {
+          const hasDashboard = currentUser.role === 'District Manager' || currentUser.role === 'State Manager' || currentUser.role === 'Admin';
+          const subTab = hasDashboard ? analyticsSubTab : 'reports';
+          return (
+            <div>
+              {/* Sub-tab bar */}
+              <div className="bg-white border-b border-slate-200 sticky top-[60px] z-30">
+                <div className="max-w-7xl mx-auto px-4 flex gap-1 py-2">
+                  {hasDashboard && (
+                    <button
+                      onClick={() => setAnalyticsSubTab('overview')}
+                      className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition ${
+                        subTab === 'overview'
+                          ? 'bg-emerald-600 text-white shadow'
+                          : 'text-slate-500 hover:bg-slate-100'
+                      }`}
+                    >
+                      <span>📊</span> Dashboard Overview
+                    </button>
+                  )}
+                  <button
+                    onClick={() => setAnalyticsSubTab('reports')}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition ${
+                      subTab === 'reports'
+                        ? 'bg-emerald-600 text-white shadow'
+                        : 'text-slate-500 hover:bg-slate-100'
+                    }`}
+                  >
+                    <span>📥</span> Reports & Export
+                  </button>
+                </div>
+              </div>
+              {/* Sub-tab content */}
+              {subTab === 'overview' && (
+                <Dashboard
+                  pipes={scopedPipes}
+                  installations={scopedInstallations}
+                  monitoringList={scopedMonitoringList}
+                />
+              )}
+              {subTab === 'reports' && (
+                <ReportsExport
+                  currentUser={currentUser}
+                  users={users}
+                  installations={scopedInstallations}
+                  monitoringList={scopedMonitoringList}
+                />
+              )}
+            </div>
+          );
+        })()}
 
+        {/* ── INVENTORY & QR (merged tab) ── */}
         {activeTab === 'inventory' && (
-          <PipeInventory
-            pipes={scopedPipes}
-            onSelectPipe={(pipeId) => {
-              setActivePipeId(pipeId);
-              setActiveTab('mobile');
-            }}
-            onAddPipeBatch={handleAddPipeBatch}
-            onOpenGenerateModal={() => setIsGenerateModalOpen(true)}
-          />
-        )}
-
-        {activeTab === 'labels' && (
-          <PrintQRLabels
-            pipes={scopedPipes}
-            onOpenGenerateModal={() => setIsGenerateModalOpen(true)}
-          />
+          <div>
+            {/* Sub-tab bar */}
+            <div className="bg-white border-b border-slate-200 sticky top-[60px] z-30">
+              <div className="max-w-7xl mx-auto px-4 flex gap-1 py-2">
+                <button
+                  onClick={() => setInventorySubTab('inventory')}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition ${
+                    inventorySubTab === 'inventory'
+                      ? 'bg-emerald-600 text-white shadow'
+                      : 'text-slate-500 hover:bg-slate-100'
+                  }`}
+                >
+                  <span>📦</span> Pipe Inventory
+                </button>
+                <button
+                  onClick={() => setInventorySubTab('labels')}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition ${
+                    inventorySubTab === 'labels'
+                      ? 'bg-emerald-600 text-white shadow'
+                      : 'text-slate-500 hover:bg-slate-100'
+                  }`}
+                >
+                  <span>🏷️</span> Print QR Labels
+                </button>
+              </div>
+            </div>
+            {/* Sub-tab content */}
+            {inventorySubTab === 'inventory' && (
+              <PipeInventory
+                pipes={scopedPipes}
+                onSelectPipe={(pipeId) => {
+                  setActivePipeId(pipeId);
+                  setActiveTab('mobile');
+                }}
+                onAddPipeBatch={handleAddPipeBatch}
+                onOpenGenerateModal={() => setIsGenerateModalOpen(true)}
+              />
+            )}
+            {inventorySubTab === 'labels' && (
+              <PrintQRLabels
+                pipes={scopedPipes}
+                onOpenGenerateModal={() => setIsGenerateModalOpen(true)}
+              />
+            )}
+          </div>
         )}
 
         {activeTab === 'hierarchy' && (
@@ -340,15 +417,6 @@ export default function App() {
           />
         )}
 
-        {activeTab === 'reports' && (
-          <ReportsExport
-            currentUser={currentUser}
-            users={users}
-            installations={scopedInstallations}
-            monitoringList={scopedMonitoringList}
-          />
-        )}
-
         {activeTab === 'code' && <AppsScriptCodeViewer />}
       </main>
 
@@ -358,7 +426,7 @@ export default function App() {
         onClose={() => setIsGenerateModalOpen(false)}
         existingPipeCount={pipes.length}
         onBatchGenerated={(newPipes) => handleCustomBatchGenerated(newPipes)}
-        onNavigateToLabels={() => setActiveTab('labels')}
+        onNavigateToLabels={() => { setActiveTab('inventory'); setInventorySubTab('labels'); }}
       />
 
       {/* Footer */}

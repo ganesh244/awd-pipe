@@ -40,38 +40,34 @@ export const Navbar: React.FC<NavbarProps> = ({
   // Map tab — CF/JCF and above
   const mapTab: NavItem = { id: 'map', label: 'Field Map View', icon: MapPin };
 
-  // Dashboard — Area Manager and above
-  const dashboardTab: NavItem = { id: 'dashboard', label: 'Analytics Dashboard', icon: BarChart3 };
+  // Analytics (Dashboard + Reports) — District Manager and above; CF/JCF/AM only get reports sub-tab
+  const analyticsTab: NavItem = { id: 'analytics', label: 'Analytics & Reports', icon: BarChart3 };
 
-  // Inventory & Labels — State Manager and Admin
-  const inventoryTab: NavItem = { id: 'inventory', label: 'Pipe Inventory', icon: Box };
-  const labelsTab: NavItem = { id: 'labels', label: 'Print QR Labels', icon: Printer };
+  // Inventory & QR (Pipe Inventory + Print QR Labels) — State Manager and Admin
+  const inventoryQRTab: NavItem = { id: 'inventory', label: 'Inventory & QR', icon: Box };
 
   // Hierarchy — District Manager and above
   const hierarchyTab: NavItem = { id: 'hierarchy', label: 'Team & Hierarchy', icon: Network };
 
-  // Code — Admin only
-  const codeTab: NavItem = { id: 'code', label: 'Apps Script', icon: Code2 };
-
   // Farmer Profiles — all roles
   const farmerProfilesTab: NavItem = { id: 'farmers', label: 'Farmer Profiles', icon: Users };
 
-  // Reports & Export — all roles
-  const reportsTab: NavItem = { id: 'reports', label: 'Reports & Export', icon: FileDown };
+  // Code — Admin only
+  const codeTab: NavItem = { id: 'code', label: 'Apps Script', icon: Code2 };
 
   let navItems: NavItem[] = [];
 
   if (role === 'CF' || role === 'JCF') {
-    navItems = [regTab, farmerProfilesTab, reportsTab];
+    navItems = [regTab, farmerProfilesTab, analyticsTab];
   } else if (role === 'Area Manager') {
-    navItems = [regTab, mapTab, farmerProfilesTab, reportsTab];
+    navItems = [regTab, mapTab, farmerProfilesTab, analyticsTab];
   } else if (role === 'District Manager') {
-    navItems = [regTab, mapTab, dashboardTab, hierarchyTab, farmerProfilesTab, reportsTab];
+    navItems = [regTab, mapTab, analyticsTab, hierarchyTab, farmerProfilesTab];
   } else if (role === 'State Manager') {
-    navItems = [regTab, mapTab, dashboardTab, inventoryTab, hierarchyTab, farmerProfilesTab, reportsTab];
+    navItems = [regTab, mapTab, analyticsTab, inventoryQRTab, hierarchyTab, farmerProfilesTab];
   } else {
     // Admin — full access
-    navItems = [regTab, mapTab, dashboardTab, inventoryTab, labelsTab, hierarchyTab, codeTab, farmerProfilesTab, reportsTab];
+    navItems = [regTab, mapTab, analyticsTab, inventoryQRTab, hierarchyTab, codeTab, farmerProfilesTab];
   }
 
   return (
