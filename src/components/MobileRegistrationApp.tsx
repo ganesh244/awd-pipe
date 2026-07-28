@@ -72,6 +72,8 @@ export const MobileRegistrationApp: React.FC<MobileRegistrationAppProps> = ({
 
   // Farmer Mode: 'new' or 'existing'
   const [farmerSelectionMode, setFarmerSelectionMode] = useState<'new' | 'existing'>('new');
+  // Search state for existing farmer live search
+  const [farmerSearch, setFarmerSearch] = useState('');
 
   // Extract unique registered farmers from installations list
   const registeredFarmersMap = new Map<string, Installation>();
@@ -335,11 +337,43 @@ export const MobileRegistrationApp: React.FC<MobileRegistrationAppProps> = ({
             )}
           </div>
 
+          {/* ── REGISTER ANOTHER FARMER BUTTON ── */}
           <button
-            onClick={() => setSuccessRecord(null)}
+            onClick={() => {
+              // Reset all form fields for a fresh registration
+              setSuccessRecord(null);
+              setFarmerName('');
+              setMobile('');
+              setVillage('');
+              setMandal('');
+              setDistrict(currentUser?.district || 'West Godavari');
+              setFarmerId('');
+              setSurveyNo('');
+              setPlotSize('2.0');
+              setVariety('');
+              setSowingDate(today);
+              setNurserySowingDate('');
+              setRemarks('');
+              setPhotoUrl(undefined);
+              setGpsData(null);
+              setGpsError(null);
+              setGeoAutoFilledNotice(null);
+              setFormError(null);
+              setFarmerSelectionMode('new');
+              setFarmerSearch('');
+              // Move to next available pipe
+              const nextPipe = pipes.find((p) => p.Status === 'Available' && p.Pipe_ID !== selectedPipe?.Pipe_ID);
+              if (nextPipe) setActivePipeId(nextPipe.Pipe_ID);
+            }}
             className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3.5 rounded-xl text-sm transition shadow-md flex items-center justify-center gap-2"
           >
-            <ShieldCheck className="w-4 h-4" /> View AWD Pipe Record
+            <Plus className="w-4 h-4" /> Register Another Farmer
+          </button>
+          <button
+            onClick={() => setSuccessRecord(null)}
+            className="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2.5 rounded-xl text-sm transition flex items-center justify-center gap-2"
+          >
+            <ShieldCheck className="w-4 h-4" /> View This Pipe Record
           </button>
         </div>
       ) : existingInstallation ? (
@@ -423,29 +457,60 @@ export const MobileRegistrationApp: React.FC<MobileRegistrationAppProps> = ({
               </button>
             </div>
 
-            {/* Dropdown to Pick Existing Farmer if Mode is 'existing' */}
+            {/* Live Search for Existing Farmer by name or mobile */}
             {farmerSelectionMode === 'existing' && registeredFarmersList.length > 0 && (
               <div className="bg-emerald-50/90 border border-emerald-300 rounded-xl p-3 space-y-2 animate-fadeIn shadow-xs">
                 <label className="block text-xs font-bold text-emerald-950 flex items-center gap-1">
                   <UserCheck className="w-4 h-4 text-emerald-700" />
-                  Select Registered Farmer (Holds Multiple Pipes)
+                  Search Registered Farmer (by Name or Mobile)
                 </label>
-                <select
-                  onChange={(e) => {
-                    if (e.target.value) handleSelectExistingFarmer(e.target.value);
-                  }}
-                  className="w-full bg-white border border-emerald-300 rounded-xl p-2.5 text-xs font-bold text-slate-800 outline-none focus:ring-2 focus:ring-emerald-500 shadow-xs cursor-pointer"
-                >
-                  <option value="">-- Choose Existing Farmer --</option>
-                  {registeredFarmersList.map((f) => {
-                    const pipeCount = installations.filter((i) => i.Farmer_Name === f.Farmer_Name).length;
-                    return (
-                      <option key={f.Farmer_Name} value={f.Farmer_Name}>
-                        🧑‍🌾 {f.Farmer_Name} ({f.Village}) - Currently Holds {pipeCount} Pipe{pipeCount > 1 ? 's' : ''}
-                      </option>
-                    );
-                  })}
-                </select>
+                {/* Search input */}
+                <div className="relative">
+                  <Search className="absolute left-2.5 top-2.5 w-3.5 h-3.5 text-slate-400" />
+                  <input
+                    type="text"
+                    value={farmerSearch}
+                    onChange={(e) => setFarmerSearch(e.target.value)}
+                    placeholder="Type name or mobile number..."
+                    className="w-full pl-8 pr-3 py-2 text-xs border border-emerald-300 rounded-xl bg-white focus:ring-2 focus:ring-emerald-500 outline-none"
+                  />
+                </div>
+                {/* Filtered results */}
+                {farmerSearch.trim() && (() => {
+                  const term = farmerSearch.toLowerCase();
+                  const results = registeredFarmersList.filter(
+                    (f) =>
+                      f.Farmer_Name.toLowerCase().includes(term) ||
+                      (f.Mobile && f.Mobile.includes(farmerSearch.replace(/\D/g, '')))
+                  );
+                  return results.length === 0 ? (
+                    <div className="text-xs text-slate-500 text-center py-2">No farmers found matching "{farmerSearch}"</div>
+                  ) : (
+                    <div className="max-h-48 overflow-y-auto rounded-xl border border-emerald-200 bg-white divide-y divide-slate-100">
+                      {results.map((f) => {
+                        const pipeCount = installations.filter((i) => i.Farmer_Name === f.Farmer_Name).length;
+                        return (
+                          <button
+                            key={f.Farmer_Name}
+                            type="button"
+                            onClick={() => {
+                              handleSelectExistingFarmer(f.Farmer_Name);
+                              setFarmerSearch(f.Farmer_Name);
+                            }}
+                            className="w-full text-left px-3 py-2.5 hover:bg-emerald-50 transition text-xs"
+                          >
+                            <div className="font-bold text-slate-800">🧑‍🌾 {f.Farmer_Name}</div>
+                            <div className="text-slate-500 flex items-center gap-3 mt-0.5">
+                              <span>📞 {f.Mobile}</span>
+                              <span>📍 {f.Village}, {f.Mandal}</span>
+                              <span className="text-emerald-700 font-semibold">{pipeCount} pipe{pipeCount > 1 ? 's' : ''}</span>
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  );
+                })()}
                 {farmerName && (
                   <div className="text-[11px] font-semibold text-emerald-900 bg-white p-2.5 rounded-lg border border-emerald-200 space-y-1">
                     <span className="font-bold block text-emerald-800">🌾 Multi-Pipe Assignment Activated:</span>
