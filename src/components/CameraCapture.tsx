@@ -45,6 +45,7 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({
       setIsCameraActive(true);
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
+        videoRef.current.play().catch((e) => console.warn('Video play failed:', e));
       }
     } catch (err: any) {
       console.warn('Unable to open live camera stream directly:', err);
@@ -255,7 +256,7 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({
       ) : isCameraActive ? (
         /* LIVE CAMERA STREAM VIEW */
         <div className="relative rounded-lg overflow-hidden border-2 border-[#2d4a2d] bg-black">
-          <video ref={videoRef} autoPlay playsInline className="w-full h-52 object-cover" />
+          <video ref={videoRef} autoPlay playsInline muted className="w-full h-52 object-cover" />
           <div className="absolute bottom-3 left-0 right-0 flex items-center justify-center gap-3 px-4">
             <button
               type="button"
