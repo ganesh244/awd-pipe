@@ -42,11 +42,7 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({
         video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } },
       });
       mediaStreamRef.current = stream;
-      setIsCameraActive(true);
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        videoRef.current.play().catch((e) => console.warn('Video play failed:', e));
-      }
+      setIsCameraActive(true); // triggers re-render → video element mounts → useEffect below fires
     } catch (err: any) {
       console.warn('Unable to open live camera stream directly:', err);
       setStreamError('Live webcam feed not available or blocked in browser. Use camera file capture below.');
@@ -56,6 +52,14 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({
       }
     }
   };
+
+  // After isCameraActive becomes true, React renders <video>. This effect attaches the stream.
+  useEffect(() => {
+    if (isCameraActive && videoRef.current && mediaStreamRef.current) {
+      videoRef.current.srcObject = mediaStreamRef.current;
+      videoRef.current.play().catch((e) => console.warn('Video play failed:', e));
+    }
+  }, [isCameraActive]);
 
   // Helper: Compress image to max 600px dimension and 0.6 JPEG quality (~30-50KB) to preserve 512MB MongoDB free tier limit
   const compressImage = (dataUrl: string): Promise<string> => {
