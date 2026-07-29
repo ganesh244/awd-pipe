@@ -137,3 +137,13 @@ export interface AreaNode {
   managerId?: string;
   managerName?: string;
 }
+
+export interface OfflineQueueItem {
+  id: string;
+  timestamp: string;
+  type: 'registration' | 'monitoring';
+  status: 'pending' | 'syncing' | 'failed';
+  error?: string;
+  payload: any;
+}
+

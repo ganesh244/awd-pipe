@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import {
   BarChart3, Box, Printer, Code2, Sprout, MapPin,
   Plus, ClipboardCheck, Network, FileDown, Users,
-  Menu, X, ChevronRight, Home
+  Menu, X, ChevronRight, Home, Wifi, WifiOff
 } from 'lucide-react';
 import { User } from '../types';
 import { UserProfileBadge } from './UserProfileBadge';
@@ -14,6 +14,10 @@ interface NavbarProps {
   currentUser: User;
   onLogout: () => void;
   onOpenGenerateModal?: () => void;
+  isOnline: boolean;
+  onToggleOnline: () => void;
+  offlineQueueCount: number;
+  onOpenSyncModal: () => void;
 }
 
 interface NavItem {
@@ -31,6 +35,10 @@ export const Navbar: React.FC<NavbarProps> = ({
   currentUser,
   onLogout,
   onOpenGenerateModal,
+  isOnline,
+  onToggleOnline,
+  offlineQueueCount,
+  onOpenSyncModal,
 }) => {
   const role = currentUser.role;
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -143,6 +151,33 @@ export const Navbar: React.FC<NavbarProps> = ({
 
           {/* Right controls */}
           <div className="flex items-center gap-2 shrink-0">
+            {/* Connectivity Status Indicator */}
+            <button
+              onClick={onOpenSyncModal}
+              className={`flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-[10px] font-bold border transition-all cursor-pointer ${
+                offlineQueueCount > 0
+                  ? 'bg-amber-950/40 text-amber-400 border-amber-500/30 animate-pulse'
+                  : isOnline
+                  ? 'bg-emerald-950/40 text-emerald-400 border-emerald-500/20'
+                  : 'bg-rose-950/40 text-rose-400 border-rose-500/20'
+              }`}
+              title="View Offline Sync Queue"
+            >
+              {isOnline ? (
+                <Wifi className="w-3.5 h-3.5" />
+              ) : (
+                <WifiOff className="w-3.5 h-3.5" />
+              )}
+              <span className="hidden sm:inline">
+                {isOnline ? 'Online' : 'Offline'}
+              </span>
+              {offlineQueueCount > 0 && (
+                <span className="bg-amber-500 text-amber-950 px-1 rounded font-mono text-[9px] font-extrabold ml-0.5 animate-pulse">
+                  {offlineQueueCount}
+                </span>
+              )}
+            </button>
+
             {onOpenGenerateModal && (role === 'Admin' || role === 'State Manager') && (
               <button
                 onClick={onOpenGenerateModal}

@@ -15,6 +15,9 @@ interface HomeProps {
   monitoringList: MonitoringRecord[];
   pipes: AWDPipe[];
   onOpenGenerateModal?: () => void;
+  isOnline: boolean;
+  offlineQueueCount: number;
+  onOpenSyncModal: () => void;
 }
 
 export const Home: React.FC<HomeProps> = ({
@@ -25,7 +28,10 @@ export const Home: React.FC<HomeProps> = ({
   installations,
   monitoringList,
   pipes,
-  onOpenGenerateModal
+  onOpenGenerateModal,
+  isOnline,
+  offlineQueueCount,
+  onOpenSyncModal,
 }) => {
   // Time of day greeting
   const greeting = useMemo(() => {
@@ -188,6 +194,48 @@ export const Home: React.FC<HomeProps> = ({
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6 page-enter">
+
+      {/* Offline Alert Banner */}
+      {(!isOnline || offlineQueueCount > 0) && (
+        <div className={`p-4 rounded-3xl border flex items-center justify-between flex-wrap gap-3 ${
+          offlineQueueCount > 0 
+            ? 'bg-amber-50 border-amber-200 text-amber-900 animate-pulse' 
+            : 'bg-rose-50 border-rose-200 text-rose-900'
+        }`}>
+          <div className="flex items-center gap-3">
+            <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${
+              offlineQueueCount > 0 ? 'bg-amber-100 text-amber-700' : 'bg-rose-100 text-rose-700'
+            }`}>
+              {offlineQueueCount > 0 ? <Zap className="w-4 h-4" /> : <Clock className="w-4 h-4" />}
+            </div>
+            <div>
+              <div className="font-bold text-xs">
+                {offlineQueueCount > 0 
+                  ? `Offline Records Detected (${offlineQueueCount} pending)` 
+                  : 'Field Device Operating in Offline Mode'
+                }
+              </div>
+              <p className="text-[10px] opacity-80 mt-0.5">
+                {offlineQueueCount > 0 
+                  ? 'You registered new farmers or visits while offline. Sync them back to server once connected.' 
+                  : 'You can still register farmers and log visits. They will be queued for upload later.'
+                }
+              </p>
+            </div>
+          </div>
+          
+          <button
+            onClick={onOpenSyncModal}
+            className={`px-3 py-1.5 rounded-xl text-[10px] font-extrabold shadow-sm active:scale-95 transition-all cursor-pointer ${
+              offlineQueueCount > 0 
+                ? 'bg-amber-600 hover:bg-amber-700 text-white' 
+                : 'bg-rose-600 hover:bg-rose-700 text-white'
+            }`}
+          >
+            {offlineQueueCount > 0 ? 'Sync Now' : 'Sync Queue'}
+          </button>
+        </div>
+      )}
       
       {/* ── Welcome Banner ── */}
       <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-emerald-800 via-emerald-900 to-[#0a180e] p-6 sm:p-8 text-white shadow-xl shadow-emerald-950/20 border border-emerald-700/20">

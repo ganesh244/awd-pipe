@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { BarChart3, FileDown, Box, Printer } from 'lucide-react';
-import { AWDPipe, Installation, MonitoringRecord, User, StateNode, DistrictNode, AreaNode } from './types';
+import { AWDPipe, Installation, MonitoringRecord, User, StateNode, DistrictNode, AreaNode, OfflineQueueItem } from './types';
 import { INITIAL_PIPES, INITIAL_INSTALLATIONS, INITIAL_MONITORING } from './data/initialData';
 import { INITIAL_STATES, INITIAL_DISTRICTS, INITIAL_AREAS, INITIAL_USERS } from './data/hierarchyData';
 import { Navbar } from './components/Navbar';
@@ -16,6 +16,8 @@ import { LoginScreen } from './components/auth/LoginScreen';
 import { ReportsExport } from './components/ReportsExport';
 import { FarmerProfiles } from './components/FarmerProfiles';
 import { Home } from './components/Home';
+import { SyncQueueManager } from './components/SyncQueueManager';
+
 
 export default function App() {
   const [pipes, setPipes] = useState<AWDPipe[]>(INITIAL_PIPES);
@@ -39,6 +41,27 @@ export default function App() {
   const [inventorySubTab, setInventorySubTab] = useState<'inventory' | 'labels'>('inventory');
   const [activePipeId, setActivePipeId] = useState<string>('AWD-0004'); // Defaults to an available unregistered pipe
   const [isGenerateModalOpen, setIsGenerateModalOpen] = useState<boolean>(false);
+
+  // Offline Data Sync States
+  const [isOnline, setIsOnline] = useState<boolean>(() => {
+    const saved = localStorage.getItem('awd_online_status');
+    return saved !== null ? saved === 'true' : true;
+  });
+  const [offlineQueue, setOfflineQueue] = useState<OfflineQueueItem[]>(() => {
+    const saved = localStorage.getItem('awd_offline_queue');
+    return saved ? JSON.parse(saved) : [];
+  });
+  const [isSyncModalOpen, setIsSyncModalOpen] = useState<boolean>(false);
+
+  // Sync state changes back to localStorage
+  useEffect(() => {
+    localStorage.setItem('awd_online_status', String(isOnline));
+  }, [isOnline]);
+
+  useEffect(() => {
+    localStorage.setItem('awd_offline_queue', JSON.stringify(offlineQueue));
+  }, [offlineQueue]);
+
 
   // Fetch initial data from Backend API / MongoDB on mount
   useEffect(() => {
@@ -118,17 +141,37 @@ export default function App() {
     }).catch((err) => console.error('Failed to delete user from MongoDB:', err));
   };
 
+  // Helper to push items to offline storage queue
+  const queueOfflineItem = (type: 'registration' | 'monitoring', payload: any) => {
+    const newItem: OfflineQueueItem = {
+      id: Math.random().toString(36).substring(2, 11),
+      timestamp: new Date().toISOString(),
+      type,
+      status: 'pending',
+      payload
+    };
+    setOfflineQueue((prev) => [...prev, newItem]);
+  };
+
   // Handler: Successful Farmer & Pipe Registration
   const handleRegisterSuccess = (newInstallation: Installation, updatedPipe: AWDPipe) => {
     setInstallations((prev) => [newInstallation, ...prev]);
     setPipes((prev) =>
       prev.map((p) => (p.Pipe_ID === updatedPipe.Pipe_ID ? updatedPipe : p))
     );
-    fetch('/api/installations', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ installation: newInstallation, updatedPipe }),
-    }).catch((err) => console.error('Failed to save registration to MongoDB:', err));
+
+    if (isOnline) {
+      fetch('/api/installations', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ installation: newInstallation, updatedPipe }),
+      }).catch((err) => {
+        console.error('Failed to save registration to MongoDB, queuing offline:', err);
+        queueOfflineItem('registration', { installation: newInstallation, updatedPipe });
+      });
+    } else {
+      queueOfflineItem('registration', { installation: newInstallation, updatedPipe });
+    }
   };
 
   // Handler: Record Monitoring Visit
@@ -141,12 +184,61 @@ export default function App() {
         )
       );
     }
-    fetch('/api/monitoring', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ record }),
-    }).catch((err) => console.error('Failed to save monitoring log to MongoDB:', err));
+
+    if (isOnline) {
+      fetch('/api/monitoring', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ record }),
+      }).catch((err) => {
+        console.error('Failed to save monitoring log to MongoDB, queuing offline:', err);
+        queueOfflineItem('monitoring', record);
+      });
+    } else {
+      queueOfflineItem('monitoring', record);
+    }
   };
+
+  // Synchronize all offline items sequentially
+  const handleSyncAll = async () => {
+    if (!isOnline || offlineQueue.length === 0) return;
+    
+    const pending = [...offlineQueue];
+    const failedIds = new Set<string>();
+    
+    for (const item of pending) {
+      try {
+        if (item.type === 'registration') {
+          const res = await fetch('/api/installations', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(item.payload),
+          });
+          if (!res.ok) throw new Error(`HTTP Error ${res.status}`);
+        } else {
+          const res = await fetch('/api/monitoring', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ record: item.payload }),
+          });
+          if (!res.ok) throw new Error(`HTTP Error ${res.status}`);
+        }
+      } catch (err: any) {
+        console.error('Failed to sync item:', item.id, err);
+        item.status = 'failed';
+        item.error = err.message || 'Sync network request failed';
+        failedIds.add(item.id);
+      }
+    }
+    
+    // Filter out successfully synced items
+    setOfflineQueue((prev) => prev.filter(item => failedIds.has(item.id)));
+  };
+
+  const handleDeleteQueueItem = (id: string) => {
+    setOfflineQueue((prev) => prev.filter(item => item.id !== id));
+  };
+
 
   // Handler: Add New Batch of AWD Pipes
   const handleAddPipeBatch = (batchNo: string, count: number) => {
@@ -266,6 +358,10 @@ export default function App() {
         currentUser={currentUser}
         onLogout={() => setCurrentUser(null)}
         onOpenGenerateModal={() => setIsGenerateModalOpen(true)}
+        isOnline={isOnline}
+        onToggleOnline={() => setIsOnline(!isOnline)}
+        offlineQueueCount={offlineQueue.length}
+        onOpenSyncModal={() => setIsSyncModalOpen(true)}
       />
 
       {/* Main Tab Views */}
@@ -280,6 +376,9 @@ export default function App() {
             monitoringList={scopedMonitoringList}
             pipes={scopedPipes}
             onOpenGenerateModal={() => setIsGenerateModalOpen(true)}
+            isOnline={isOnline}
+            offlineQueueCount={offlineQueue.length}
+            onOpenSyncModal={() => setIsSyncModalOpen(true)}
           />
         )}
 
@@ -435,6 +534,18 @@ export default function App() {
         onBatchGenerated={(newPipes) => handleCustomBatchGenerated(newPipes)}
         onNavigateToLabels={() => { setActiveTab('inventory'); setInventorySubTab('labels'); }}
       />
+
+      {/* Offline Sync Manager Modal */}
+      <SyncQueueManager
+        isOpen={isSyncModalOpen}
+        onClose={() => setIsSyncModalOpen(false)}
+        isOnline={isOnline}
+        onToggleOnline={() => setIsOnline(!isOnline)}
+        queue={offlineQueue}
+        onSyncAll={handleSyncAll}
+        onDeleteItem={handleDeleteQueueItem}
+      />
+
 
       {/* Footer */}
       <footer className="bg-[#0a0f0d] text-slate-600 text-[11px] py-3.5 border-t border-white/[0.05]">
