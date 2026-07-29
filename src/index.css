@@ -1,7 +1,49 @@
 @import "tailwindcss";
 @import "leaflet/dist/leaflet.css";
 
-/* Leaflet map tweaks */
+/* ── Google Font ── */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+
+/* ── Global Reset & Base ── */
+*, *::before, *::after { box-sizing: border-box; }
+
+:root {
+  --brand-green:   #16a34a;
+  --brand-teal:    #0d9488;
+  --brand-lime:    #88b04b;
+  --dark-bg:       #0a0f0d;
+  --dark-surface:  #111816;
+  --dark-border:   #1e2d24;
+  --radius-xl:     1rem;
+  --radius-2xl:    1.25rem;
+  --radius-3xl:    1.5rem;
+  --transition:    all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+html {
+  font-family: 'Inter', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: #f8fafc;
+  color: #0f172a;
+  line-height: 1.5;
+}
+
+/* ── Scrollbar Hide Utility ── */
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* ── Custom Thin Scrollbar ── */
+.thin-scroll::-webkit-scrollbar { width: 4px; height: 4px; }
+.thin-scroll::-webkit-scrollbar-track { background: transparent; }
+.thin-scroll::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 99px; }
+.thin-scroll::-webkit-scrollbar-thumb:hover { background: #64748b; }
+
+/* ── Leaflet map ── */
 .leaflet-container {
   width: 100%;
   height: 100%;
@@ -9,3 +51,157 @@
   z-index: 1;
 }
 
+/* ── Animations ── */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to   { opacity: 1; transform: scale(1); }
+}
+@keyframes shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+@keyframes pulse-ring {
+  0%   { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(22, 163, 74, 0.4); }
+  70%  { transform: scale(1);    box-shadow: 0 0 0 8px rgba(22, 163, 74, 0); }
+  100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(22, 163, 74, 0); }
+}
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50%       { transform: translateY(-6px); }
+}
+
+.animate-fadeIn  { animation: fadeIn  0.35s ease both; }
+.animate-slideUp { animation: slideUp 0.4s ease both; }
+.animate-scaleIn { animation: scaleIn 0.25s ease both; }
+.animate-float   { animation: float 4s ease-in-out infinite; }
+.animate-pulse-ring { animation: pulse-ring 2s cubic-bezier(0.455, 0.03, 0.515, 0.955) infinite; }
+
+/* ── Shimmer loading skeleton ── */
+.skeleton {
+  background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 0.5rem;
+}
+
+/* ── Glassmorphism card ── */
+.glass {
+  background: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+}
+.glass-dark {
+  background: rgba(17, 24, 22, 0.85);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+/* ── Premium card hover ── */
+.card-hover {
+  transition: var(--transition);
+}
+.card-hover:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 32px -8px rgba(0, 0, 0, 0.12);
+}
+
+/* ── Input focus glow ── */
+input:focus, select:focus, textarea:focus {
+  outline: none;
+}
+
+/* ── Button press effect ── */
+.btn-press:active { transform: scale(0.97); }
+
+/* ── Gradient text ── */
+.gradient-text {
+  background: linear-gradient(135deg, #16a34a, #0d9488, #88b04b);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ── Status indicator dot ── */
+.status-dot-live {
+  width: 8px; height: 8px;
+  background: #22c55e;
+  border-radius: 50%;
+  animation: pulse-ring 2s infinite;
+  display: inline-block;
+}
+
+/* ── Page transition wrapper ── */
+.page-enter {
+  animation: fadeIn 0.3s ease both;
+}
+
+/* ── Section divider ── */
+.section-divider {
+  border: none;
+  border-top: 1px solid #e2e8f0;
+  margin: 1.5rem 0;
+}
+
+/* ── Sub-tab pill bar ── */
+.sub-tab-bar {
+  display: flex;
+  gap: 0.25rem;
+  padding: 0.375rem;
+  background: #f1f5f9;
+  border-radius: 0.875rem;
+  border: 1px solid #e2e8f0;
+}
+.sub-tab-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  border-radius: 0.625rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  transition: var(--transition);
+  border: none;
+  background: transparent;
+  color: #64748b;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.sub-tab-btn:hover { background: #fff; color: #0f172a; }
+.sub-tab-btn.active {
+  background: #fff;
+  color: #15803d;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.08), 0 0 0 1px rgba(22,163,74,0.15);
+}
+
+/* ── Stat card ── */
+.stat-card {
+  background: white;
+  border: 1px solid #f1f5f9;
+  border-radius: 1rem;
+  padding: 1.25rem;
+  transition: var(--transition);
+}
+.stat-card:hover {
+  border-color: #e2e8f0;
+  box-shadow: 0 4px 16px -4px rgba(0,0,0,0.08);
+  transform: translateY(-1px);
+}
+
+/* ── Badge styles ── */
+.badge { display: inline-flex; align-items: center; gap: 0.25rem; font-size: 0.6875rem; font-weight: 700; padding: 0.2rem 0.5rem; border-radius: 999px; }
+.badge-emerald { background: #dcfce7; color: #15803d; border: 1px solid #bbf7d0; }
+.badge-blue { background: #dbeafe; color: #1d4ed8; border: 1px solid #bfdbfe; }
+.badge-amber { background: #fef3c7; color: #b45309; border: 1px solid #fde68a; }
+.badge-red { background: #fee2e2; color: #dc2626; border: 1px solid #fecaca; }
+.badge-slate { background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; }
+.badge-violet { background: #ede9fe; color: #7c3aed; border: 1px solid #ddd6fe; }

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { BarChart3, FileDown, Box, Printer } from 'lucide-react';
 import { AWDPipe, Installation, MonitoringRecord, User, StateNode, DistrictNode, AreaNode } from './types';
 import { INITIAL_PIPES, INITIAL_INSTALLATIONS, INITIAL_MONITORING } from './data/initialData';
 import { INITIAL_STATES, INITIAL_DISTRICTS, INITIAL_AREAS, INITIAL_USERS } from './data/hierarchyData';
@@ -298,100 +299,92 @@ export default function App() {
           const hasDashboard = currentUser.role === 'District Manager' || currentUser.role === 'State Manager' || currentUser.role === 'Admin';
           const subTab = hasDashboard ? analyticsSubTab : 'reports';
           return (
-            <div>
+            <div className="page-enter">
               {/* Sub-tab bar */}
-              <div className="bg-white border-b border-slate-200 sticky top-[60px] z-30">
-                <div className="max-w-7xl mx-auto px-4 flex gap-1 py-2">
-                  {hasDashboard && (
+              <div className="bg-white/80 backdrop-blur-sm border-b border-slate-200/80 sticky top-[60px] z-30 shadow-sm">
+                <div className="max-w-7xl mx-auto px-4 py-2.5">
+                  <div className="sub-tab-bar w-fit">
+                    {hasDashboard && (
+                      <button
+                        onClick={() => setAnalyticsSubTab('overview')}
+                        className={`sub-tab-btn ${subTab === 'overview' ? 'active' : ''}`}
+                      >
+                        <BarChart3 className="w-3.5 h-3.5" /> Dashboard Overview
+                      </button>
+                    )}
                     <button
-                      onClick={() => setAnalyticsSubTab('overview')}
-                      className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition ${
-                        subTab === 'overview'
-                          ? 'bg-emerald-600 text-white shadow'
-                          : 'text-slate-500 hover:bg-slate-100'
-                      }`}
+                      onClick={() => setAnalyticsSubTab('reports')}
+                      className={`sub-tab-btn ${subTab === 'reports' ? 'active' : ''}`}
                     >
-                      <span>📊</span> Dashboard Overview
+                      <FileDown className="w-3.5 h-3.5" /> Reports & Export
                     </button>
-                  )}
-                  <button
-                    onClick={() => setAnalyticsSubTab('reports')}
-                    className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition ${
-                      subTab === 'reports'
-                        ? 'bg-emerald-600 text-white shadow'
-                        : 'text-slate-500 hover:bg-slate-100'
-                    }`}
-                  >
-                    <span>📥</span> Reports & Export
-                  </button>
+                  </div>
                 </div>
               </div>
               {/* Sub-tab content */}
-              {subTab === 'overview' && (
-                <Dashboard
-                  pipes={scopedPipes}
-                  installations={scopedInstallations}
-                  monitoringList={scopedMonitoringList}
-                />
-              )}
-              {subTab === 'reports' && (
-                <ReportsExport
-                  currentUser={currentUser}
-                  users={users}
-                  installations={scopedInstallations}
-                  monitoringList={scopedMonitoringList}
-                />
-              )}
+              <div className="page-enter">
+                {subTab === 'overview' && (
+                  <Dashboard
+                    pipes={scopedPipes}
+                    installations={scopedInstallations}
+                    monitoringList={scopedMonitoringList}
+                  />
+                )}
+                {subTab === 'reports' && (
+                  <ReportsExport
+                    currentUser={currentUser}
+                    users={users}
+                    installations={scopedInstallations}
+                    monitoringList={scopedMonitoringList}
+                  />
+                )}
+              </div>
             </div>
           );
         })()}
 
         {/* ── INVENTORY & QR (merged tab) ── */}
         {activeTab === 'inventory' && (
-          <div>
+          <div className="page-enter">
             {/* Sub-tab bar */}
-            <div className="bg-white border-b border-slate-200 sticky top-[60px] z-30">
-              <div className="max-w-7xl mx-auto px-4 flex gap-1 py-2">
-                <button
-                  onClick={() => setInventorySubTab('inventory')}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition ${
-                    inventorySubTab === 'inventory'
-                      ? 'bg-emerald-600 text-white shadow'
-                      : 'text-slate-500 hover:bg-slate-100'
-                  }`}
-                >
-                  <span>📦</span> Pipe Inventory
-                </button>
-                <button
-                  onClick={() => setInventorySubTab('labels')}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition ${
-                    inventorySubTab === 'labels'
-                      ? 'bg-emerald-600 text-white shadow'
-                      : 'text-slate-500 hover:bg-slate-100'
-                  }`}
-                >
-                  <span>🏷️</span> Print QR Labels
-                </button>
+            <div className="bg-white/80 backdrop-blur-sm border-b border-slate-200/80 sticky top-[60px] z-30 shadow-sm">
+              <div className="max-w-7xl mx-auto px-4 py-2.5">
+                <div className="sub-tab-bar w-fit">
+                  <button
+                    onClick={() => setInventorySubTab('inventory')}
+                    className={`sub-tab-btn ${inventorySubTab === 'inventory' ? 'active' : ''}`}
+                  >
+                    <Box className="w-3.5 h-3.5" /> Pipe Inventory
+                  </button>
+                  <button
+                    onClick={() => setInventorySubTab('labels')}
+                    className={`sub-tab-btn ${inventorySubTab === 'labels' ? 'active' : ''}`}
+                  >
+                    <Printer className="w-3.5 h-3.5" /> Print QR Labels
+                  </button>
+                </div>
               </div>
             </div>
             {/* Sub-tab content */}
-            {inventorySubTab === 'inventory' && (
-              <PipeInventory
-                pipes={scopedPipes}
-                onSelectPipe={(pipeId) => {
-                  setActivePipeId(pipeId);
-                  setActiveTab('mobile');
-                }}
-                onAddPipeBatch={handleAddPipeBatch}
-                onOpenGenerateModal={() => setIsGenerateModalOpen(true)}
-              />
-            )}
-            {inventorySubTab === 'labels' && (
-              <PrintQRLabels
-                pipes={scopedPipes}
-                onOpenGenerateModal={() => setIsGenerateModalOpen(true)}
-              />
-            )}
+            <div className="page-enter">
+              {inventorySubTab === 'inventory' && (
+                <PipeInventory
+                  pipes={scopedPipes}
+                  onSelectPipe={(pipeId) => {
+                    setActivePipeId(pipeId);
+                    setActiveTab('mobile');
+                  }}
+                  onAddPipeBatch={handleAddPipeBatch}
+                  onOpenGenerateModal={() => setIsGenerateModalOpen(true)}
+                />
+              )}
+              {inventorySubTab === 'labels' && (
+                <PrintQRLabels
+                  pipes={scopedPipes}
+                  onOpenGenerateModal={() => setIsGenerateModalOpen(true)}
+                />
+              )}
+            </div>
           </div>
         )}
 
@@ -430,20 +423,27 @@ export default function App() {
       />
 
       {/* Footer */}
-      <footer className="bg-slate-900 text-slate-400 text-xs py-6 border-t border-slate-800 text-center">
-        <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-3">
-          <div className="flex items-center gap-2">
-            <span>🌱 <strong>AWD Pipe System</strong> — Alternate Wetting and Drying Paddy Water Management</span>
-            <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full font-medium text-[11px] ${
-              dbStatus === 'cloud' 
-                ? 'bg-emerald-950/80 text-emerald-300 border border-emerald-800' 
-                : 'bg-amber-950/80 text-amber-300 border border-amber-800'
+      <footer className="bg-[#0a0f0d] text-slate-600 text-[11px] py-3.5 border-t border-white/[0.05]">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-2">
+          <div className="flex items-center gap-3 flex-wrap justify-center sm:justify-start">
+            <span className="flex items-center gap-1.5 text-slate-500 font-medium">
+              <span className="text-emerald-600">🌱</span>
+              <strong className="text-slate-400">AWD Pipe Registry</strong>
+              <span className="text-slate-700">·</span>
+              Alternate Wetting & Drying
+            </span>
+            <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full font-semibold text-[10px] border ${
+              dbStatus === 'cloud'
+                ? 'bg-emerald-950/60 text-emerald-400 border-emerald-900'
+                : 'bg-amber-950/60 text-amber-400 border-amber-900'
             }`}>
-              <span className={`w-2 h-2 rounded-full ${dbStatus === 'cloud' ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'}`} />
-              {dbStatus === 'cloud' ? 'Connected to MongoDB Atlas (512MB Free Tier)' : 'Local Demo Mode (MongoDB Offline)'}
+              <span className={`w-1.5 h-1.5 rounded-full ${dbStatus === 'cloud' ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'}`} />
+              {dbStatus === 'cloud' ? 'MongoDB Atlas · Connected' : 'Local Demo Mode'}
             </span>
           </div>
-          <span className="text-slate-500 font-medium">Logged in as {currentUser.name} ({currentUser.role})</span>
+          <span className="text-slate-600 font-medium tabular-nums">
+            {currentUser.name} · <span className="text-slate-500">{currentUser.role}</span>
+          </span>
         </div>
       </footer>
 

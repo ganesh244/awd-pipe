@@ -1,5 +1,9 @@
-import React from 'react';
-import { BarChart3, Box, Printer, Code2, Sprout, MapPin, Plus, ClipboardCheck, Network, FileDown, Users } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import {
+  BarChart3, Box, Printer, Code2, Sprout, MapPin,
+  Plus, ClipboardCheck, Network, FileDown, Users,
+  Menu, X, ChevronRight
+} from 'lucide-react';
 import { User } from '../types';
 import { UserProfileBadge } from './UserProfileBadge';
 
@@ -17,6 +21,7 @@ interface NavItem {
   label: string;
   icon: React.FC<any>;
   badge?: string;
+  color?: string;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -28,127 +33,199 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenGenerateModal,
 }) => {
   const role = currentUser.role;
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
 
-  // Registration tab is available to everyone
-  const regTab: NavItem = {
-    id: 'mobile',
-    label: 'Registration & Field Ops',
-    icon: ClipboardCheck,
-    badge: activePipeId || undefined,
-  };
+  useEffect(() => {
+    const handler = () => setScrolled(window.scrollY > 4);
+    window.addEventListener('scroll', handler, { passive: true });
+    return () => window.removeEventListener('scroll', handler);
+  }, []);
 
-  // Map tab — CF/JCF and above
-  const mapTab: NavItem = { id: 'map', label: 'Field Map View', icon: MapPin };
-
-  // Analytics (Dashboard + Reports) — District Manager and above; CF/JCF/AM only get reports sub-tab
-  const analyticsTab: NavItem = { id: 'analytics', label: 'Analytics & Reports', icon: BarChart3 };
-
-  // Inventory & QR (Pipe Inventory + Print QR Labels) — State Manager and Admin
-  const inventoryQRTab: NavItem = { id: 'inventory', label: 'Inventory & QR', icon: Box };
-
-  // Hierarchy — District Manager and above
-  const hierarchyTab: NavItem = { id: 'hierarchy', label: 'Team & Hierarchy', icon: Network };
-
-  // Farmer Profiles — all roles
-  const farmerProfilesTab: NavItem = { id: 'farmers', label: 'Farmer Profiles', icon: Users };
-
-  // Code — Admin only
-  const codeTab: NavItem = { id: 'code', label: 'Apps Script', icon: Code2 };
+  const regTab: NavItem       = { id: 'mobile',    label: 'Registration',        icon: ClipboardCheck, badge: activePipeId || undefined, color: 'emerald' };
+  const mapTab: NavItem       = { id: 'map',        label: 'Field Map',           icon: MapPin,         color: 'blue' };
+  const analyticsTab: NavItem = { id: 'analytics',  label: 'Analytics',           icon: BarChart3,      color: 'violet' };
+  const inventoryQRTab: NavItem={ id: 'inventory',  label: 'Inventory & QR',      icon: Box,            color: 'amber' };
+  const hierarchyTab: NavItem = { id: 'hierarchy',  label: 'Team',                icon: Network,        color: 'teal' };
+  const farmerTab: NavItem    = { id: 'farmers',    label: 'Farmers',             icon: Users,          color: 'indigo' };
+  const codeTab: NavItem      = { id: 'code',       label: 'Apps Script',         icon: Code2,          color: 'slate' };
 
   let navItems: NavItem[] = [];
+  if (role === 'CF' || role === 'JCF')           navItems = [regTab, farmerTab, analyticsTab];
+  else if (role === 'Area Manager')              navItems = [regTab, mapTab, farmerTab, analyticsTab];
+  else if (role === 'District Manager')          navItems = [regTab, mapTab, analyticsTab, hierarchyTab, farmerTab];
+  else if (role === 'State Manager')             navItems = [regTab, mapTab, analyticsTab, inventoryQRTab, hierarchyTab, farmerTab];
+  else navItems = [regTab, mapTab, analyticsTab, inventoryQRTab, hierarchyTab, codeTab, farmerTab];
 
-  if (role === 'CF' || role === 'JCF') {
-    navItems = [regTab, farmerProfilesTab, analyticsTab];
-  } else if (role === 'Area Manager') {
-    navItems = [regTab, mapTab, farmerProfilesTab, analyticsTab];
-  } else if (role === 'District Manager') {
-    navItems = [regTab, mapTab, analyticsTab, hierarchyTab, farmerProfilesTab];
-  } else if (role === 'State Manager') {
-    navItems = [regTab, mapTab, analyticsTab, inventoryQRTab, hierarchyTab, farmerProfilesTab];
-  } else {
-    // Admin — full access
-    navItems = [regTab, mapTab, analyticsTab, inventoryQRTab, hierarchyTab, codeTab, farmerProfilesTab];
-  }
+  const activeItem = navItems.find(i => i.id === activeTab);
+
+  const TAB_COLORS: Record<string, string> = {
+    emerald: 'from-emerald-500 to-teal-500',
+    blue:    'from-blue-500 to-cyan-500',
+    violet:  'from-violet-500 to-purple-500',
+    amber:   'from-amber-500 to-orange-500',
+    teal:    'from-teal-500 to-emerald-500',
+    indigo:  'from-indigo-500 to-blue-500',
+    slate:   'from-slate-500 to-slate-600',
+  };
+
+  const handleTab = (id: string) => {
+    setActiveTab(id);
+    setMobileOpen(false);
+  };
 
   return (
-    <header className="bg-slate-900 text-white border-b border-slate-800 sticky top-0 z-40 shadow-md">
+    <header
+      className={`bg-[#0a0f0d] text-white sticky top-0 z-40 transition-all duration-300 ${
+        scrolled ? 'shadow-2xl shadow-black/40 border-b border-white/5' : 'border-b border-white/[0.06]'
+      }`}
+    >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 
-        {/* BRAND TOP ROW */}
-        <div className="flex items-center justify-between h-16 border-b border-slate-800/80 gap-3">
+        {/* ── TOP ROW: Brand + Controls ── */}
+        <div className="flex items-center justify-between h-[60px] gap-4">
 
-          {/* Logo & Title */}
-          <div
-            onClick={() => setActiveTab('mobile')}
-            className="flex items-center gap-3 cursor-pointer group shrink-0"
+          {/* Logo */}
+          <button
+            onClick={() => handleTab('mobile')}
+            className="flex items-center gap-3 group shrink-0 cursor-pointer"
           >
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-[#2d4a2d] via-emerald-600 to-[#88b04b] flex items-center justify-center text-white shadow-md shadow-emerald-950/50 group-hover:scale-105 transition-transform">
-              <Sprout className="w-6 h-6 text-white" />
-            </div>
-            <div className="hidden sm:block">
-              <div className="flex items-center gap-2">
-                <span className="font-extrabold text-base tracking-tight text-white uppercase">
-                  AWD Pipe Registry
-                </span>
-                <span className="bg-emerald-500/10 text-emerald-400 text-[10px] font-semibold px-2 py-0.5 rounded-md border border-emerald-500/20 hidden md:inline">
-                  Field Ops
-                </span>
+            <div className="relative">
+              <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-emerald-600 via-teal-500 to-lime-400 flex items-center justify-center shadow-lg shadow-emerald-900/50 group-hover:shadow-emerald-600/40 transition-all duration-300 group-hover:scale-105">
+                <Sprout className="w-5 h-5 text-white" />
               </div>
-              <p className="text-[11px] text-slate-400 font-medium">
-                Alternate Wetting & Drying Management
-              </p>
+              <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-emerald-400 rounded-full border-2 border-[#0a0f0d] animate-pulse" />
             </div>
-          </div>
+            <div className="hidden sm:block leading-tight">
+              <div className="font-black text-[13px] tracking-tight text-white">
+                AWD Pipe <span className="text-emerald-400">Registry</span>
+              </div>
+              <div className="text-[10px] text-slate-500 font-medium">Field Operations Platform</div>
+            </div>
+          </button>
+
+          {/* Desktop nav — center */}
+          <nav className="hidden lg:flex items-center flex-1 justify-center">
+            <div className="flex items-center gap-0.5 bg-white/[0.04] border border-white/[0.06] rounded-2xl p-1">
+              {navItems.map((item) => {
+                const Icon = item.icon;
+                const isActive = activeTab === item.id;
+                const grad = TAB_COLORS[item.color ?? 'emerald'];
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => handleTab(item.id)}
+                    className={`relative flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-[12px] font-semibold transition-all duration-200 cursor-pointer ${
+                      isActive
+                        ? 'text-white'
+                        : 'text-slate-400 hover:text-white hover:bg-white/[0.06]'
+                    }`}
+                  >
+                    {/* Active gradient background */}
+                    {isActive && (
+                      <span className={`absolute inset-0 rounded-xl bg-gradient-to-r ${grad} opacity-90`} />
+                    )}
+                    <Icon className={`relative w-3.5 h-3.5 ${isActive ? 'text-white' : 'text-slate-500'}`} />
+                    <span className="relative whitespace-nowrap">{item.label}</span>
+                    {item.badge && (
+                      <span className={`relative text-[9px] font-mono font-bold px-1.5 py-0.5 rounded-md ${
+                        isActive
+                          ? 'bg-black/20 text-white/90'
+                          : 'bg-emerald-950 text-emerald-400'
+                      }`}>
+                        {item.badge}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </nav>
 
           {/* Right controls */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 shrink-0">
             {onOpenGenerateModal && (role === 'Admin' || role === 'State Manager') && (
               <button
                 onClick={onOpenGenerateModal}
-                className="hidden sm:flex bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white font-extrabold text-xs px-3.5 py-2 rounded-xl transition shadow-md shadow-emerald-950/30 items-center gap-1.5 uppercase tracking-wider border border-emerald-400/40 cursor-pointer"
+                className="hidden sm:flex items-center gap-1.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-[11px] px-3 py-1.5 rounded-xl transition-all shadow-lg shadow-emerald-900/30 active:scale-95 border border-emerald-400/20 cursor-pointer"
               >
-                <Plus className="w-4 h-4 text-emerald-200" />
-                <span>Mint QR Batch</span>
+                <Plus className="w-3.5 h-3.5" />
+                <span>Mint QR</span>
               </button>
             )}
             <UserProfileBadge currentUser={currentUser} onLogout={onLogout} />
+            {/* Mobile hamburger */}
+            <button
+              className="lg:hidden p-2 rounded-xl hover:bg-white/10 transition"
+              onClick={() => setMobileOpen(v => !v)}
+            >
+              {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+            </button>
           </div>
         </div>
 
-        {/* SEGMENTED TAB CONTROLLER BAR */}
-        <div className="py-2.5 overflow-x-auto no-scrollbar">
-          <nav className="flex items-center gap-1.5 min-w-max p-1 bg-slate-950/80 rounded-2xl border border-slate-800/90 shadow-inner">
-            {navItems.map((item) => {
-              const Icon = item.icon;
-              const isActive = activeTab === item.id;
-              return (
-                <button
-                  key={item.id}
-                  onClick={() => setActiveTab(item.id)}
-                  className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                    isActive
-                      ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-md shadow-emerald-900/50 border border-emerald-400/30'
-                      : 'text-slate-400 hover:text-white hover:bg-slate-800/80'
-                  }`}
-                >
-                  <Icon className={`w-4 h-4 ${isActive ? 'text-emerald-200' : 'text-slate-400'}`} />
-                  <span>{item.label}</span>
-                  {item.badge && (
-                    <span
-                      className={`text-[10px] font-mono font-extrabold px-1.5 py-0.5 rounded-md border ${
-                        isActive
-                          ? 'bg-slate-950/60 text-emerald-200 border-emerald-400/40'
-                          : 'bg-emerald-950 text-emerald-400 border-emerald-800'
-                      }`}
-                    >
-                      {item.badge}
-                    </span>
-                  )}
-                </button>
-              );
-            })}
-          </nav>
-        </div>
+        {/* ── Mobile Nav Drawer ── */}
+        {mobileOpen && (
+          <div className="lg:hidden border-t border-white/[0.06] py-3 animate-fadeIn">
+            <div className="space-y-1">
+              {navItems.map((item) => {
+                const Icon = item.icon;
+                const isActive = activeTab === item.id;
+                const grad = TAB_COLORS[item.color ?? 'emerald'];
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => handleTab(item.id)}
+                    className={`w-full flex items-center justify-between px-3 py-3 rounded-xl text-sm font-semibold transition cursor-pointer ${
+                      isActive
+                        ? `bg-gradient-to-r ${grad} text-white shadow-md`
+                        : 'text-slate-400 hover:bg-white/[0.06] hover:text-white'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <Icon className="w-4 h-4" />
+                      <span>{item.label}</span>
+                      {item.badge && (
+                        <span className="text-[10px] font-mono bg-black/20 px-1.5 py-0.5 rounded-md">{item.badge}</span>
+                      )}
+                    </div>
+                    <ChevronRight className="w-3.5 h-3.5 opacity-40" />
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* ── Mobile current tab pill (visible on tablet, hidden on lg) ── */}
+        {!mobileOpen && (
+          <div className="lg:hidden overflow-x-auto no-scrollbar pb-2">
+            <div className="flex items-center gap-1 min-w-max">
+              {navItems.map((item) => {
+                const Icon = item.icon;
+                const isActive = activeTab === item.id;
+                const grad = TAB_COLORS[item.color ?? 'emerald'];
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => handleTab(item.id)}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-bold whitespace-nowrap transition cursor-pointer ${
+                      isActive
+                        ? `bg-gradient-to-r ${grad} text-white shadow-md`
+                        : 'text-slate-400 hover:text-white hover:bg-white/[0.06]'
+                    }`}
+                  >
+                    <Icon className="w-3.5 h-3.5" />
+                    {item.label}
+                    {item.badge && (
+                      <span className="text-[9px] font-mono bg-black/20 px-1 rounded">{item.badge}</span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
       </div>
     </header>
