@@ -42,13 +42,13 @@ export const Navbar: React.FC<NavbarProps> = ({
     return () => window.removeEventListener('scroll', handler);
   }, []);
 
-  const regTab: NavItem       = { id: 'mobile',    label: 'Registration',        icon: ClipboardCheck, badge: activePipeId || undefined, color: 'emerald' };
-  const mapTab: NavItem       = { id: 'map',        label: 'Field Map',           icon: MapPin,         color: 'blue' };
-  const analyticsTab: NavItem = { id: 'analytics',  label: 'Analytics',           icon: BarChart3,      color: 'violet' };
-  const inventoryQRTab: NavItem={ id: 'inventory',  label: 'Inventory & QR',      icon: Box,            color: 'amber' };
-  const hierarchyTab: NavItem = { id: 'hierarchy',  label: 'Team',                icon: Network,        color: 'teal' };
-  const farmerTab: NavItem    = { id: 'farmers',    label: 'Farmers',             icon: Users,          color: 'indigo' };
-  const codeTab: NavItem      = { id: 'code',       label: 'Apps Script',         icon: Code2,          color: 'slate' };
+  const regTab: NavItem       = { id: 'mobile',    label: 'Register',        icon: ClipboardCheck, badge: activePipeId || undefined, color: 'emerald' };
+  const mapTab: NavItem       = { id: 'map',        label: 'Field Map',       icon: MapPin,         color: 'blue' };
+  const analyticsTab: NavItem = { id: 'analytics',  label: 'Analytics',       icon: BarChart3,      color: 'violet' };
+  const inventoryQRTab: NavItem={ id: 'inventory',  label: 'Inventory & QR',  icon: Box,            color: 'amber' };
+  const hierarchyTab: NavItem = { id: 'hierarchy',  label: 'Team Admin',      icon: Network,        color: 'teal' };
+  const farmerTab: NavItem    = { id: 'farmers',    label: 'Farmers',         icon: Users,          color: 'indigo' };
+  const codeTab: NavItem      = { id: 'code',       label: 'Dev Tools',       icon: Code2,          color: 'slate' };
 
   let navItems: NavItem[] = [];
   if (role === 'CF' || role === 'JCF')           navItems = [regTab, farmerTab, analyticsTab];
@@ -105,8 +105,8 @@ export const Navbar: React.FC<NavbarProps> = ({
           </button>
 
           {/* Desktop nav — center */}
-          <nav className="hidden lg:flex items-center flex-1 justify-center">
-            <div className="flex items-center gap-0.5 bg-white/[0.04] border border-white/[0.06] rounded-2xl p-1">
+          <nav className="hidden lg:flex items-center flex-1 justify-center min-w-0 overflow-hidden">
+            <div className="flex items-center gap-0.5 bg-white/[0.04] border border-white/[0.06] rounded-2xl p-1 overflow-x-auto no-scrollbar max-w-full">
               {navItems.map((item) => {
                 const Icon = item.icon;
                 const isActive = activeTab === item.id;
@@ -115,23 +115,20 @@ export const Navbar: React.FC<NavbarProps> = ({
                   <button
                     key={item.id}
                     onClick={() => handleTab(item.id)}
-                    className={`relative flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-[12px] font-semibold transition-all duration-200 cursor-pointer ${
+                    className={`relative flex items-center gap-1.5 px-3 py-2 rounded-xl text-[11px] font-semibold transition-all duration-200 cursor-pointer whitespace-nowrap shrink-0 ${
                       isActive
                         ? 'text-white'
                         : 'text-slate-400 hover:text-white hover:bg-white/[0.06]'
                     }`}
                   >
-                    {/* Active gradient background */}
                     {isActive && (
                       <span className={`absolute inset-0 rounded-xl bg-gradient-to-r ${grad} opacity-90`} />
                     )}
-                    <Icon className={`relative w-3.5 h-3.5 ${isActive ? 'text-white' : 'text-slate-500'}`} />
-                    <span className="relative whitespace-nowrap">{item.label}</span>
+                    <Icon className={`relative w-3.5 h-3.5 shrink-0 ${isActive ? 'text-white' : 'text-slate-500'}`} />
+                    <span className="relative">{item.label}</span>
                     {item.badge && (
                       <span className={`relative text-[9px] font-mono font-bold px-1.5 py-0.5 rounded-md ${
-                        isActive
-                          ? 'bg-black/20 text-white/90'
-                          : 'bg-emerald-950 text-emerald-400'
+                        isActive ? 'bg-black/20 text-white/90' : 'bg-emerald-950 text-emerald-400'
                       }`}>
                         {item.badge}
                       </span>
