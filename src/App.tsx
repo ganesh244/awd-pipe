@@ -15,6 +15,7 @@ import { HierarchyManager } from './components/HierarchyManager';
 import { LoginScreen } from './components/auth/LoginScreen';
 import { ReportsExport } from './components/ReportsExport';
 import { FarmerProfiles } from './components/FarmerProfiles';
+import { Home } from './components/Home';
 
 export default function App() {
   const [pipes, setPipes] = useState<AWDPipe[]>(INITIAL_PIPES);
@@ -33,7 +34,7 @@ export default function App() {
   // Database Connection Status State
   const [dbStatus, setDbStatus] = useState<'cloud' | 'local' | 'loading'>('loading');
 
-  const [activeTab, setActiveTab] = useState<string>('mobile');
+  const [activeTab, setActiveTab] = useState<string>('home');
   const [analyticsSubTab, setAnalyticsSubTab] = useState<'overview' | 'reports'>('overview');
   const [inventorySubTab, setInventorySubTab] = useState<'inventory' | 'labels'>('inventory');
   const [activePipeId, setActivePipeId] = useState<string>('AWD-0004'); // Defaults to an available unregistered pipe
@@ -269,6 +270,19 @@ export default function App() {
 
       {/* Main Tab Views */}
       <main className="flex-1 pb-12">
+        {activeTab === 'home' && (
+          <Home
+            currentUser={currentUser}
+            setActiveTab={setActiveTab}
+            setAnalyticsSubTab={setAnalyticsSubTab}
+            setInventorySubTab={setInventorySubTab}
+            installations={scopedInstallations}
+            monitoringList={scopedMonitoringList}
+            pipes={scopedPipes}
+            onOpenGenerateModal={() => setIsGenerateModalOpen(true)}
+          />
+        )}
+
         {activeTab === 'mobile' && (
           <MobileRegistrationApp
             pipes={scopedPipes}

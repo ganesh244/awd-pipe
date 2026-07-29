@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import {
   BarChart3, Box, Printer, Code2, Sprout, MapPin,
   Plus, ClipboardCheck, Network, FileDown, Users,
-  Menu, X, ChevronRight
+  Menu, X, ChevronRight, Home
 } from 'lucide-react';
 import { User } from '../types';
 import { UserProfileBadge } from './UserProfileBadge';
@@ -42,7 +42,8 @@ export const Navbar: React.FC<NavbarProps> = ({
     return () => window.removeEventListener('scroll', handler);
   }, []);
 
-  const regTab: NavItem       = { id: 'mobile',    label: 'Register',        icon: ClipboardCheck, badge: activePipeId || undefined, color: 'emerald' };
+  const homeTab: NavItem       = { id: 'home',      label: 'Home',            icon: Home,           color: 'emerald' };
+  const regTab: NavItem       = { id: 'mobile',    label: 'Register',        icon: ClipboardCheck, badge: activePipeId || undefined, color: 'sky' };
   const mapTab: NavItem       = { id: 'map',        label: 'Field Map',       icon: MapPin,         color: 'blue' };
   const analyticsTab: NavItem = { id: 'analytics',  label: 'Analytics',       icon: BarChart3,      color: 'violet' };
   const inventoryQRTab: NavItem={ id: 'inventory',  label: 'Inventory & QR',  icon: Box,            color: 'amber' };
@@ -51,16 +52,17 @@ export const Navbar: React.FC<NavbarProps> = ({
   const codeTab: NavItem      = { id: 'code',       label: 'Dev Tools',       icon: Code2,          color: 'slate' };
 
   let navItems: NavItem[] = [];
-  if (role === 'CF' || role === 'JCF')           navItems = [regTab, farmerTab, analyticsTab];
-  else if (role === 'Area Manager')              navItems = [regTab, mapTab, farmerTab, analyticsTab];
-  else if (role === 'District Manager')          navItems = [regTab, mapTab, analyticsTab, hierarchyTab, farmerTab];
-  else if (role === 'State Manager')             navItems = [regTab, mapTab, analyticsTab, inventoryQRTab, hierarchyTab, farmerTab];
-  else navItems = [regTab, mapTab, analyticsTab, inventoryQRTab, hierarchyTab, codeTab, farmerTab];
+  if (role === 'CF' || role === 'JCF')           navItems = [homeTab, regTab, farmerTab, analyticsTab];
+  else if (role === 'Area Manager')              navItems = [homeTab, regTab, mapTab, farmerTab, analyticsTab];
+  else if (role === 'District Manager')          navItems = [homeTab, regTab, mapTab, analyticsTab, hierarchyTab, farmerTab];
+  else if (role === 'State Manager')             navItems = [homeTab, regTab, mapTab, analyticsTab, inventoryQRTab, hierarchyTab, farmerTab];
+  else navItems = [homeTab, regTab, mapTab, analyticsTab, inventoryQRTab, hierarchyTab, codeTab, farmerTab];
 
   const activeItem = navItems.find(i => i.id === activeTab);
 
   const TAB_COLORS: Record<string, string> = {
     emerald: 'from-emerald-500 to-teal-500',
+    sky:     'from-sky-500 to-blue-500',
     blue:    'from-blue-500 to-cyan-500',
     violet:  'from-violet-500 to-purple-500',
     amber:   'from-amber-500 to-orange-500',
@@ -87,7 +89,7 @@ export const Navbar: React.FC<NavbarProps> = ({
 
           {/* Logo */}
           <button
-            onClick={() => handleTab('mobile')}
+            onClick={() => handleTab('home')}
             className="flex items-center gap-3 group shrink-0 cursor-pointer"
           >
             <div className="relative">
