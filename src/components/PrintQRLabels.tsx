@@ -92,7 +92,7 @@ export const PrintQRLabels: React.FC<PrintQRLabelsProps> = ({ pipes, onOpenGener
           </div>
           <div class="pipe-id">
             <span class="pipe-id-text">${item.pipeId}</span>
-            <span class="scan-hint">DR. REDDY'S FOUNDATION • SCAN TO INSPECT</span>
+            <span class="scan-hint">SCAN TO REGISTER / INSPECT</span>
           </div>
         </div>
       `
