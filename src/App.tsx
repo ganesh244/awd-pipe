@@ -890,18 +890,24 @@ export default function App() {
 
     // Get all user IDs & names in this manager's reporting tree
     const subUserIds = getSubordinateUserIds(currentUser.id, users);
-    const subNames = new Set(
-      users.filter((u) => subUserIds.has(u.id)).map((u) => norm(u.name))
-    );
+    const subNamesList = users.filter((u) => subUserIds.has(u.id)).map((u) => norm(u.name)).filter(Boolean);
+
+    const isSubordinateInstallation = (inst: Installation) => {
+      if (inst.Registered_By_User_ID && subUserIds.has(inst.Registered_By_User_ID)) return true;
+      if (inst.Installed_By) {
+        const iNorm = norm(inst.Installed_By);
+        if (subNamesList.some((sName) => iNorm.includes(sName) || sName.includes(iNorm))) return true;
+      }
+      return false;
+    };
 
     if (currentUser.role === 'State Manager') {
       const uState = norm(currentUser.state);
       return installations.filter((inst) => {
-        const isRegisteredBySub = inst.Registered_By_User_ID ? subUserIds.has(inst.Registered_By_User_ID) : false;
-        const isInstalledBySub = inst.Installed_By ? subNames.has(norm(inst.Installed_By)) : false;
+        const isSub = isSubordinateInstallation(inst);
         const iState = norm(inst.State);
         const stateMatch = !uState || !iState || iState.includes(uState) || uState.includes(iState);
-        return isRegisteredBySub || isInstalledBySub || stateMatch;
+        return isSub || stateMatch;
       });
     }
 
@@ -909,13 +915,12 @@ export default function App() {
       const uDist = norm(currentUser.district);
       const uState = norm(currentUser.state);
       return installations.filter((inst) => {
-        const isRegisteredBySub = inst.Registered_By_User_ID ? subUserIds.has(inst.Registered_By_User_ID) : false;
-        const isInstalledBySub = inst.Installed_By ? subNames.has(norm(inst.Installed_By)) : false;
+        const isSub = isSubordinateInstallation(inst);
         const iDist = norm(inst.District);
         const iState = norm(inst.State);
         const distMatch = !uDist || !iDist || iDist.includes(uDist) || uDist.includes(iDist);
         const stateMatch = !uState || !iState || iState.includes(uState) || uState.includes(iState);
-        return isRegisteredBySub || isInstalledBySub || (distMatch && stateMatch);
+        return isSub || (distMatch && stateMatch);
       });
     }
 
@@ -923,15 +928,14 @@ export default function App() {
       const uArea = norm(currentUser.areaName);
       const uDist = norm(currentUser.district);
       return installations.filter((inst) => {
-        const isRegisteredBySub = inst.Registered_By_User_ID ? subUserIds.has(inst.Registered_By_User_ID) : false;
-        const isInstalledBySub = inst.Installed_By ? subNames.has(norm(inst.Installed_By)) : false;
+        const isSub = isSubordinateInstallation(inst);
         const iAreaMgr = inst.Area_Manager_User_ID === currentUser.id;
         const iDist = norm(inst.District);
         const iMandal = norm(inst.Mandal);
         const iVillage = norm(inst.Village);
         const areaMatch = uArea && (iMandal.includes(uArea) || uArea.includes(iMandal) || iVillage.includes(uArea));
         const distMatch = !uDist || !iDist || iDist.includes(uDist) || uDist.includes(iDist);
-        return isRegisteredBySub || isInstalledBySub || iAreaMgr || areaMatch || (!inst.Registered_By_User_ID && distMatch);
+        return isSub || iAreaMgr || areaMatch || (!inst.Registered_By_User_ID && distMatch);
       });
     }
 
