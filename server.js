@@ -305,17 +305,19 @@ app.get('/api/init', authenticateToken, async (req, res) => {
     if (!isMongoConnected) {
       await connectDB();
     }
+    const scope = await getScopeFilter(req.user);
+
     if (isMongoConnected) {
       const users = await User.find({}).lean();
-      const pipes = await Pipe.find({}).sort({ createdAt: -1 }).lean();
-      const installations = await Installation.find({}).sort({ createdAt: -1 }).lean();
-      const monitoringList = await MonitoringRecord.find({}).sort({ createdAt: -1 }).lean();
+      const pipes = await Pipe.find(scope.mongo).sort({ createdAt: -1 }).lean();
+      const installations = await Installation.find(scope.mongo).sort({ createdAt: -1 }).lean();
+      const monitoringList = await MonitoringRecord.find(scope.mongo).sort({ createdAt: -1 }).lean();
       const states = await StateNode.find({}).lean();
       const districts = await DistrictNode.find({}).lean();
       const areas = await AreaNode.find({}).lean();
 
-      // Clean _id and __v for clean frontend consumption
-      const cleanUsers = users.map(({ _id, __v, ...rest }) => rest);
+      // Clean _id and __v for clean frontend consumption, and REMOVE password hashes
+      const cleanUsers = users.map(({ _id, __v, password, passwordHash, ...rest }) => rest);
       const cleanPipes = pipes.map(({ _id, __v, ...rest }) => rest);
       const cleanInstallations = installations.map(({ _id, __v, ...rest }) => rest);
       const cleanMonitoringList = monitoringList.map(({ _id, __v, ...rest }) => rest);
@@ -334,12 +336,15 @@ app.get('/api/init', authenticateToken, async (req, res) => {
         areas: cleanAreas,
       });
     } else {
+      // In-memory fallback
+      const cleanUsers = inMemoryData.users.map(({ password, passwordHash, ...rest }) => rest);
+      
       return res.json({
         dbStatus: 'local',
-        users: inMemoryData.users,
-        pipes: inMemoryData.pipes,
-        installations: inMemoryData.installations,
-        monitoringList: inMemoryData.monitoringList,
+        users: cleanUsers,
+        pipes: inMemoryData.pipes.filter(scope.memory),
+        installations: inMemoryData.installations.filter(scope.memory),
+        monitoringList: inMemoryData.monitoringList.filter(scope.memory),
         states: inMemoryData.states,
         districts: inMemoryData.districts,
         areas: inMemoryData.areas,
