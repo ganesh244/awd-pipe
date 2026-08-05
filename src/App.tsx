@@ -1088,8 +1088,8 @@ export default function App() {
         onOpenSyncModal={() => setIsSyncModalOpen(true)}
       />
 
-      {/* Main Tab Views */}
-      <main className="flex-1 pb-12">
+      {/* Main Tab Views — add bottom padding on mobile for the fixed bottom nav */}
+      <main className="flex-1 pb-12 lg:pb-4">
         {activeTab === 'home' && (
           <Home
             currentUser={currentUser}

@@ -991,9 +991,9 @@ export const FarmerProfiles: React.FC<FarmerProfilesProps> = ({
           {/* ── HEADER BANNER ── */}
           <div className="bg-gradient-to-r from-slate-900 via-emerald-950 to-slate-900 text-white rounded-3xl p-6 shadow-xl border border-emerald-500/20 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-2">
             <div className="space-y-1">
-              <div className="flex items-center gap-2">
-                <User className="w-6 h-6 text-emerald-400" />
-                <h1 className="text-2xl font-black uppercase tracking-wide">Farmer Profiles</h1>
+              <div className="flex items-center gap-2 flex-wrap">
+                <User className="w-5 h-5 sm:w-6 sm:h-6 text-emerald-400 shrink-0" />
+                <h1 className="text-lg sm:text-2xl font-black uppercase tracking-wide">Farmer Profiles</h1>
                 <span className="bg-emerald-500/20 text-emerald-300 text-xs font-bold px-2.5 py-1 rounded-lg border border-emerald-500/30">
                   {currentUser.role} View
                 </span>

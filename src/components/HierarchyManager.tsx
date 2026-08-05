@@ -444,10 +444,10 @@ export const HierarchyManager: React.FC<HierarchyManagerProps> = ({
       {/* HEADER BANNER WITH PERMISSIONS INFO */}
       <div className="bg-gradient-to-r from-slate-900 via-purple-950 to-slate-900 text-white rounded-3xl p-6 shadow-xl border border-purple-500/20 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <div className="space-y-1">
-          <div className="flex items-center gap-2">
-            <Shield className="w-6 h-6 text-purple-400" />
-            <h1 className="text-2xl font-black uppercase tracking-wide">
-              Hierarchy & Role Management
+          <div className="flex items-center gap-2 flex-wrap">
+            <Shield className="w-5 h-5 sm:w-6 sm:h-6 text-purple-400 shrink-0" />
+            <h1 className="text-lg sm:text-2xl font-black uppercase tracking-wide">
+              Hierarchy &amp; Role Management
             </h1>
             <span className="bg-purple-500/20 text-purple-300 text-xs font-bold px-2.5 py-1 rounded-lg border border-purple-500/30">
               {currentUser.role} View
@@ -478,7 +478,7 @@ export const HierarchyManager: React.FC<HierarchyManagerProps> = ({
       </div>
 
       {/* CASCADING HIERARCHY COLUMNS */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
         
         {/* COLUMN 1: STATES */}
         <div className="bg-white rounded-2xl border border-slate-200 p-5 space-y-4 shadow-sm">
