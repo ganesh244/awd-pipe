@@ -170,6 +170,8 @@ export default function App() {
   // Database Connection Status State
   const [dbStatus, setDbStatus] = useState<'cloud' | 'local' | 'loading'>('loading');
   const [isAppReady, setIsAppReady] = useState(false);
+  const [hierarchyDirty, setHierarchyDirty] = useState<boolean>(() => localStorage.getItem(HIERARCHY_DIRTY_KEY) === 'true');
+  const [isSavingHierarchy, setIsSavingHierarchy] = useState<boolean>(false);
 
   const [activeTab, setActiveTab] = useState<string>('home');
   const [analyticsSubTab, setAnalyticsSubTab] = useState<'overview' | 'reports'>('overview');
@@ -209,6 +211,9 @@ export default function App() {
     }
   }, [currentUser]);
 
+  useEffect(() => {
+    localStorage.setItem(HIERARCHY_DIRTY_KEY, String(hierarchyDirty));
+  }, [hierarchyDirty]);
 
   useEffect(() => {
     if (!currentUser) return;
@@ -280,6 +285,7 @@ export default function App() {
     if (Array.isArray(data.monitoringList)) setMonitoringList(data.monitoringList);
 
     setDbStatus(data.dbStatus || 'local');
+    setHierarchyDirty(false);
     return data;
   };
 
@@ -297,6 +303,7 @@ export default function App() {
       return true;
     } catch (err) {
       console.error('Hierarchy sync failed:', err);
+      setHierarchyDirty(true);
       return false;
     }
   };
@@ -360,50 +367,21 @@ export default function App() {
     }
   }, [currentUser]);
 
-  const pushHierarchyChanges = (
-    oldStates: StateNode[], newStates: StateNode[],
-    oldDistricts: DistrictNode[], newDistricts: DistrictNode[],
-    oldAreas: AreaNode[], newAreas: AreaNode[]
-  ) => {
-    if (!isOnline) return;
-    newStates.forEach(s => {
-      const oldS = oldStates.find(x => x.id === s.id);
-      if (!oldS || oldS.managerId !== s.managerId || oldS.managerName !== s.managerName) {
-        void apiFetch('/api/hierarchy/state', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(s) });
-      }
-    });
-    newDistricts.forEach(d => {
-      const oldD = oldDistricts.find(x => x.id === d.id);
-      if (!oldD || oldD.managerId !== d.managerId || oldD.managerName !== d.managerName) {
-        void apiFetch('/api/hierarchy/district', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(d) });
-      }
-    });
-    newAreas.forEach(a => {
-      const oldA = oldAreas.find(x => x.id === a.id);
-      if (!oldA || oldA.managerId !== a.managerId || oldA.managerName !== a.managerName) {
-        void apiFetch('/api/hierarchy/area', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(a) });
-      }
-    });
-  };
-
   // Handler: Add User to Hierarchy
   const handleAddUser = (newUser: User) => {
     const scopedNewUser = buildScopedUser(newUser, users, states, districts, areas);
 
-    // Auto-create AreaNode if user has an areaName that doesn't exist in areas array yet
+    // Auto-create AreaNode if user has an areaName that doesn't exist in areas array yet!
     let updatedAreas = [...areas];
-    let newAreaPayload: AreaNode | undefined;
-
     if (scopedNewUser.areaName && scopedNewUser.district) {
       const existingArea = updatedAreas.find(
-        (a) => a.name.trim().toLowerCase() === scopedNewUser.areaName!.trim().toLowerCase() &&
-               a.districtName.trim().toLowerCase() === scopedNewUser.district!.trim().toLowerCase()
+        (a) => a.name.trim().toLowerCase() === scopedNewUser.areaName!.trim().toLowerCase()
       );
       if (!existingArea) {
         const distObj = districts.find(
           (d) => d.name.trim().toLowerCase() === scopedNewUser.district!.trim().toLowerCase()
         );
-        newAreaPayload = {
+        const newAreaObj: AreaNode = {
           id: `area-${Date.now()}`,
           districtId: distObj?.id || `dist-${Date.now()}`,
           districtName: scopedNewUser.district,
@@ -412,7 +390,7 @@ export default function App() {
           managerId: scopedNewUser.role === 'Area Manager' ? scopedNewUser.id : '',
           managerName: scopedNewUser.role === 'Area Manager' ? scopedNewUser.name : '',
         };
-        updatedAreas.push(newAreaPayload);
+        updatedAreas.push(newAreaObj);
       }
     }
 
@@ -422,19 +400,15 @@ export default function App() {
     setStates(nextStates);
     setDistricts(nextDistricts);
     setAreas(nextAreas);
-    pushHierarchyChanges(states, nextStates, districts, nextDistricts, areas, nextAreas);
-
-    // Pass newArea in the same POST so backend atomically upserts area + user in one request,
-    // eliminating any race condition between fire-and-forget area PUT and the user save.
+    setHierarchyDirty(true);
     void syncHierarchyMutation(() =>
       apiFetch('/api/users', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ newUser: scopedNewUser, ...(newAreaPayload ? { newArea: newAreaPayload } : {}) }),
+        body: JSON.stringify({ newUser: scopedNewUser }),
       })
     );
   };
-
 
   // Handler: Update User in Hierarchy
   const handleUpdateUser = (updatedUser: User) => {
@@ -446,7 +420,7 @@ export default function App() {
     setStates(nextStates);
     setDistricts(nextDistricts);
     setAreas(nextAreas);
-    pushHierarchyChanges(states, nextStates, districts, nextDistricts, areas, nextAreas);
+    setHierarchyDirty(true);
     if (currentUser && currentUser.id === updatedUser.id) {
       setCurrentUser(scopedUpdatedUser);
     }
@@ -467,7 +441,7 @@ export default function App() {
     setStates(nextStates);
     setDistricts(nextDistricts);
     setAreas(nextAreas);
-    pushHierarchyChanges(states, nextStates, districts, nextDistricts, areas, nextAreas);
+    setHierarchyDirty(true);
     if (currentUser && currentUser.id === userId) {
       setCurrentUser(null);
     }
@@ -710,6 +684,7 @@ export default function App() {
 
   const handleAddState = (newState: StateNode) => {
     setStates((prev) => [...prev, newState]);
+    setHierarchyDirty(true);
     if (isOnline) {
       void syncHierarchyMutation(() =>
         apiFetch('/api/hierarchy/states', {
@@ -727,6 +702,7 @@ export default function App() {
       stateName: newDistrict.stateName || states.find((state) => state.id === newDistrict.stateId)?.name || ''
     };
     setDistricts((prev) => [...prev, districtWithState]);
+    setHierarchyDirty(true);
     if (isOnline) {
       void syncHierarchyMutation(() =>
         apiFetch('/api/hierarchy/districts', {
@@ -746,6 +722,7 @@ export default function App() {
       stateName: newArea.stateName || parentDistrict?.stateName || ''
     };
     setAreas((prev) => [...prev, areaWithParents]);
+    setHierarchyDirty(true);
     if (isOnline) {
       void syncHierarchyMutation(() =>
         apiFetch('/api/hierarchy/areas', {
@@ -771,6 +748,7 @@ export default function App() {
       !districtNamesToDelete.has(user.district || '') &&
       !areaNamesToDelete.has(user.areaName || '')
     ));
+    setHierarchyDirty(true);
     if (currentUser?.state === stateToDelete?.name) {
       setCurrentUser(null);
     }
@@ -792,6 +770,7 @@ export default function App() {
       user.district !== districtToDelete?.name &&
       !areaNamesToDelete.has(user.areaName || '')
     ));
+    setHierarchyDirty(true);
     if (currentUser?.district === districtToDelete?.name) {
       setCurrentUser(null);
     }
@@ -808,6 +787,7 @@ export default function App() {
 
     setAreas((prev) => prev.filter((area) => area.id !== areaId));
     setUsers((prev) => prev.filter((user) => user.areaName !== areaToDelete?.name));
+    setHierarchyDirty(true);
     if (currentUser?.areaName === areaToDelete?.name) {
       setCurrentUser(null);
     }
@@ -842,6 +822,7 @@ export default function App() {
     setDistricts(synced.nextDistricts);
     setAreas(synced.nextAreas);
     setUsers(nextUsers);
+    setHierarchyDirty(true);
     if (isOnline) {
       void syncHierarchyMutation(() =>
         apiFetch('/api/hierarchy/state', {
@@ -877,6 +858,7 @@ export default function App() {
     setAreas(synced.nextAreas);
     setStates(synced.nextStates);
     setUsers(nextUsers);
+    setHierarchyDirty(true);
     if (isOnline) {
       void syncHierarchyMutation(() =>
         apiFetch('/api/hierarchy/district', {
@@ -902,6 +884,7 @@ export default function App() {
     setStates(synced.nextStates);
     setDistricts(synced.nextDistricts);
     setUsers(nextUsers);
+    setHierarchyDirty(true);
     if (isOnline) {
       void syncHierarchyMutation(() =>
         apiFetch('/api/hierarchy/area', {
@@ -1088,7 +1071,26 @@ export default function App() {
     return pipes;
   }, [pipes, scopedInstallations, currentUser]);
 
-
+  const handleSaveHierarchy = async () => {
+    setIsSavingHierarchy(true);
+    try {
+      const saved = await syncHierarchyMutation(() =>
+        apiFetch('/api/hierarchy/save', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ users, states, districts, areas }),
+        })
+      );
+      if (!saved) {
+        throw new Error('Hierarchy save failed');
+      }
+    } catch (err) {
+      console.error('Failed to save hierarchy snapshot:', err);
+      setHierarchyDirty(true);
+    } finally {
+      setIsSavingHierarchy(false);
+    }
+  };
 
   if (!isAppReady) {
     return <AppLoadingScreen />;
@@ -1282,7 +1284,9 @@ export default function App() {
             onDeleteState={handleDeleteState}
             onDeleteDistrict={handleDeleteDistrict}
             onDeleteArea={handleDeleteArea}
-
+            onSaveHierarchy={handleSaveHierarchy}
+            hierarchyDirty={hierarchyDirty}
+            isSavingHierarchy={isSavingHierarchy}
             dbStatus={dbStatus}
             currentUser={currentUser}
           />

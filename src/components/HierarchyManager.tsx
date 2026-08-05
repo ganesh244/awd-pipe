@@ -21,9 +21,7 @@ interface HierarchyManagerProps {
   onDeleteState?: (stateId: string) => void;
   onDeleteDistrict?: (districtId: string) => void;
   onDeleteArea?: (areaId: string) => void;
-  onSaveHierarchy?: () => void;
-  hierarchyDirty?: boolean;
-  isSavingHierarchy?: boolean;
+
   dbStatus?: 'cloud' | 'local' | 'loading';
 }
 
@@ -45,9 +43,7 @@ export const HierarchyManager: React.FC<HierarchyManagerProps> = ({
   onDeleteState,
   onDeleteDistrict,
   onDeleteArea,
-  onSaveHierarchy,
-  hierarchyDirty = false,
-  isSavingHierarchy = false,
+
   dbStatus = 'loading',
 }) => {
   // Scoping based on logged in user
@@ -56,12 +52,19 @@ export const HierarchyManager: React.FC<HierarchyManagerProps> = ({
   const isSM = currentUser.role === 'State Manager';
   const isAdmin = currentUser.role === 'Admin';
 
+  const norm = (s?: string) => (s || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+  const matchLoc = (a?: string, b?: string) => {
+    if (!a || !b) return false;
+    const na = norm(a); const nb = norm(b);
+    return na.length >= 2 && nb.length >= 2 && (na.includes(nb) || nb.includes(na));
+  };
+
   const defaultStateId = isDM || isAM || isSM 
-    ? states.find(s => s.name === currentUser.state)?.id || states[0]?.id || '' 
+    ? states.find(s => matchLoc(s.name, currentUser.state))?.id || states[0]?.id || '' 
     : states[0]?.id || '';
   
   const defaultDistrictId = isDM || isAM 
-    ? districts.find(d => d.name === currentUser.district)?.id || districts[0]?.id || '' 
+    ? districts.find(d => matchLoc(d.name, currentUser.district))?.id || districts[0]?.id || '' 
     : districts.find(d => d.stateId === defaultStateId)?.id || '';
 
   const [selectedStateId, setSelectedStateId] = useState<string>(defaultStateId);
@@ -97,7 +100,7 @@ export const HierarchyManager: React.FC<HierarchyManagerProps> = ({
       },
     });
   };
-  const [showPasswordMap, setShowPasswordMap] = useState<Record<string, boolean>>({});
+
 
   // Add user form state
   const [newUserName, setNewUserName] = useState('');
@@ -119,12 +122,7 @@ export const HierarchyManager: React.FC<HierarchyManagerProps> = ({
   const [addingHierarchyType, setAddingHierarchyType] = useState<'state' | 'district' | 'area' | null>(null);
   const [newHierarchyName, setNewHierarchyName] = useState('');
 
-  const norm = (s?: string) => (s || '').toLowerCase().replace(/[^a-z0-9]/g, '');
-  const matchLoc = (a?: string, b?: string) => {
-    if (!a || !b) return false;
-    const na = norm(a); const nb = norm(b);
-    return na.length >= 2 && nb.length >= 2 && (na.includes(nb) || nb.includes(na));
-  };
+
 
   // Filter lists based on role and selection — use both ID AND name matching for robustness
   const visibleStates = states.filter(st => {
@@ -170,10 +168,10 @@ export const HierarchyManager: React.FC<HierarchyManagerProps> = ({
     () => areas.filter((a) => a.districtId === targetDistrict?.id),
     [areas, targetDistrict?.id]
   );
-  const needsCustomDistrict = newUserRole === 'District Manager' && targetDistrictOptions.length === 0;
-  const needsCustomArea = (newUserRole === 'Area Manager' || newUserRole === 'CF' || newUserRole === 'JCF') && targetAreaOptions.length === 0;
-  const effectiveAreaName = targetAreaName === '__new__' ? targetNewAreaName.trim() : targetAreaName;
-  const effectiveDistrictName = needsCustomDistrict ? targetNewDistrictName.trim() : targetDistrictName;
+  const needsCustomDistrict = newUserRole === 'District Manager' && (targetDistrictOptions.length === 0 || targetDistrictName === '__new__');
+  const needsCustomArea = (newUserRole === 'Area Manager' || newUserRole === 'CF' || newUserRole === 'JCF') && (targetAreaOptions.length === 0 || targetAreaName === '__new__');
+  const effectiveAreaName = (needsCustomArea || targetAreaName === '__new__') ? targetNewAreaName.trim() : targetAreaName;
+  const effectiveDistrictName = (needsCustomDistrict || targetDistrictName === '__new__') ? targetNewDistrictName.trim() : targetDistrictName;
   const managerPreview = useMemo(() => {
     if (newUserRole === 'District Manager') {
       return users.find((u) => u.role === 'State Manager' && u.state === targetStateName)?.name || 'Unassigned';
@@ -190,9 +188,9 @@ export const HierarchyManager: React.FC<HierarchyManagerProps> = ({
   // When opening add modal, pre-fill defaults
   const openAddModal = (defaultRole?: UserRole, defaultArea?: string) => {
     const role = defaultRole || (isDM ? 'Area Manager' : isAM ? 'CF' : 'Area Manager');
-    const initialStateName = selectedState?.name || availableStateOptions[0]?.name || states[0]?.name || '';
-    const initialDistrictName = selectedDistrict?.name || districts.find((d) => d.stateId === selectedState?.id)?.name || '';
-    const initialAreaName = defaultArea || visibleAreas[0]?.name || '';
+    const initialStateName = (isDM || isAM) ? (currentUser.state || '') : (selectedState?.name || availableStateOptions[0]?.name || states[0]?.name || '');
+    const initialDistrictName = (isDM || isAM) ? (currentUser.district || '') : (selectedDistrict?.name || districts.find((d) => d.stateId === selectedState?.id)?.name || '');
+    const initialAreaName = defaultArea || (isAM ? currentUser.areaName : '') || visibleAreas[0]?.name || '';
     setNewUserRole(role);
     setTargetStateName(initialStateName);
     setTargetDistrictName(initialDistrictName);
@@ -212,32 +210,34 @@ export const HierarchyManager: React.FC<HierarchyManagerProps> = ({
     if (!newUserName.trim() || !newUserUsername.trim() || !newUserPassword.trim()) return;
 
     let intelligentReportsToId = currentUser.id;
-    const assignedState = newUserRole === 'Admin' ? undefined : targetStateName || selectedState?.name;
+    const assignedState = newUserRole === 'Admin' ? undefined : (targetStateName || selectedState?.name || currentUser.state);
     const assignedDistrict = newUserRole === 'District Manager'
       ? effectiveDistrictName
-      : (newUserRole === 'Area Manager' || newUserRole === 'CF' || newUserRole === 'JCF' ? effectiveDistrictName : undefined);
+      : (newUserRole === 'Area Manager' || newUserRole === 'CF' || newUserRole === 'JCF' ? (effectiveDistrictName || currentUser.district) : undefined);
     const assignedArea = (newUserRole === 'Area Manager' || newUserRole === 'CF' || newUserRole === 'JCF') ? effectiveAreaName : undefined;
 
     if (newUserRole === 'District Manager' && !assignedDistrict) return;
     if ((newUserRole === 'Area Manager' || newUserRole === 'CF' || newUserRole === 'JCF') && (!assignedDistrict || !assignedArea)) return;
 
-    if (newUserRole === 'District Manager' && needsCustomDistrict && onAddDistrict && targetState) {
+    if (newUserRole === 'District Manager' && (needsCustomDistrict || targetDistrictName === '__new__') && onAddDistrict) {
+      const parentState = targetState || states.find(s => matchLoc(s.name, assignedState));
       onAddDistrict({
         id: `dist-${Date.now()}`,
-        stateId: targetState.id,
-        stateName: targetState.name,
+        stateId: parentState?.id || `state-${Date.now()}`,
+        stateName: assignedState || parentState?.name || 'Telangana',
         name: assignedDistrict,
         managerId: '',
         managerName: ''
       });
     }
 
-    if ((newUserRole === 'Area Manager' || newUserRole === 'CF' || newUserRole === 'JCF') && targetAreaName === '__new__' && onAddArea && targetDistrict && assignedArea) {
+    if ((newUserRole === 'Area Manager' || newUserRole === 'CF' || newUserRole === 'JCF') && (needsCustomArea || targetAreaName === '__new__') && onAddArea && assignedArea) {
+      const parentDist = targetDistrict || districts.find(d => matchLoc(d.name, assignedDistrict));
       onAddArea({
         id: `area-${Date.now()}`,
-        districtId: targetDistrict.id,
-        districtName: targetDistrict.name,
-        stateName: targetState?.name || '',
+        districtId: parentDist?.id || `dist-${Date.now()}`,
+        districtName: assignedDistrict || parentDist?.name || '',
+        stateName: assignedState || parentDist?.stateName || targetState?.name || 'Telangana',
         name: assignedArea,
         managerId: '',
         managerName: ''
@@ -434,9 +434,7 @@ export const HierarchyManager: React.FC<HierarchyManagerProps> = ({
     setIsAddingHierarchy(false);
   };
 
-  const togglePasswordVisibility = (userId: string) => {
-    setShowPasswordMap(prev => ({ ...prev, [userId]: !prev[userId] }));
-  };
+
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6 animate-fadeIn">
@@ -468,14 +466,8 @@ export const HierarchyManager: React.FC<HierarchyManagerProps> = ({
           <UserPlus className="w-4 h-4 text-purple-200" />
           <span>Add Team Member / Assign Credentials</span>
         </button>
-        <button
-          onClick={onSaveHierarchy}
-          disabled={!onSaveHierarchy || isSavingHierarchy}
-          className="bg-white/10 hover:bg-white/15 disabled:opacity-60 text-white text-xs font-extrabold px-4 py-3 rounded-xl transition border border-white/15 shrink-0"
-        >
-          {isSavingHierarchy ? 'Saving...' : hierarchyDirty ? 'Save Hierarchy' : dbStatus === 'cloud' ? 'Saved to Cloud' : 'Saved Locally'}
-        </button>
       </div>
+
 
       {/* CASCADING HIERARCHY COLUMNS */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
@@ -847,7 +839,6 @@ export const HierarchyManager: React.FC<HierarchyManagerProps> = ({
                       ) : (
                         fieldStaff.map((staff) => {
                           const isJCF = staff.role === 'JCF';
-                          const showPwd = showPasswordMap[staff.id] || false;
 
                           return (
                             <div
@@ -892,16 +883,7 @@ export const HierarchyManager: React.FC<HierarchyManagerProps> = ({
                               {/* Credentials preview for supervisors */}
                               <div className="flex items-center justify-between text-[11px] bg-slate-50 px-2 py-1 rounded-lg font-mono border border-slate-100">
                                 <span className="text-slate-600">ID: <strong>@{staff.username}</strong></span>
-                                <div className="flex items-center gap-1.5 text-slate-700">
-                                  <span>Pwd: {showPwd ? <strong>{staff.password}</strong> : '••••••••'}</span>
-                                  <button
-                                    type="button"
-                                    onClick={() => togglePasswordVisibility(staff.id)}
-                                    className="text-slate-400 hover:text-slate-700 p-0.5 cursor-pointer"
-                                  >
-                                    {showPwd ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
-                                  </button>
-                                </div>
+                                <span className="text-slate-400">Pwd: <span className="italic">Hidden for Security</span></span>
                               </div>
                             </div>
                           );
@@ -943,7 +925,6 @@ export const HierarchyManager: React.FC<HierarchyManagerProps> = ({
               return u.id === currentUser.id;
             })
             .map((u) => {
-              const showPwd = showPasswordMap[u.id] || false;
               const canEdit = isAdmin || 
                 (isSM && ['District Manager', 'Area Manager', 'CF', 'JCF'].includes(u.role)) ||
                 (isDM && ['Area Manager', 'CF', 'JCF'].includes(u.role)) ||
@@ -987,14 +968,8 @@ export const HierarchyManager: React.FC<HierarchyManagerProps> = ({
 
                   <div className="pt-2 border-t border-slate-200/80 flex items-center justify-between font-mono text-xs">
                     <span className="text-slate-700">User: <strong className="text-indigo-600">@{u.username}</strong></span>
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-slate-600">Pass: {showPwd ? <strong className="text-slate-900">{u.password}</strong> : '••••••••'}</span>
-                      <button
-                        onClick={() => togglePasswordVisibility(u.id)}
-                        className="p-1 hover:bg-slate-200 rounded text-slate-500 cursor-pointer"
-                      >
-                        {showPwd ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-                      </button>
+                    <div className="flex items-center gap-1">
+                      <span className="text-slate-400">Pass: <span className="italic">Hidden</span></span>
                     </div>
                   </div>
                 </div>
@@ -1469,11 +1444,11 @@ export const HierarchyManager: React.FC<HierarchyManagerProps> = ({
                     />
                   </div>
                   <div>
-                    <label className="block text-[10px] font-extrabold text-blue-800 mb-1">Password</label>
+                    <label className="block text-[10px] font-extrabold text-blue-800 mb-1">Set New Password</label>
                     <input
                       type="text"
-                      required
-                      value={editingUser.password}
+                      placeholder="Leave blank to keep current password"
+                      value={editingUser.password || ''}
                       onChange={(e) => setEditingUser({ ...editingUser, password: e.target.value })}
                       className="w-full bg-white border border-blue-300 rounded-xl p-2.5 text-xs font-mono font-bold text-blue-950 outline-none focus:ring-2 focus:ring-blue-600"
                     />
