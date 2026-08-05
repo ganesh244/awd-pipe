@@ -43,19 +43,8 @@ export const Home: React.FC<HomeProps> = ({
 
   // Filter scope based on user role to show personal stats on home screen
   const userInstallations = useMemo(() => {
-    if (currentUser.role === 'Admin') return installations;
-    if (currentUser.role === 'State Manager') {
-      return installations.filter(i => i.State === currentUser.state);
-    }
-    if (currentUser.role === 'District Manager') {
-      return installations.filter(i => i.District === currentUser.district);
-    }
-    if (currentUser.role === 'Area Manager') {
-      return installations.filter(i => i.Area_Name === currentUser.areaName);
-    }
-    // CF / JCF
-    return installations.filter(i => i.CF_Name === currentUser.name || i.JCF_Name === currentUser.name);
-  }, [installations, currentUser]);
+    return installations;
+  }, [installations]);
 
   const userMonitoring = useMemo(() => {
     const pipeIds = new Set(userInstallations.map(i => i.Pipe_ID));
