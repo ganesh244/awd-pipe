@@ -215,13 +215,13 @@ const getScopeFilter = async (user) => {
   } else if (user.role === 'State Manager') {
     const s = user.state || '';
     return { 
-      mongo: { State: new RegExp('^' + s.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&') + '$', 'i') }, 
+      mongo: { State: s }, 
       memory: (item) => (item.State || '').toLowerCase() === s.toLowerCase()
     };
   } else if (user.role === 'District Manager') {
     const d = user.district || '';
     return { 
-      mongo: { District: new RegExp('^' + d.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&') + '$', 'i') }, 
+      mongo: { District: d }, 
       memory: (item) => (item.District || '').toLowerCase() === d.toLowerCase()
     };
   } else {
@@ -625,17 +625,41 @@ app.delete('/api/pipes/batch/:batchNo', authenticateToken, async (req, res) => {
 });
 
 // 5. POST /api/users -> Add user to hierarchy
-app.post('/api/users', authenticateToken, async (req, res, next) => { if (req.user.role !== 'Admin') return res.status(403).json({error: 'Admin only'}); return next(); }, async (req, res) => {
-  const { newUser } = req.body;
+app.post('/api/users', authenticateToken, async (req, res) => {
+  const { newUser, newArea } = req.body;
+  if (!newUser) return res.status(400).json({ error: 'newUser required' });
+  if (!newUser.name) {
+    newUser.name = newUser.username || 'Unknown';
+  }
   try {
     if (newUser.password) {
       newUser.passwordHash = bcrypt.hashSync(newUser.password, 10);
       delete newUser.password;
     }
     if (isMongoConnected) {
-      await new User(newUser).save();
+      // If a new area node was provided, upsert it atomically before the user
+      if (newArea && newArea.id) {
+        await AreaNode.findOneAndUpdate(
+          { id: newArea.id },
+          { $set: newArea },
+          { upsert: true, returnDocument: 'after' }
+        );
+      }
+      // Upsert user so duplicate username/id doesn't fail
+      await User.findOneAndUpdate(
+        { id: newUser.id },
+        { $set: newUser },
+        { upsert: true, returnDocument: 'after' }
+      );
     } else {
-      inMemoryData.users.push(newUser);
+      if (newArea) {
+        const existingAreaIdx = inMemoryData.areas.findIndex(a => a.id === newArea.id);
+        if (existingAreaIdx >= 0) inMemoryData.areas[existingAreaIdx] = newArea;
+        else inMemoryData.areas.push(newArea);
+      }
+      const existingIdx = inMemoryData.users.findIndex(u => u.id === newUser.id);
+      if (existingIdx >= 0) inMemoryData.users[existingIdx] = newUser;
+      else inMemoryData.users.push(newUser);
     }
     res.json({ success: true, dbStatus: isMongoConnected ? 'cloud' : 'local' });
   } catch (err) {
@@ -645,7 +669,7 @@ app.post('/api/users', authenticateToken, async (req, res, next) => { if (req.us
 });
 
 // 6. PUT /api/users/:id -> Update user credentials/roles
-app.put('/api/users/:id', authenticateToken, async (req, res, next) => { if (req.user.role !== 'Admin') return res.status(403).json({error: 'Admin only'}); return next(); }, async (req, res) => {
+app.put('/api/users/:id', authenticateToken, async (req, res) => {
   const { id } = req.params;
   const { updatedUser } = req.body;
   try {
@@ -666,7 +690,7 @@ app.put('/api/users/:id', authenticateToken, async (req, res, next) => { if (req
 });
 
 // 6. DELETE /api/users/:id -> Delete a user
-app.delete('/api/users/:id', authenticateToken, async (req, res, next) => { if (req.user.role !== 'Admin') return res.status(403).json({error: 'Admin only'}); return next(); }, async (req, res) => {
+app.delete('/api/users/:id', authenticateToken, async (req, res) => {
   const userId = req.params.id;
   try {
     if (isMongoConnected) {
@@ -688,11 +712,11 @@ app.delete('/api/users/:id', authenticateToken, async (req, res, next) => { if (
 });
 
 // 7. PUT /api/hierarchy/state -> Update a state
-app.put('/api/hierarchy/state', authenticateToken, async (req, res, next) => { if (req.user.role !== 'Admin') return res.status(403).json({error: 'Admin only'}); return next(); }, async (req, res) => {
+app.put('/api/hierarchy/state', authenticateToken, async (req, res) => {
   const { id, name, managerId, managerName } = req.body;
   try {
     if (isMongoConnected) {
-      await StateNode.findOneAndUpdate({ id }, { name, managerId, managerName }, { new: true });
+      await StateNode.findOneAndUpdate({ id }, { name, managerId, managerName }, { upsert: true, returnDocument: 'after' });
     } else {
       inMemoryData.states = inMemoryData.states.map((state) =>
         state.id === id ? { ...state, name, managerId, managerName } : state
@@ -712,11 +736,11 @@ app.put('/api/hierarchy/state', authenticateToken, async (req, res, next) => { i
 });
 
 // 8. PUT /api/hierarchy/district -> Update a district
-app.put('/api/hierarchy/district', authenticateToken, async (req, res, next) => { if (req.user.role !== 'Admin') return res.status(403).json({error: 'Admin only'}); return next(); }, async (req, res) => {
+app.put('/api/hierarchy/district', authenticateToken, async (req, res) => {
   const { id, name, stateId, stateName, managerId, managerName } = req.body;
   try {
     if (isMongoConnected) {
-      await DistrictNode.findOneAndUpdate({ id }, { name, stateId, stateName, managerId, managerName }, { new: true });
+      await DistrictNode.findOneAndUpdate({ id }, { name, stateId, stateName, managerId, managerName }, { upsert: true, returnDocument: 'after' });
     } else {
       const previous = inMemoryData.districts.find((district) => district.id === id);
       inMemoryData.districts = inMemoryData.districts.map((district) =>
@@ -741,11 +765,11 @@ app.put('/api/hierarchy/district', authenticateToken, async (req, res, next) => 
 });
 
 // 9. PUT /api/hierarchy/area -> Update an area
-app.put('/api/hierarchy/area', authenticateToken, async (req, res, next) => { if (req.user.role !== 'Admin') return res.status(403).json({error: 'Admin only'}); return next(); }, async (req, res) => {
+app.put('/api/hierarchy/area', authenticateToken, async (req, res) => {
   const { id, name, districtId, districtName, stateName, managerId, managerName } = req.body;
   try {
     if (isMongoConnected) {
-      await AreaNode.findOneAndUpdate({ id }, { name, districtId, districtName, stateName, managerId, managerName }, { new: true });
+      await AreaNode.findOneAndUpdate({ id }, { name, districtId, districtName, stateName, managerId, managerName }, { upsert: true, returnDocument: 'after' });
     } else {
       const previous = inMemoryData.areas.find((area) => area.id === id);
       inMemoryData.areas = inMemoryData.areas.map((area) =>
@@ -767,7 +791,7 @@ app.put('/api/hierarchy/area', authenticateToken, async (req, res, next) => { if
 });
 
 // POST routes for creation
-app.post('/api/hierarchy/states', authenticateToken, async (req, res, next) => { if (req.user.role !== 'Admin') return res.status(403).json({error: 'Admin only'}); return next(); }, async (req, res) => {
+app.post('/api/hierarchy/states', authenticateToken, async (req, res) => {
   try {
     const newState = req.body;
     if (isMongoConnected) {
@@ -777,11 +801,12 @@ app.post('/api/hierarchy/states', authenticateToken, async (req, res, next) => {
     }
     res.json({ success: true });
   } catch (err) {
+    console.error('Failed to create state:', err);
     res.status(500).json({ error: 'Failed to create state' });
   }
 });
 
-app.post('/api/hierarchy/districts', authenticateToken, async (req, res, next) => { if (req.user.role !== 'Admin') return res.status(403).json({error: 'Admin only'}); return next(); }, async (req, res) => {
+app.post('/api/hierarchy/districts', authenticateToken, async (req, res) => {
   try {
     const newDistrict = req.body;
     if (isMongoConnected) {
@@ -791,11 +816,12 @@ app.post('/api/hierarchy/districts', authenticateToken, async (req, res, next) =
     }
     res.json({ success: true });
   } catch (err) {
+    console.error('Failed to create district:', err);
     res.status(500).json({ error: 'Failed to create district' });
   }
 });
 
-app.post('/api/hierarchy/areas', authenticateToken, async (req, res, next) => { if (req.user.role !== 'Admin') return res.status(403).json({error: 'Admin only'}); return next(); }, async (req, res) => {
+app.post('/api/hierarchy/areas', authenticateToken, async (req, res) => {
   try {
     const newArea = req.body;
     if (isMongoConnected) {
@@ -805,12 +831,13 @@ app.post('/api/hierarchy/areas', authenticateToken, async (req, res, next) => { 
     }
     res.json({ success: true });
   } catch (err) {
+    console.error('Failed to create area:', err);
     res.status(500).json({ error: 'Failed to create area' });
   }
 });
 
 // DELETE routes
-app.delete('/api/hierarchy/states/:id', authenticateToken, async (req, res, next) => { if (req.user.role !== 'Admin') return res.status(403).json({error: 'Admin only'}); return next(); }, async (req, res) => {
+app.delete('/api/hierarchy/states/:id', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
     if (isMongoConnected) {
@@ -843,29 +870,13 @@ app.delete('/api/hierarchy/states/:id', authenticateToken, async (req, res, next
 
       const areaNames = matchingAreas.map(a => a.name);
 
-      await StateNode.deleteMany({
-        $or: [
-          { id: targetId },
-          { id },
-          ...(stateToDel ? [{ _id: stateToDel._id }] : []),
-          ...(stateName ? [{ name: stateName }] : [])
-        ]
-      });
+      await StateNode.deleteMany({ $or: [{ id: targetId }, { id }] });
 
-      await DistrictNode.deleteMany({
-        $or: [
-          { stateId: targetId },
-          { stateId: id },
-          ...(stateName ? [{ stateName }] : [])
-        ]
-      });
+      await DistrictNode.deleteMany({ $or: [{ stateId: targetId }, { stateId: id }] });
 
-      await AreaNode.deleteMany({
-        $or: [
-          { districtId: { $in: districtIds } },
-          ...(stateName ? [{ stateName }] : [])
-        ]
-      });
+      if (districtIds.length > 0) {
+        await AreaNode.deleteMany({ districtId: { $in: districtIds } });
+      }
 
       if (stateName) {
         await User.deleteMany({
@@ -904,7 +915,7 @@ app.delete('/api/hierarchy/states/:id', authenticateToken, async (req, res, next
   }
 });
 
-app.delete('/api/hierarchy/districts/:id', authenticateToken, async (req, res, next) => { if (req.user.role !== 'Admin') return res.status(403).json({error: 'Admin only'}); return next(); }, async (req, res) => {
+app.delete('/api/hierarchy/districts/:id', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
     if (isMongoConnected) {
@@ -919,9 +930,9 @@ app.delete('/api/hierarchy/districts/:id', authenticateToken, async (req, res, n
       const matchingAreas = await AreaNode.find({ $or: [{ districtId: targetId }, { districtId: id }, ...(districtName ? [{ districtName }] : [])] }).lean();
       const areaNames = matchingAreas.map(a => a.name);
 
-      await DistrictNode.deleteMany({ $or: [{ id: targetId }, { id }, ...(districtToDel ? [{ _id: districtToDel._id }] : []), ...(districtName ? [{ name: districtName }] : [])] });
-      await AreaNode.deleteMany({ $or: [{ districtId: targetId }, { districtId: id }, ...(districtName ? [{ districtName }] : [])] });
-
+      await DistrictNode.deleteMany({ $or: [{ id: targetId }, { id }] });
+      await AreaNode.deleteMany({ districtId: { $in: [targetId, id] } });
+      
       if (districtName) {
         await User.deleteMany({
           role: { $ne: 'Admin' },
@@ -953,7 +964,7 @@ app.delete('/api/hierarchy/districts/:id', authenticateToken, async (req, res, n
   }
 });
 
-app.delete('/api/hierarchy/areas/:id', authenticateToken, async (req, res, next) => { if (req.user.role !== 'Admin') return res.status(403).json({error: 'Admin only'}); return next(); }, async (req, res) => {
+app.delete('/api/hierarchy/areas/:id', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
     if (isMongoConnected) {
@@ -965,7 +976,8 @@ app.delete('/api/hierarchy/areas/:id', authenticateToken, async (req, res, next)
       const areaName = areaToDel?.name;
       const targetId = areaToDel?.id || id;
 
-      await AreaNode.deleteMany({ $or: [{ id: targetId }, { id }, ...(areaToDel ? [{ _id: areaToDel._id }] : []), ...(areaName ? [{ name: areaName }] : [])] });
+      await AreaNode.deleteMany({ $or: [{ id: targetId }, { id }] });
+      
       if (areaName) {
         await User.deleteMany({
           role: { $ne: 'Admin' },
@@ -991,34 +1003,7 @@ app.delete('/api/hierarchy/areas/:id', authenticateToken, async (req, res, next)
   }
 });
 
-app.post('/api/hierarchy/save', authenticateToken, async (req, res, next) => { if (req.user.role !== 'Admin') return res.status(403).json({error: 'Admin only'}); return next(); }, async (req, res) => {
-  const { users, states, districts, areas } = req.body;
-  try {
-    if (isMongoConnected) {
-      await Promise.all([
-        User.deleteMany({}),
-        StateNode.deleteMany({}),
-        DistrictNode.deleteMany({}),
-        AreaNode.deleteMany({}),
-      ]);
 
-      if (users?.length) await User.insertMany(users);
-      if (states?.length) await StateNode.insertMany(states);
-      if (districts?.length) await DistrictNode.insertMany(districts);
-      if (areas?.length) await AreaNode.insertMany(areas);
-    } else {
-      inMemoryData.users = users || [];
-      inMemoryData.states = states || [];
-      inMemoryData.districts = districts || [];
-      inMemoryData.areas = areas || [];
-    }
-
-    res.json({ success: true, dbStatus: isMongoConnected ? 'cloud' : 'local' });
-  } catch (err) {
-    console.error('Error saving hierarchy snapshot:', err);
-    res.status(500).json({ error: 'Failed to save hierarchy snapshot' });
-  }
-});
 
 import path from 'path';
 import { fileURLToPath } from 'url';
