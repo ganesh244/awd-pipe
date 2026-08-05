@@ -277,7 +277,7 @@ export const PrintQRLabels: React.FC<PrintQRLabelsProps> = ({ pipes, onOpenGener
                     DR. REDDY'S FOUNDATION
                   </div>
                   <div className="text-[9px] font-bold text-slate-500 flex items-center justify-between mt-0.5">
-                    <span>AWD WATER MGMT</span>
+                    <span>AWD PIPE</span>
                     <span className="text-emerald-700 font-mono text-[9px]">{item.batchNo}</span>
                   </div>
                 </div>
@@ -287,7 +287,7 @@ export const PrintQRLabels: React.FC<PrintQRLabelsProps> = ({ pipes, onOpenGener
                 <div className="bg-slate-900 text-white rounded-lg py-1.5 px-2">
                   <span className="font-mono font-black text-sm tracking-wider block">{item.pipeId}</span>
                   <span className="text-[7.5px] font-extrabold text-emerald-300 tracking-tight block uppercase">
-                    DR. REDDY'S FOUNDATION • SCAN TO INSPECT
+                    SCAN TO REGISTER / INSPECT
                   </span>
                 </div>
               </div>

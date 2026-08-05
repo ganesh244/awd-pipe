@@ -277,7 +277,7 @@ export const PipeInventory: React.FC<PipeInventoryProps> = ({
           </div>
           <div className="text-xs text-slate-600 space-y-1">
             <div className="font-mono font-extrabold text-sm text-slate-800">{selectedQrPipe.Pipe_ID}</div>
-            <p className="text-[11px] font-semibold text-emerald-700">DR. REDDY'S FOUNDATION • AWD PADDY SYSTEM</p>
+            <p className="text-[11px] font-semibold text-[#88b04b]">AWD PIPE SYSTEM</p>
           </div>
           <button
             onClick={() => onSelectPipe(selectedQrPipe.Pipe_ID)}

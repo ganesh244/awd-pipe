@@ -4,6 +4,19 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>AWD Pipe — QR Registration & Monitoring System</title>
+    <script>
+      (function() {
+        try {
+          var params = new URLSearchParams(window.location.search);
+          if (params.has('id')) {
+            var savedUser = localStorage.getItem('awd_user_session_v1');
+            if (!savedUser) {
+              window.location.replace('https://drreddysfoundation.org/');
+            }
+          }
+        } catch (e) {}
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>
