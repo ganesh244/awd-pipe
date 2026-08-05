@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { AWDPipe } from '../types';
-import { Printer, QrCode, Sliders, CheckCircle2, Plus } from 'lucide-react';
+import { Printer, Sliders, Plus } from 'lucide-react';
 import QRCode from 'qrcode';
 
 interface PrintQRLabelsProps {
@@ -20,7 +20,7 @@ export const PrintQRLabels: React.FC<PrintQRLabelsProps> = ({ pipes, onOpenGener
   const [labels, setLabels] = useState<QRLabelData[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
 
-  const batches = Array.from(new Set(pipes.map((p) => p.Batch_No)));
+  const batches = Array.from(new Set(pipes.map((p) => p.Batch_No).filter(Boolean))) as string[];
 
   const filteredPipes = pipes.filter(
     (p) => selectedBatch === 'All' || p.Batch_No === selectedBatch
@@ -38,13 +38,13 @@ export const PrintQRLabels: React.FC<PrintQRLabelsProps> = ({ pipes, onOpenGener
         const targetUrl = `${origin}?id=${pipe.Pipe_ID}`;
         try {
           const dataUrl = await QRCode.toDataURL(targetUrl, {
-            width: 180,
+            width: 200,
             margin: 1,
             color: { dark: '#042f2e', light: '#ffffff' },
           });
           generated.push({
             pipeId: pipe.Pipe_ID,
-            batchNo: pipe.Batch_No,
+            batchNo: pipe.Batch_No || '',
             dataUrl,
             targetUrl,
           });
@@ -67,21 +67,139 @@ export const PrintQRLabels: React.FC<PrintQRLabelsProps> = ({ pipes, onOpenGener
   }, [selectedBatch, pipes]);
 
   const handlePrint = () => {
-    window.print();
+    const printWindow = window.open('', '_blank', 'width=900,height=700');
+    if (!printWindow) {
+      alert('Please allow popups for this site to print QR labels.');
+      return;
+    }
+
+    const batchLabel = selectedBatch === 'All' ? 'All Batches' : selectedBatch;
+
+    const labelsHtml = labels
+      .map(
+        (item) => `
+        <div class="label">
+          <div class="label-header">
+            <span>AWD PIPE</span>
+            <span class="batch">${item.batchNo}</span>
+          </div>
+          <div class="qr-wrap">
+            <img src="${item.dataUrl}" alt="${item.pipeId}" />
+          </div>
+          <div class="pipe-id">
+            <span class="pipe-id-text">${item.pipeId}</span>
+            <span class="scan-hint">SCAN TO REGISTER / INSPECT</span>
+          </div>
+        </div>
+      `
+      )
+      .join('');
+
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8" />
+        <title>AWD QR Labels — ${batchLabel}</title>
+        <style>
+          * { box-sizing: border-box; margin: 0; padding: 0; }
+          body {
+            font-family: 'Courier New', monospace;
+            background: #fff;
+            padding: 16px;
+          }
+          h1 {
+            font-size: 14px;
+            font-weight: bold;
+            text-align: center;
+            margin-bottom: 12px;
+            color: #1e3a1e;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+          }
+          .grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+          }
+          .label {
+            border: 2px solid #1e293b;
+            border-radius: 10px;
+            padding: 10px;
+            text-align: center;
+            page-break-inside: avoid;
+            break-inside: avoid;
+          }
+          .label-header {
+            font-size: 8px;
+            font-weight: bold;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            display: flex;
+            justify-content: space-between;
+            padding-bottom: 6px;
+            border-bottom: 1px solid #e2e8f0;
+            color: #475569;
+            margin-bottom: 6px;
+          }
+          .label-header .batch { color: #15803d; }
+          .qr-wrap img {
+            width: 110px;
+            height: 110px;
+            display: block;
+            margin: 0 auto 6px;
+          }
+          .pipe-id {
+            background: #1e293b;
+            color: #fff;
+            border-radius: 6px;
+            padding: 4px 8px;
+          }
+          .pipe-id-text {
+            font-size: 11px;
+            font-weight: bold;
+            display: block;
+            letter-spacing: 0.05em;
+          }
+          .scan-hint {
+            font-size: 7px;
+            color: #6ee7b7;
+            display: block;
+            letter-spacing: 0.03em;
+          }
+          @media print {
+            body { padding: 8px; }
+            .grid { grid-template-columns: repeat(3, 1fr); gap: 8px; }
+          }
+        </style>
+      </head>
+      <body>
+        <h1>AWD QR Labels — ${batchLabel} (${labels.length} pipes)</h1>
+        <div class="grid">${labelsHtml}</div>
+        <script>
+          window.onload = function() {
+            window.print();
+            window.onafterprint = function() { window.close(); };
+          };
+        </script>
+      </body>
+      </html>
+    `);
+    printWindow.document.close();
   };
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
-      
-      {/* Control Bar (Hidden during print) */}
-      <div className="print:hidden bg-white p-5 rounded-lg border border-[#d1dbd1] shadow-sm flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+
+      {/* Control Bar */}
+      <div className="bg-white p-5 rounded-xl border border-[#d1dbd1] shadow-sm flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-xl font-bold text-[#2d3a2d] tracking-tight flex items-center gap-2 uppercase">
             <Printer className="w-6 h-6 text-[#88b04b]" />
             Field QR Label Printing Center
           </h1>
           <p className="text-xs text-slate-500 mt-0.5">
-            Print weather-resistant QR stickers for AWD pipes. Includes human-readable Pipe ID text below each code.
+            Select a batch and print isolated QR labels — no navbar or UI included in the printout.
           </p>
         </div>
 
@@ -96,7 +214,7 @@ export const PrintQRLabels: React.FC<PrintQRLabelsProps> = ({ pipes, onOpenGener
               <option value="All">All Batches ({pipes.length} Pipes)</option>
               {batches.map((b) => (
                 <option key={b} value={b}>
-                  Batch: {b}
+                  {b} ({pipes.filter(p => p.Batch_No === b).length} pipes)
                 </option>
               ))}
             </select>
@@ -114,7 +232,7 @@ export const PrintQRLabels: React.FC<PrintQRLabelsProps> = ({ pipes, onOpenGener
           <button
             onClick={handlePrint}
             disabled={isGenerating || labels.length === 0}
-            className="bg-[#2d4a2d] hover:bg-[#1a2d1a] text-white font-bold text-xs px-4 py-2.5 rounded-lg transition shadow-md flex items-center gap-2 uppercase tracking-wider"
+            className="bg-[#2d4a2d] hover:bg-[#1a2d1a] disabled:opacity-50 text-white font-bold text-xs px-4 py-2.5 rounded-lg transition shadow-md flex items-center gap-2 uppercase tracking-wider"
           >
             <Printer className="w-4 h-4 text-[#88b04b]" /> Print Label Sheet
           </button>
@@ -125,40 +243,42 @@ export const PrintQRLabels: React.FC<PrintQRLabelsProps> = ({ pipes, onOpenGener
       {isGenerating && (
         <div className="text-center py-12 text-slate-500 text-xs flex items-center justify-center gap-2">
           <div className="animate-spin h-5 w-5 border-2 border-emerald-600 border-t-transparent rounded-full" />
-          Rendering printable QR labels for {filteredPipes.length} AWD Pipes...
+          Rendering {filteredPipes.length} QR labels…
         </div>
       )}
 
-      {/* PRINTABLE QR LABELS GRID */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 print:grid-cols-3 print:gap-2">
-        {labels.map((item) => (
-          <div
-            key={item.pipeId}
-            className="bg-white border-2 border-slate-900 rounded-xl p-3 text-center space-y-2 shadow-sm break-inside-avoid print:shadow-none"
-          >
-            {/* Header Badge */}
-            <div className="text-[10px] font-bold tracking-wider text-slate-500 uppercase flex items-center justify-between border-b pb-1">
-              <span>AWD PIPE</span>
-              <span className="text-emerald-700 font-mono text-[9px]">{item.batchNo}</span>
-            </div>
-
-            {/* QR Image */}
-            <div className="p-1 bg-white inline-block">
-              <img src={item.dataUrl} alt={`QR Code ${item.pipeId}`} className="w-28 h-28 mx-auto" />
-            </div>
-
-            {/* Human-Readable Pipe ID Below QR Code */}
-            <div className="bg-slate-900 text-white rounded-lg py-1.5 px-2">
-              <span className="font-mono font-black text-sm tracking-wider block">
-                {item.pipeId}
-              </span>
-              <span className="text-[8px] text-emerald-300 tracking-tight block">
-                SCAN TO REGISTER / INSPECT
-              </span>
-            </div>
+      {/* PREVIEW GRID */}
+      {!isGenerating && labels.length > 0 && (
+        <>
+          <div className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
+            Preview — {labels.length} label{labels.length !== 1 ? 's' : ''} ready to print
           </div>
-        ))}
-      </div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+            {labels.map((item) => (
+              <div
+                key={item.pipeId}
+                className="bg-white border-2 border-slate-900 rounded-xl p-3 text-center space-y-2 shadow-sm"
+              >
+                <div className="text-[10px] font-bold tracking-wider text-slate-500 uppercase flex items-center justify-between border-b pb-1">
+                  <span>AWD PIPE</span>
+                  <span className="text-emerald-700 font-mono text-[9px]">{item.batchNo}</span>
+                </div>
+                <div className="p-1 bg-white inline-block">
+                  <img src={item.dataUrl} alt={`QR Code ${item.pipeId}`} className="w-28 h-28 mx-auto" />
+                </div>
+                <div className="bg-slate-900 text-white rounded-lg py-1.5 px-2">
+                  <span className="font-mono font-black text-sm tracking-wider block">{item.pipeId}</span>
+                  <span className="text-[8px] text-emerald-300 tracking-tight block">SCAN TO REGISTER / INSPECT</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+
+      {!isGenerating && labels.length === 0 && (
+        <div className="text-center py-16 text-slate-400 text-sm">No pipes found for this batch.</div>
+      )}
 
     </div>
   );

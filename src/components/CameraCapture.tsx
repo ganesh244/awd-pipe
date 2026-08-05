@@ -61,12 +61,12 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({
     }
   }, [isCameraActive]);
 
-  // Helper: Compress image to max 600px dimension and 0.6 JPEG quality (~30-50KB) to preserve 512MB MongoDB free tier limit
+  // Helper: Preserve high-definition image clarity (max 1600px dimension, 0.90 JPEG quality)
   const compressImage = (dataUrl: string): Promise<string> => {
     return new Promise((resolve) => {
       const img = new Image();
       img.onload = () => {
-        const maxDim = 600;
+        const maxDim = 1600;
         let width = img.width;
         let height = img.height;
         if (width > maxDim || height > maxDim) {
@@ -84,7 +84,7 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({
         const ctx = canvas.getContext('2d');
         if (ctx) {
           ctx.drawImage(img, 0, 0, width, height);
-          resolve(canvas.toDataURL('image/jpeg', 0.6));
+          resolve(canvas.toDataURL('image/jpeg', 0.90));
         } else {
           resolve(dataUrl);
         }

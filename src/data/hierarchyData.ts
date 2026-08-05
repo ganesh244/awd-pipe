@@ -32,6 +32,17 @@ export const INITIAL_USERS: User[] = [
     isActive: true,
     createdAt: '2026-01-01',
   },
+  {
+    id: 'usr-admin-ganesh',
+    name: 'Ganesh Keesara',
+    username: 'ganeshkeesara',
+    password: 'BLACKperaL1',
+    role: 'Admin',
+    email: 'ganesh@awdpipe.org',
+    phone: '+91 98765 00000',
+    isActive: true,
+    createdAt: '2026-08-05',
+  },
 
   // ─── STATE MANAGERS ──────────────────────────────────────
   {

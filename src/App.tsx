@@ -18,23 +18,141 @@ import { FarmerProfiles } from './components/FarmerProfiles';
 import { Home } from './components/Home';
 import { SyncQueueManager } from './components/SyncQueueManager';
 
+const HIERARCHY_STORAGE_KEY = 'awd_hierarchy_snapshot';
+const SESSION_STORAGE_KEY = 'awd_current_user';
+const HIERARCHY_DIRTY_KEY = 'awd_hierarchy_dirty';
+
+type PersistedHierarchySnapshot = {
+  users: User[];
+  states: StateNode[];
+  districts: DistrictNode[];
+  areas: AreaNode[];
+};
+
+const loadPersistedHierarchy = (): PersistedHierarchySnapshot | null => {
+  try {
+    const raw = localStorage.getItem(HIERARCHY_STORAGE_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+};
+
+const loadPersistedCurrentUser = (): User | null => {
+  try {
+    const raw = localStorage.getItem(SESSION_STORAGE_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+};
+
+const syncHierarchyManagers = (users: User[], states: StateNode[], districts: DistrictNode[], areas: AreaNode[]) => {
+  const findLatestManager = (predicate: (user: User) => boolean) =>
+    [...users].reverse().find(predicate);
+
+  const nextStates = states.map((state) => {
+    const manager = findLatestManager((user) => user.role === 'State Manager' && user.state === state.name);
+    return {
+      ...state,
+      managerId: manager?.id || '',
+      managerName: manager?.name || ''
+    };
+  });
+
+  const nextDistricts = districts.map((district) => {
+    const manager = findLatestManager((user) => user.role === 'District Manager' && user.district === district.name);
+    return {
+      ...district,
+      stateName: states.find((state) => state.id === district.stateId)?.name || district.stateName,
+      managerId: manager?.id || '',
+      managerName: manager?.name || ''
+    };
+  });
+
+  const nextAreas = areas.map((area) => {
+    const parentDistrict = districts.find((district) => district.id === area.districtId);
+    const manager = findLatestManager((user) => user.role === 'Area Manager' && user.areaName === area.name);
+    return {
+      ...area,
+      districtName: parentDistrict?.name || area.districtName,
+      stateName: parentDistrict?.stateName || area.stateName,
+      managerId: manager?.id || '',
+      managerName: manager?.name || ''
+    };
+  });
+
+  return { nextStates, nextDistricts, nextAreas };
+};
+
+const buildScopedUser = (
+  draft: User,
+  allUsers: User[],
+  states: StateNode[],
+  districts: DistrictNode[],
+  areas: AreaNode[]
+): User => {
+  const scopedUser: User = { ...draft };
+
+  if (scopedUser.role === 'Admin') {
+    scopedUser.state = undefined;
+    scopedUser.district = undefined;
+    scopedUser.areaName = undefined;
+    scopedUser.reportsToId = undefined;
+    return scopedUser;
+  }
+
+  if (scopedUser.role === 'State Manager') {
+    scopedUser.district = undefined;
+    scopedUser.areaName = undefined;
+    scopedUser.reportsToId = undefined;
+    return scopedUser;
+  }
+
+  if (scopedUser.role === 'District Manager') {
+    const district = districts.find((item) => item.name === scopedUser.district) || districts.find((item) => item.stateName === scopedUser.state);
+    scopedUser.district = district?.name || scopedUser.district;
+    scopedUser.state = district?.stateName || scopedUser.state;
+    scopedUser.areaName = undefined;
+    scopedUser.reportsToId = allUsers.find((user) => user.role === 'State Manager' && user.state === scopedUser.state)?.id;
+    return scopedUser;
+  }
+
+  const area = areas.find((item) => item.name === scopedUser.areaName) || areas.find((item) => item.districtName === scopedUser.district);
+  if (area) {
+    scopedUser.areaName = area.name;
+    scopedUser.district = area.districtName;
+    scopedUser.state = area.stateName;
+  }
+
+  if (scopedUser.role === 'Area Manager') {
+    scopedUser.reportsToId = allUsers.find((user) => user.role === 'District Manager' && user.district === scopedUser.district)?.id;
+    return scopedUser;
+  }
+
+  scopedUser.reportsToId = allUsers.find((user) => user.role === 'Area Manager' && user.areaName === scopedUser.areaName)?.id;
+  return scopedUser;
+};
 
 export default function App() {
+  const persistedHierarchy = loadPersistedHierarchy();
   const [pipes, setPipes] = useState<AWDPipe[]>(INITIAL_PIPES);
   const [installations, setInstallations] = useState<Installation[]>(INITIAL_INSTALLATIONS);
   const [monitoringList, setMonitoringList] = useState<MonitoringRecord[]>(INITIAL_MONITORING);
 
   // Hierarchy Data States
-  const [states, setStates] = useState<StateNode[]>(INITIAL_STATES);
-  const [districts, setDistricts] = useState<DistrictNode[]>(INITIAL_DISTRICTS);
-  const [areas, setAreas] = useState<AreaNode[]>(INITIAL_AREAS);
-  const [users, setUsers] = useState<User[]>(INITIAL_USERS);
+  const [states, setStates] = useState<StateNode[]>(persistedHierarchy?.states || INITIAL_STATES);
+  const [districts, setDistricts] = useState<DistrictNode[]>(persistedHierarchy?.districts || INITIAL_DISTRICTS);
+  const [areas, setAreas] = useState<AreaNode[]>(persistedHierarchy?.areas || INITIAL_AREAS);
+  const [users, setUsers] = useState<User[]>(persistedHierarchy?.users || INITIAL_USERS);
   
   // Auth State
-  const [currentUser, setCurrentUser] = useState<User | null>(INITIAL_USERS[0]); // Default logged in as Super Admin
+  const [currentUser, setCurrentUser] = useState<User | null>(loadPersistedCurrentUser()); // null = show login screen
   
   // Database Connection Status State
   const [dbStatus, setDbStatus] = useState<'cloud' | 'local' | 'loading'>('loading');
+  const [hierarchyDirty, setHierarchyDirty] = useState<boolean>(() => localStorage.getItem(HIERARCHY_DIRTY_KEY) === 'true');
+  const [isSavingHierarchy, setIsSavingHierarchy] = useState<boolean>(false);
 
   const [activeTab, setActiveTab] = useState<string>('home');
   const [analyticsSubTab, setAnalyticsSubTab] = useState<'overview' | 'reports'>('overview');
@@ -62,25 +180,93 @@ export default function App() {
     localStorage.setItem('awd_offline_queue', JSON.stringify(offlineQueue));
   }, [offlineQueue]);
 
+  useEffect(() => {
+    localStorage.setItem(HIERARCHY_STORAGE_KEY, JSON.stringify({ users, states, districts, areas }));
+  }, [users, states, districts, areas]);
+
+  useEffect(() => {
+    if (currentUser) {
+      localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(currentUser));
+    } else {
+      localStorage.removeItem(SESSION_STORAGE_KEY);
+    }
+  }, [currentUser]);
+
+  useEffect(() => {
+    localStorage.setItem(HIERARCHY_DIRTY_KEY, String(hierarchyDirty));
+  }, [hierarchyDirty]);
+
+  useEffect(() => {
+    if (!currentUser) return;
+    const freshCurrentUser = users.find((user) => user.id === currentUser.id);
+    if (!freshCurrentUser) {
+      setCurrentUser(null);
+      return;
+    }
+    if (JSON.stringify(freshCurrentUser) !== JSON.stringify(currentUser)) {
+      setCurrentUser(freshCurrentUser);
+    }
+  }, [users, currentUser]);
+
+  const applyHierarchySnapshot = (snapshot: PersistedHierarchySnapshot) => {
+    setUsers(snapshot.users);
+    setStates(snapshot.states);
+    setDistricts(snapshot.districts);
+    setAreas(snapshot.areas);
+  };
+
+  const refreshHierarchyFromServer = async () => {
+    const res = await fetch('/api/init');
+    const data = await res.json();
+    if (!res.ok) {
+      throw new Error(data?.error || `HTTP ${res.status}`);
+    }
+
+    applyHierarchySnapshot({
+      users: data.users || [],
+      states: data.states || [],
+      districts: data.districts || [],
+      areas: data.areas || [],
+    });
+
+    if (Array.isArray(data.pipes)) setPipes(data.pipes);
+    if (Array.isArray(data.installations)) setInstallations(data.installations);
+    if (Array.isArray(data.monitoringList)) setMonitoringList(data.monitoringList);
+
+    setDbStatus(data.dbStatus || 'local');
+    setHierarchyDirty(false);
+    return data;
+  };
+
+  const syncHierarchyMutation = async (request: () => Promise<Response>) => {
+    try {
+      const res = await request();
+      const data = await res.json().catch(() => null);
+      if (!res.ok) {
+        throw new Error(data?.error || `HTTP ${res.status}`);
+      }
+      if (data?.dbStatus) {
+        setDbStatus(data.dbStatus);
+      }
+      await refreshHierarchyFromServer();
+      return true;
+    } catch (err) {
+      console.error('Hierarchy sync failed:', err);
+      setHierarchyDirty(true);
+      return false;
+    }
+  };
+
 
   // Fetch initial data from Backend API / MongoDB on mount
   useEffect(() => {
-    fetch('/api/init')
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.users && data.users.length > 0) setUsers(data.users);
-        if (data.pipes && data.pipes.length > 0) setPipes(data.pipes);
-        if (data.installations && data.installations.length > 0) setInstallations(data.installations);
-        if (data.monitoringList && data.monitoringList.length > 0) setMonitoringList(data.monitoringList);
-        if (data.states && data.states.length > 0) setStates(data.states);
-        if (data.districts && data.districts.length > 0) setDistricts(data.districts);
-        if (data.areas && data.areas.length > 0) setAreas(data.areas);
-        setDbStatus(data.dbStatus || 'local');
-      })
-      .catch((err) => {
-        console.warn('Backend API not reachable, running in offline demo mode:', err);
-        setDbStatus('local');
-      });
+    refreshHierarchyFromServer().catch((err) => {
+      console.warn('Backend API not reachable, using local draft if present:', err);
+      if (persistedHierarchy) {
+        applyHierarchySnapshot(persistedHierarchy);
+      }
+      setDbStatus('local');
+    });
   }, []);
 
   // URL Parameter Detection: Check if ?id=AWD-XXXX exists in current URL
@@ -109,36 +295,63 @@ export default function App() {
 
   // Handler: Add User to Hierarchy
   const handleAddUser = (newUser: User) => {
-    setUsers((prev) => [...prev, newUser]);
-    fetch('/api/users', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ newUser }),
-    }).catch((err) => console.error('Failed to sync user to MongoDB:', err));
+    const scopedNewUser = buildScopedUser(newUser, users, states, districts, areas);
+    const nextUsers = [...users, scopedNewUser];
+    const { nextStates, nextDistricts, nextAreas } = syncHierarchyManagers(nextUsers, states, districts, areas);
+    setUsers(nextUsers);
+    setStates(nextStates);
+    setDistricts(nextDistricts);
+    setAreas(nextAreas);
+    setHierarchyDirty(true);
+    void syncHierarchyMutation(() =>
+      fetch('/api/users', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ newUser: scopedNewUser }),
+      })
+    );
   };
 
   // Handler: Update User in Hierarchy
   const handleUpdateUser = (updatedUser: User) => {
-    setUsers((prev) => prev.map((u) => (u.id === updatedUser.id ? updatedUser : u)));
+    const peerUsers = users.filter((user) => user.id !== updatedUser.id);
+    const scopedUpdatedUser = buildScopedUser(updatedUser, peerUsers, states, districts, areas);
+    const nextUsers = users.map((user) => (user.id === scopedUpdatedUser.id ? scopedUpdatedUser : user));
+    const { nextStates, nextDistricts, nextAreas } = syncHierarchyManagers(nextUsers, states, districts, areas);
+    setUsers(nextUsers);
+    setStates(nextStates);
+    setDistricts(nextDistricts);
+    setAreas(nextAreas);
+    setHierarchyDirty(true);
     if (currentUser && currentUser.id === updatedUser.id) {
-      setCurrentUser(updatedUser);
+      setCurrentUser(scopedUpdatedUser);
     }
-    fetch(`/api/users/${updatedUser.id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ updatedUser }),
-    }).catch((err) => console.error('Failed to sync user update to MongoDB:', err));
+    void syncHierarchyMutation(() =>
+      fetch(`/api/users/${updatedUser.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ updatedUser: scopedUpdatedUser }),
+      })
+    );
   };
 
   // Handler: Delete User from Hierarchy
   const handleDeleteUser = (userId: string) => {
-    setUsers((prev) => prev.filter((u) => u.id !== userId));
+    const nextUsers = users.filter((u) => u.id !== userId);
+    const { nextStates, nextDistricts, nextAreas } = syncHierarchyManagers(nextUsers, states, districts, areas);
+    setUsers(nextUsers);
+    setStates(nextStates);
+    setDistricts(nextDistricts);
+    setAreas(nextAreas);
+    setHierarchyDirty(true);
     if (currentUser && currentUser.id === userId) {
       setCurrentUser(null);
     }
-    fetch(`/api/users/${userId}`, {
-      method: 'DELETE',
-    }).catch((err) => console.error('Failed to delete user from MongoDB:', err));
+    void syncHierarchyMutation(() =>
+      fetch(`/api/users/${userId}`, {
+        method: 'DELETE',
+      })
+    );
   };
 
   // Helper to push items to offline storage queue
@@ -171,6 +384,62 @@ export default function App() {
       });
     } else {
       queueOfflineItem('registration', { installation: newInstallation, updatedPipe });
+    }
+  };
+
+  // Handler: Update Farmer Installation Details
+  const handleUpdateInstallation = (updated: Installation) => {
+    setInstallations((prev) =>
+      prev.map((i) => (i.Pipe_ID === updated.Pipe_ID ? updated : i))
+    );
+    setPipes((prev) =>
+      prev.map((p) =>
+        p.Pipe_ID === updated.Pipe_ID
+          ? {
+              ...p,
+              Farmer_Name: updated.Farmer_Name,
+              Village: updated.Village,
+              District: updated.District,
+              State: updated.State,
+              Installation_Date: updated.Installation_Date,
+            }
+          : p
+      )
+    );
+
+    if (isOnline) {
+      fetch(`/api/installations/${encodeURIComponent(updated.Pipe_ID)}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updated),
+      }).catch((err) => console.error('Failed to update installation on server:', err));
+    }
+  };
+
+  // Handler: Delete Farmer Installation Record
+  const handleDeleteInstallation = (pipeId: string) => {
+    setInstallations((prev) => prev.filter((i) => i.Pipe_ID !== pipeId));
+    setMonitoringList((prev) => prev.filter((m) => m.Pipe_ID !== pipeId));
+    setPipes((prev) =>
+      prev.map((p) =>
+        p.Pipe_ID === pipeId
+          ? {
+              ...p,
+              Status: 'Unregistered',
+              Farmer_Name: '',
+              Village: '',
+              District: '',
+              State: '',
+              Installation_Date: '',
+            }
+          : p
+      )
+    );
+
+    if (isOnline) {
+      fetch(`/api/installations/${encodeURIComponent(pipeId)}`, {
+        method: 'DELETE',
+      }).catch((err) => console.error('Failed to delete installation on server:', err));
     }
   };
 
@@ -262,6 +531,49 @@ export default function App() {
     }).catch((err) => console.error('Failed to sync pipe batch to MongoDB:', err));
   };
 
+  // Handler: Update an existing Pipe
+  const handleUpdatePipe = (pipeId: string, updates: Partial<AWDPipe>) => {
+    setPipes((prev) =>
+      prev.map((p) => (p.Pipe_ID === pipeId ? { ...p, ...updates } : p))
+    );
+    
+    if (isOnline) {
+      fetch(`/api/pipes/${pipeId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updates),
+      }).catch((err) => {
+        console.error('Failed to update pipe in MongoDB, queuing offline:', err);
+        // Note: Real offline sync might need a separate queue type for pipe updates
+        // For now we just log it.
+      });
+    }
+  };
+
+  // Handler: Rename a Batch
+  const handleRenameBatch = (oldBatchNo: string, newBatchNo: string) => {
+    setPipes((prev) =>
+      prev.map((p) => (p.Batch_No === oldBatchNo ? { ...p, Batch_No: newBatchNo } : p))
+    );
+    if (isOnline) {
+      fetch('/api/pipes/batch/rename', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ oldBatchNo, newBatchNo }),
+      }).catch((err) => console.error('Failed to rename batch:', err));
+    }
+  };
+
+  // Handler: Delete a Batch
+  const handleDeleteBatch = (batchNo: string) => {
+    setPipes((prev) => prev.filter((p) => p.Batch_No !== batchNo));
+    if (isOnline) {
+      fetch(`/api/pipes/batch/${batchNo}`, {
+        method: 'DELETE',
+      }).catch((err) => console.error('Failed to delete batch:', err));
+    }
+  };
+
   // Handler: Generated Custom QR Batch
   const handleCustomBatchGenerated = (newPipes: AWDPipe[]) => {
     setPipes((prev) => [...newPipes, ...prev]);
@@ -270,6 +582,220 @@ export default function App() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ newPipes }),
     }).catch((err) => console.error('Failed to sync pipe batch to MongoDB:', err));
+  };
+
+  const handleAddState = (newState: StateNode) => {
+    setStates((prev) => [...prev, newState]);
+    setHierarchyDirty(true);
+    if (isOnline) {
+      void syncHierarchyMutation(() =>
+        fetch('/api/hierarchy/states', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(newState),
+        })
+      );
+    }
+  };
+
+  const handleAddDistrict = (newDistrict: DistrictNode) => {
+    const districtWithState = {
+      ...newDistrict,
+      stateName: newDistrict.stateName || states.find((state) => state.id === newDistrict.stateId)?.name || ''
+    };
+    setDistricts((prev) => [...prev, districtWithState]);
+    setHierarchyDirty(true);
+    if (isOnline) {
+      void syncHierarchyMutation(() =>
+        fetch('/api/hierarchy/districts', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(districtWithState),
+        })
+      );
+    }
+  };
+
+  const handleAddArea = (newArea: AreaNode) => {
+    const parentDistrict = districts.find((district) => district.id === newArea.districtId);
+    const areaWithParents = {
+      ...newArea,
+      districtName: newArea.districtName || parentDistrict?.name || '',
+      stateName: newArea.stateName || parentDistrict?.stateName || ''
+    };
+    setAreas((prev) => [...prev, areaWithParents]);
+    setHierarchyDirty(true);
+    if (isOnline) {
+      void syncHierarchyMutation(() =>
+        fetch('/api/hierarchy/areas', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(areaWithParents),
+        })
+      );
+    }
+  };
+
+  const handleDeleteState = (stateId: string) => {
+    const stateToDelete = states.find((state) => state.id === stateId);
+    const districtIdsToDelete = new Set(districts.filter((district) => district.stateId === stateId).map((district) => district.id));
+    const districtNamesToDelete = new Set(districts.filter((district) => district.stateId === stateId).map((district) => district.name));
+    const areaNamesToDelete = new Set(areas.filter((area) => districtIdsToDelete.has(area.districtId)).map((area) => area.name));
+
+    setStates((prev) => prev.filter((state) => state.id !== stateId));
+    setDistricts((prev) => prev.filter((district) => !districtIdsToDelete.has(district.id)));
+    setAreas((prev) => prev.filter((area) => !districtIdsToDelete.has(area.districtId)));
+    setUsers((prev) => prev.filter((user) =>
+      user.state !== stateToDelete?.name &&
+      !districtNamesToDelete.has(user.district || '') &&
+      !areaNamesToDelete.has(user.areaName || '')
+    ));
+    setHierarchyDirty(true);
+    if (currentUser?.state === stateToDelete?.name) {
+      setCurrentUser(null);
+    }
+
+    if (isOnline) {
+      void syncHierarchyMutation(() =>
+        fetch(`/api/hierarchy/states/${stateId}`, { method: 'DELETE' })
+      );
+    }
+  };
+
+  const handleDeleteDistrict = (districtId: string) => {
+    const districtToDelete = districts.find((district) => district.id === districtId);
+    const areaNamesToDelete = new Set(areas.filter((area) => area.districtId === districtId).map((area) => area.name));
+
+    setDistricts((prev) => prev.filter((district) => district.id !== districtId));
+    setAreas((prev) => prev.filter((area) => area.districtId !== districtId));
+    setUsers((prev) => prev.filter((user) =>
+      user.district !== districtToDelete?.name &&
+      !areaNamesToDelete.has(user.areaName || '')
+    ));
+    setHierarchyDirty(true);
+    if (currentUser?.district === districtToDelete?.name) {
+      setCurrentUser(null);
+    }
+
+    if (isOnline) {
+      void syncHierarchyMutation(() =>
+        fetch(`/api/hierarchy/districts/${districtId}`, { method: 'DELETE' })
+      );
+    }
+  };
+
+  const handleDeleteArea = (areaId: string) => {
+    const areaToDelete = areas.find((area) => area.id === areaId);
+
+    setAreas((prev) => prev.filter((area) => area.id !== areaId));
+    setUsers((prev) => prev.filter((user) => user.areaName !== areaToDelete?.name));
+    setHierarchyDirty(true);
+    if (currentUser?.areaName === areaToDelete?.name) {
+      setCurrentUser(null);
+    }
+
+    if (isOnline) {
+      void syncHierarchyMutation(() =>
+        fetch(`/api/hierarchy/areas/${areaId}`, { method: 'DELETE' })
+      );
+    }
+  };
+  // Handler: Update State Hierarchy
+  const handleUpdateState = (updated: StateNode) => {
+    const previousState = states.find((state) => state.id === updated.id);
+    const nextStates = states.map((state) => (state.id === updated.id ? updated : state));
+    const nextDistricts = districts.map((district) =>
+      previousState && district.stateId === updated.id
+        ? { ...district, stateName: updated.name }
+        : district
+    );
+    const nextAreas = areas.map((area) =>
+      previousState && area.stateName === previousState.name
+        ? { ...area, stateName: updated.name }
+        : area
+    );
+    const nextUsers = users.map((user) =>
+      previousState && user.state === previousState.name
+        ? buildScopedUser({ ...user, state: updated.name }, users, nextStates, nextDistricts, nextAreas)
+        : user
+    );
+    const synced = syncHierarchyManagers(nextUsers, nextStates, nextDistricts, nextAreas);
+    setStates(synced.nextStates);
+    setDistricts(synced.nextDistricts);
+    setAreas(synced.nextAreas);
+    setUsers(nextUsers);
+    setHierarchyDirty(true);
+    if (isOnline) {
+      void syncHierarchyMutation(() =>
+        fetch('/api/hierarchy/state', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(updated),
+        })
+      );
+    }
+  };
+
+  // Handler: Update District Hierarchy
+  const handleUpdateDistrict = (updated: DistrictNode) => {
+    const previousDistrict = districts.find((district) => district.id === updated.id);
+    const nextDistricts = districts.map((district) => (district.id === updated.id ? updated : district));
+    const nextAreas = areas.map((area) =>
+      previousDistrict && area.districtId === updated.id
+        ? { ...area, districtName: updated.name, stateName: updated.stateName }
+        : area
+    );
+    const nextUsers = users.map((user) => {
+      if (!previousDistrict) return user;
+      if (user.district === previousDistrict.name) {
+        const nextAreaName = user.areaName
+          ? nextAreas.find((area) => area.name === user.areaName)?.name || user.areaName
+          : user.areaName;
+        return buildScopedUser({ ...user, district: updated.name, state: updated.stateName, areaName: nextAreaName }, users, states, nextDistricts, nextAreas);
+      }
+      return user;
+    });
+    const synced = syncHierarchyManagers(nextUsers, states, nextDistricts, nextAreas);
+    setDistricts(synced.nextDistricts);
+    setAreas(synced.nextAreas);
+    setStates(synced.nextStates);
+    setUsers(nextUsers);
+    setHierarchyDirty(true);
+    if (isOnline) {
+      void syncHierarchyMutation(() =>
+        fetch('/api/hierarchy/district', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(updated),
+        })
+      );
+    }
+  };
+
+  // Handler: Update Area Hierarchy
+  const handleUpdateArea = (updated: AreaNode) => {
+    const previousArea = areas.find((area) => area.id === updated.id);
+    const nextAreas = areas.map((area) => (area.id === updated.id ? updated : area));
+    const nextUsers = users.map((user) =>
+      previousArea && user.areaName === previousArea.name
+        ? buildScopedUser({ ...user, areaName: updated.name, district: updated.districtName, state: updated.stateName }, users, states, districts, nextAreas)
+        : user
+    );
+    const synced = syncHierarchyManagers(nextUsers, states, districts, nextAreas);
+    setAreas(synced.nextAreas);
+    setStates(synced.nextStates);
+    setDistricts(synced.nextDistricts);
+    setUsers(nextUsers);
+    setHierarchyDirty(true);
+    if (isOnline) {
+      void syncHierarchyMutation(() =>
+        fetch('/api/hierarchy/area', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(updated),
+        })
+      );
+    }
   };
 
   // Data Scoping logic: Filter installations and monitoring records based on currentUser role and hierarchy
@@ -341,6 +867,27 @@ export default function App() {
     }
     return pipes;
   }, [pipes, scopedInstallations, currentUser]);
+
+  const handleSaveHierarchy = async () => {
+    setIsSavingHierarchy(true);
+    try {
+      const saved = await syncHierarchyMutation(() =>
+        fetch('/api/hierarchy/save', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ users, states, districts, areas }),
+        })
+      );
+      if (!saved) {
+        throw new Error('Hierarchy save failed');
+      }
+    } catch (err) {
+      console.error('Failed to save hierarchy snapshot:', err);
+      setHierarchyDirty(true);
+    } finally {
+      setIsSavingHierarchy(false);
+    }
+  };
 
   // Render Login Gate if no user is active
   if (!currentUser) {
@@ -461,7 +1008,7 @@ export default function App() {
           <div className="page-enter">
             {/* Sub-tab bar */}
             <div className="bg-white/80 backdrop-blur-sm border-b border-slate-200/80 sticky top-[60px] z-30 shadow-sm">
-              <div className="max-w-7xl mx-auto px-4 py-2.5">
+              <div className="max-w-7xl mx-auto px-4 py-2.5 flex items-center justify-between gap-4">
                 <div className="sub-tab-bar w-fit">
                   <button
                     onClick={() => setInventorySubTab('inventory')}
@@ -488,6 +1035,9 @@ export default function App() {
                     setActiveTab('mobile');
                   }}
                   onAddPipeBatch={handleAddPipeBatch}
+                  onUpdatePipe={handleUpdatePipe}
+                  onRenameBatch={handleRenameBatch}
+                  onDeleteBatch={handleDeleteBatch}
                   onOpenGenerateModal={() => setIsGenerateModalOpen(true)}
                 />
               )}
@@ -510,6 +1060,19 @@ export default function App() {
             onAddUser={handleAddUser}
             onUpdateUser={handleUpdateUser}
             onDeleteUser={handleDeleteUser}
+            onUpdateState={handleUpdateState}
+            onUpdateDistrict={handleUpdateDistrict}
+            onUpdateArea={handleUpdateArea}
+            onAddState={handleAddState}
+            onAddDistrict={handleAddDistrict}
+            onAddArea={handleAddArea}
+            onDeleteState={handleDeleteState}
+            onDeleteDistrict={handleDeleteDistrict}
+            onDeleteArea={handleDeleteArea}
+            onSaveHierarchy={handleSaveHierarchy}
+            hierarchyDirty={hierarchyDirty}
+            isSavingHierarchy={isSavingHierarchy}
+            dbStatus={dbStatus}
             currentUser={currentUser}
           />
         )}
@@ -520,6 +1083,8 @@ export default function App() {
             installations={scopedInstallations}
             monitoringList={scopedMonitoringList}
             pipes={pipes}
+            onUpdateInstallation={handleUpdateInstallation}
+            onDeleteInstallation={handleDeleteInstallation}
           />
         )}
 
@@ -575,4 +1140,3 @@ export default function App() {
     </div>
   );
 }
-

@@ -1,10 +1,12 @@
 import React, { useState, useMemo } from 'react';
+import ReactDOM from 'react-dom';
 import {
   Search, User, Phone, MapPin, Sprout, Droplet, ClipboardList,
   CheckCircle2, AlertTriangle, ChevronDown, ChevronUp, Eye,
   BarChart3, Layers, Calendar, Ruler, Camera, X, Printer, ArrowRight,
-  ArrowDownToLine, FileText
+  ArrowDownToLine, FileText, ZoomIn, Edit2, Trash2
 } from 'lucide-react';
+import { PhotoLightbox } from './PhotoLightbox';
 import { Installation, MonitoringRecord, User as UserType, AWDPipe } from '../types';
 
 // ── Download Helpers ──────────────────────────────────────────────────────────
@@ -212,6 +214,8 @@ interface FarmerProfilesProps {
   installations: Installation[];      // pre-scoped
   monitoringList: MonitoringRecord[]; // pre-scoped
   pipes: AWDPipe[];
+  onUpdateInstallation?: (updated: Installation) => void;
+  onDeleteInstallation?: (pipeId: string) => void;
 }
 
 const formatDate = (d?: string) => {
@@ -230,18 +234,259 @@ const COND_COLOR = (v: string) =>
   : v === 'Damaged' ? 'bg-red-100 text-red-700 border-red-300'
   : 'bg-amber-100 text-amber-700 border-amber-300';
 
+// ── Edit Farmer Modal ──────────────────────────────────────────────────────────
+const EditFarmerModal: React.FC<{
+  inst: Installation;
+  onSave: (updated: Installation) => void;
+  onClose: () => void;
+}> = ({ inst, onSave, onClose }) => {
+  const [form, setForm] = useState<Installation>({ ...inst });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    onSave(form);
+    onClose();
+  };
+
+  return ReactDOM.createPortal(
+    <div className="fixed inset-0 bg-slate-900/65 backdrop-blur-md z-[9999] flex items-center justify-center p-4 overflow-y-auto">
+      <div className="bg-white rounded-3xl max-w-2xl w-full p-6 space-y-5 shadow-2xl border border-slate-200 my-8">
+        <div className="flex items-center justify-between border-b pb-3">
+          <div className="flex items-center gap-2">
+            <Edit2 className="w-5 h-5 text-emerald-600" />
+            <h3 className="text-base font-extrabold text-slate-900">
+              Edit Farmer & Field Registration ({inst.Pipe_ID})
+            </h3>
+          </div>
+          <button onClick={onClose} className="text-slate-400 hover:text-slate-600 font-bold p-1 cursor-pointer">
+            ✕
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-4 max-h-[75vh] overflow-y-auto pr-1">
+          {/* Section 1: Farmer Personal Details */}
+          <div>
+            <h4 className="text-xs font-black text-slate-400 uppercase tracking-wider mb-2">Farmer Information</h4>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">Farmer Name *</label>
+                <input
+                  type="text"
+                  required
+                  value={form.Farmer_Name}
+                  onChange={(e) => setForm({ ...form, Farmer_Name: e.target.value })}
+                  className="w-full bg-slate-50 border border-slate-300 rounded-xl p-2.5 text-xs font-semibold"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">Mobile Number *</label>
+                <input
+                  type="text"
+                  required
+                  value={form.Mobile}
+                  onChange={(e) => setForm({ ...form, Mobile: e.target.value })}
+                  className="w-full bg-slate-50 border border-slate-300 rounded-xl p-2.5 text-xs font-semibold"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">Farmer ID</label>
+                <input
+                  type="text"
+                  value={form.Farmer_ID || ''}
+                  onChange={(e) => setForm({ ...form, Farmer_ID: e.target.value })}
+                  className="w-full bg-slate-50 border border-slate-300 rounded-xl p-2.5 text-xs font-semibold"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Section 2: Location */}
+          <div>
+            <h4 className="text-xs font-black text-slate-400 uppercase tracking-wider mb-2">Location Details</h4>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">Village *</label>
+                <input
+                  type="text"
+                  required
+                  value={form.Village}
+                  onChange={(e) => setForm({ ...form, Village: e.target.value })}
+                  className="w-full bg-slate-50 border border-slate-300 rounded-xl p-2.5 text-xs font-semibold"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">Mandal *</label>
+                <input
+                  type="text"
+                  required
+                  value={form.Mandal}
+                  onChange={(e) => setForm({ ...form, Mandal: e.target.value })}
+                  className="w-full bg-slate-50 border border-slate-300 rounded-xl p-2.5 text-xs font-semibold"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">District *</label>
+                <input
+                  type="text"
+                  required
+                  value={form.District}
+                  onChange={(e) => setForm({ ...form, District: e.target.value })}
+                  className="w-full bg-slate-50 border border-slate-300 rounded-xl p-2.5 text-xs font-semibold"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">State</label>
+                <input
+                  type="text"
+                  value={form.State || ''}
+                  onChange={(e) => setForm({ ...form, State: e.target.value })}
+                  className="w-full bg-slate-50 border border-slate-300 rounded-xl p-2.5 text-xs font-semibold"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Section 3: Field & Crop Details */}
+          <div>
+            <h4 className="text-xs font-black text-slate-400 uppercase tracking-wider mb-2">Field & Crop Specifications</h4>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">Survey No.</label>
+                <input
+                  type="text"
+                  value={form.Survey_No || ''}
+                  onChange={(e) => setForm({ ...form, Survey_No: e.target.value })}
+                  className="w-full bg-slate-50 border border-slate-300 rounded-xl p-2.5 text-xs font-semibold"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">Plot Size *</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  required
+                  value={form.Plot_Size}
+                  onChange={(e) => setForm({ ...form, Plot_Size: parseFloat(e.target.value) || 0 })}
+                  className="w-full bg-slate-50 border border-slate-300 rounded-xl p-2.5 text-xs font-semibold"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">Unit</label>
+                <select
+                  value={form.Plot_Size_Unit}
+                  onChange={(e) => setForm({ ...form, Plot_Size_Unit: e.target.value as any })}
+                  className="w-full bg-slate-50 border border-slate-300 rounded-xl p-2.5 text-xs font-semibold"
+                >
+                  <option value="Acres">Acres</option>
+                  <option value="Hectares">Hectares</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">Crop</label>
+                <input
+                  type="text"
+                  value={form.Crop}
+                  onChange={(e) => setForm({ ...form, Crop: e.target.value })}
+                  className="w-full bg-slate-50 border border-slate-300 rounded-xl p-2.5 text-xs font-semibold"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">Variety</label>
+                <input
+                  type="text"
+                  value={form.Variety || ''}
+                  onChange={(e) => setForm({ ...form, Variety: e.target.value })}
+                  className="w-full bg-slate-50 border border-slate-300 rounded-xl p-2.5 text-xs font-semibold"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">Establishment Method</label>
+                <input
+                  type="text"
+                  value={form.Establishment_Method}
+                  onChange={(e) => setForm({ ...form, Establishment_Method: e.target.value as any })}
+                  className="w-full bg-slate-50 border border-slate-300 rounded-xl p-2.5 text-xs font-semibold"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Section 4: Installation Info */}
+          <div>
+            <h4 className="text-xs font-black text-slate-400 uppercase tracking-wider mb-2">Installation Meta</h4>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">Installed By</label>
+                <input
+                  type="text"
+                  value={form.Installed_By}
+                  onChange={(e) => setForm({ ...form, Installed_By: e.target.value })}
+                  className="w-full bg-slate-50 border border-slate-300 rounded-xl p-2.5 text-xs font-semibold"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">Installation Date</label>
+                <input
+                  type="date"
+                  value={form.Installation_Date}
+                  onChange={(e) => setForm({ ...form, Installation_Date: e.target.value })}
+                  className="w-full bg-slate-50 border border-slate-300 rounded-xl p-2.5 text-xs font-semibold"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="pt-3 flex items-center justify-end gap-3 border-t">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-5 py-2.5 rounded-xl text-xs font-extrabold text-slate-600 hover:bg-slate-100 transition cursor-pointer"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="px-5 py-2.5 rounded-xl text-xs font-extrabold bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg shadow-emerald-900/30 transition cursor-pointer"
+            >
+              Save Farmer Details
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>,
+    document.body
+  );
+};
+
 // ── Pipe Detail Card ──────────────────────────────────────────────────────────
 const PipeDetailCard: React.FC<{
   inst: Installation;
   visits: MonitoringRecord[];
   pipe?: AWDPipe;
   defaultOpen?: boolean;
-}> = ({ inst, visits, pipe, defaultOpen = false }) => {
+  onEdit?: (inst: Installation) => void;
+  onDelete?: (pipeId: string, farmerName: string) => void;
+}> = ({ inst, visits, pipe, defaultOpen = false, onEdit, onDelete }) => {
   const [expanded, setExpanded] = useState(defaultOpen);
+  const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
+  const [lightboxCaption, setLightboxCaption] = useState<string>('');
   const latestVisit = visits[0];
+
+  const openLightbox = (url: string, caption: string) => {
+    setLightboxUrl(url);
+    setLightboxCaption(caption);
+  };
 
   return (
     <div className="border border-slate-200 rounded-2xl overflow-hidden shadow-sm bg-white">
+      {/* Photo Lightbox */}
+      {lightboxUrl && (
+        <PhotoLightbox
+          url={lightboxUrl}
+          caption={lightboxCaption}
+          onClose={() => setLightboxUrl(null)}
+        />
+      )}
       {/* Card Header — always visible */}
       <button
         type="button"
@@ -305,32 +550,73 @@ const PipeDetailCard: React.FC<{
             ))}
           </div>
 
-          {/* GPS & Photo row */}
-          <div className="flex flex-wrap gap-3">
-            <a
-              href={inst.Location_Link}
-              target="_blank"
-              rel="noreferrer"
-              className="flex items-center gap-1.5 text-xs font-semibold text-blue-600 hover:text-blue-800 bg-blue-50 border border-blue-200 px-3 py-1.5 rounded-lg transition"
-            >
-              <MapPin className="w-3.5 h-3.5" /> View on Google Maps
-            </a>
-            <span className="text-xs text-slate-400 flex items-center gap-1">
-              GPS: {inst.Latitude}, {inst.Longitude} (±{inst.GPS_Accuracy}m)
-            </span>
+          {/* Actions & GPS row */}
+          <div className="flex flex-wrap items-center justify-between gap-3 pt-1 border-t border-slate-100">
+            <div className="flex items-center gap-2 flex-wrap">
+              {onEdit && (
+                <button
+                  type="button"
+                  onClick={() => onEdit(inst)}
+                  className="flex items-center gap-1.5 text-xs font-extrabold text-blue-600 bg-blue-50 hover:bg-blue-100 border border-blue-200 px-3 py-1.5 rounded-xl transition cursor-pointer"
+                >
+                  <Edit2 className="w-3.5 h-3.5" /> Edit Farmer Details
+                </button>
+              )}
+              {onDelete && (
+                <button
+                  type="button"
+                  onClick={() => onDelete(inst.Pipe_ID, inst.Farmer_Name)}
+                  className="flex items-center gap-1.5 text-xs font-extrabold text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 px-3 py-1.5 rounded-xl transition cursor-pointer"
+                >
+                  <Trash2 className="w-3.5 h-3.5" /> Remove Installation
+                </button>
+              )}
+            </div>
+
+            <div className="flex items-center gap-3 flex-wrap ml-auto">
+              <a
+                href={inst.Location_Link}
+                target="_blank"
+                rel="noreferrer"
+                className="flex items-center gap-1.5 text-xs font-semibold text-slate-700 hover:text-blue-600 bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-xl transition"
+              >
+                <MapPin className="w-3.5 h-3.5 text-red-500" /> View on Maps
+              </a>
+              <span className="text-[11px] font-mono text-slate-400">
+                GPS: {inst.Latitude}, {inst.Longitude} (±{inst.GPS_Accuracy}m)
+              </span>
+            </div>
           </div>
 
-          {/* Field photo */}
+          {/* Field photo (Full Uncropped View) */}
           {inst.Photo_URL && (
             <div>
-              <div className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5 flex items-center gap-1">
-                <Camera className="w-3.5 h-3.5" /> Field Photo
+              <div className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5 flex items-center justify-between">
+                <span className="flex items-center gap-1">
+                  <Camera className="w-3.5 h-3.5 text-emerald-600" /> Installation Photo
+                </span>
+                <span className="text-[10px] text-emerald-600 font-extrabold flex items-center gap-0.5 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-md">
+                  <ZoomIn className="w-3 h-3" /> Click for HD Fullscreen
+                </span>
               </div>
-              <img
-                src={inst.Photo_URL}
-                alt="Field"
-                className="w-full max-h-48 object-cover rounded-xl border border-slate-200"
-              />
+              <button
+                type="button"
+                onClick={() => openLightbox(inst.Photo_URL!, `Installation Photo — ${inst.Pipe_ID}`)}
+                className="w-full group relative overflow-hidden rounded-2xl border border-slate-700 bg-slate-950 p-2 shadow-inner hover:border-emerald-500 transition-all cursor-pointer"
+              >
+                <div className="w-full flex items-center justify-center min-h-[160px] max-h-72 overflow-hidden">
+                  <img
+                    src={inst.Photo_URL}
+                    alt="Field Installation"
+                    className="max-h-64 max-w-full w-auto object-contain rounded-xl group-hover:scale-[1.02] transition-transform duration-300 shadow-xl"
+                  />
+                </div>
+                <div className="absolute inset-0 bg-slate-950/0 group-hover:bg-slate-950/40 transition-all flex items-center justify-center">
+                  <span className="opacity-0 group-hover:opacity-100 transition-all bg-emerald-600 text-white font-extrabold text-xs px-3.5 py-2 rounded-xl shadow-2xl flex items-center gap-1.5 transform translate-y-2 group-hover:translate-y-0">
+                    <ZoomIn className="w-4 h-4" /> Expand Uncropped Image
+                  </span>
+                </div>
+              </button>
             </div>
           )}
 
@@ -347,29 +633,52 @@ const PipeDetailCard: React.FC<{
             ) : (
               <div className="space-y-2">
                 {visits.map((v, i) => (
-                  <div key={i} className="flex gap-3 items-start bg-slate-50 border border-slate-100 rounded-xl p-3">
-                    <div className="w-7 h-7 rounded-full bg-blue-100 text-blue-700 text-[10px] font-extrabold flex items-center justify-center shrink-0">
-                      {i + 1}
-                    </div>
-                    <div className="flex-1 grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-1 text-xs">
-                      <div><span className="text-slate-400">Date:</span> <span className="font-bold">{formatDate(v.Visit_Date)}</span></div>
-                      <div><span className="text-slate-400">Water Level:</span> <span className="font-bold">{v.Water_Level} cm</span></div>
-                      <div><span className="text-slate-400">Crop Stage:</span> <span className="font-bold">{v.Crop_Stage}</span></div>
-                      <div>
-                        <span className="text-slate-400">AWD Followed:</span>{' '}
-                        <span className={`font-bold px-1.5 py-0.5 rounded border text-[10px] ${AWD_COLOR(v.AWD_Followed)}`}>{v.AWD_Followed}</span>
+                  <div key={i} className="bg-slate-50 border border-slate-100 rounded-xl p-3 space-y-2">
+                    <div className="flex gap-3 items-start">
+                      <div className="w-7 h-7 rounded-full bg-blue-100 text-blue-700 text-[10px] font-extrabold flex items-center justify-center shrink-0">
+                        {i + 1}
                       </div>
-                      <div>
-                        <span className="text-slate-400">Pipe Condition:</span>{' '}
-                        <span className={`font-bold px-1.5 py-0.5 rounded border text-[10px] ${COND_COLOR(v.Pipe_Condition)}`}>{v.Pipe_Condition}</span>
-                      </div>
-                      <div><span className="text-slate-400">Visited By:</span> <span className="font-bold">{v.Visited_By}</span></div>
-                      {v.Remarks && (
-                        <div className="col-span-2 sm:col-span-3">
-                          <span className="text-slate-400">Remarks:</span> <span className="font-semibold">{v.Remarks}</span>
+                      <div className="flex-1 grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-1 text-xs">
+                        <div><span className="text-slate-400">Date:</span> <span className="font-bold">{formatDate(v.Visit_Date)}</span></div>
+                        <div><span className="text-slate-400">Water Level:</span> <span className="font-bold">{v.Water_Level}</span></div>
+                        <div><span className="text-slate-400">Crop Stage:</span> <span className="font-bold">{v.Crop_Stage}</span></div>
+                        <div>
+                          <span className="text-slate-400">AWD Followed:</span>{' '}
+                          <span className={`font-bold px-1.5 py-0.5 rounded border text-[10px] ${AWD_COLOR(v.AWD_Followed)}`}>{v.AWD_Followed}</span>
                         </div>
-                      )}
+                        <div>
+                          <span className="text-slate-400">Pipe Condition:</span>{' '}
+                          <span className={`font-bold px-1.5 py-0.5 rounded border text-[10px] ${COND_COLOR(v.Pipe_Condition)}`}>{v.Pipe_Condition}</span>
+                        </div>
+                        <div><span className="text-slate-400">Visited By:</span> <span className="font-bold">{v.Visited_By}</span></div>
+                        {v.Remarks && (
+                          <div className="col-span-2 sm:col-span-3">
+                            <span className="text-slate-400">Remarks:</span> <span className="font-semibold">{v.Remarks}</span>
+                          </div>
+                        )}
+                      </div>
                     </div>
+                    {/* Visit Photo (Full Uncropped View) */}
+                    {v.Photo_URL && (
+                      <button
+                        type="button"
+                        onClick={() => openLightbox(v.Photo_URL!, `Visit Photo — ${formatDate(v.Visit_Date)} · ${inst.Pipe_ID}`)}
+                        className="w-full group relative overflow-hidden rounded-xl border border-slate-700 bg-slate-950 p-1.5 shadow-inner hover:border-blue-400 transition-all ml-10 mt-1 cursor-pointer"
+                        style={{ maxWidth: 'calc(100% - 2.5rem)' }}
+                      >
+                        <div className="flex items-center justify-between text-[10px] text-slate-300 font-bold uppercase tracking-wider px-2 pt-1 pb-1">
+                          <span className="flex items-center gap-1"><Camera className="w-3 h-3 text-blue-400" /> Visit Photo</span>
+                          <span className="text-blue-400 font-extrabold flex items-center gap-0.5"><ZoomIn className="w-3 h-3" /> Uncropped HD</span>
+                        </div>
+                        <div className="w-full flex items-center justify-center min-h-[120px] max-h-52 overflow-hidden bg-slate-900 rounded-lg p-1">
+                          <img
+                            src={v.Photo_URL}
+                            alt="Visit"
+                            className="max-h-48 max-w-full w-auto object-contain rounded group-hover:scale-[1.02] transition-transform duration-300"
+                          />
+                        </div>
+                      </button>
+                    )}
                   </div>
                 ))}
               </div>
@@ -388,10 +697,37 @@ const FarmerFullProfile: React.FC<{
   monitoringList: MonitoringRecord[];
   pipes: AWDPipe[];
   onBack: () => void;
-}> = ({ farmerName, installations, monitoringList, pipes, onBack }) => {
+  onEditInst?: (inst: Installation) => void;
+  onDeleteInst?: (pipeId: string, farmerName: string) => void;
+}> = ({ farmerName, installations, monitoringList, pipes, onBack, onEditInst, onDeleteInst }) => {
   const farmerInsts = installations.filter((i) => i.Farmer_Name === farmerName);
   const allPipeIds = new Set(farmerInsts.map((i) => i.Pipe_ID));
   const farmerVisits = monitoringList.filter((m) => allPipeIds.has(m.Pipe_ID));
+
+  if (farmerInsts.length === 0) {
+    return (
+      <div className="bg-white border border-slate-200 rounded-3xl p-10 text-center space-y-4 shadow-sm animate-fadeIn">
+        <div className="w-16 h-16 bg-red-100 text-red-600 rounded-2xl flex items-center justify-center mx-auto text-2xl font-bold shadow-inner">
+          🗑️
+        </div>
+        <div>
+          <h3 className="text-lg font-extrabold text-slate-900">
+            Farmer Field Record Deleted
+          </h3>
+          <p className="text-xs text-slate-500 max-w-md mx-auto mt-1 font-semibold">
+            All registered pipe installations for <strong className="text-slate-800">{farmerName}</strong> have been deleted from the system.
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={onBack}
+          className="px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs rounded-xl shadow-lg shadow-emerald-900/30 transition cursor-pointer"
+        >
+          ← Back to Farmers Search
+        </button>
+      </div>
+    );
+  }
 
   // Stats
   const totalAcres = farmerInsts.reduce((sum, i) => {
@@ -492,6 +828,8 @@ const FarmerFullProfile: React.FC<{
                 visits={visits}
                 pipe={pipe}
                 defaultOpen={idx === 0}
+                onEdit={onEditInst}
+                onDelete={onDeleteInst}
               />
             );
           })}
@@ -507,9 +845,13 @@ export const FarmerProfiles: React.FC<FarmerProfilesProps> = ({
   installations,
   monitoringList,
   pipes,
+  onUpdateInstallation,
+  onDeleteInstallation,
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedFarmer, setSelectedFarmer] = useState<string | null>(null);
+  const [editingInst, setEditingInst] = useState<Installation | null>(null);
+  const [deleteConfirmTarget, setDeleteConfirmTarget] = useState<{ pipeId: string; farmerName: string } | null>(null);
 
   // Build unique farmer list
   const farmerMap = useMemo(() => {
@@ -527,170 +869,205 @@ export const FarmerProfiles: React.FC<FarmerProfilesProps> = ({
         const val = i.Plot_Size_Unit === 'Hectares' ? i.Plot_Size * 2.47105 : i.Plot_Size;
         return sum + val;
       }, 0);
-      const allPipeIds = new Set(insts.map((i) => i.Pipe_ID));
-      const totalVisits = monitoringList.filter((m) => allPipeIds.has(m.Pipe_ID)).length;
-      const lastVisit = monitoringList.find((m) => allPipeIds.has(m.Pipe_ID));
-      const rep = insts[0];
-      return { name, insts, totalAcres, totalVisits, lastVisit, rep };
-    });
-  }, [farmerMap, monitoringList]);
 
-  // Filtered by search
+      const latestDate = insts.reduce((max, i) => {
+        return i.Installation_Date > max ? i.Installation_Date : max;
+      }, '');
+
+      const rep = insts[0];
+      return {
+        name,
+        insts,
+        totalAcres,
+        latestDate,
+        rep,
+      };
+    });
+  }, [farmerMap]);
+
+  // Filtered farmers based on search
   const filteredFarmers = useMemo(() => {
     if (!searchQuery.trim()) return farmerList;
-    const term = searchQuery.toLowerCase();
-    const numTerm = searchQuery.replace(/\D/g, '');
+    const q = searchQuery.toLowerCase();
     return farmerList.filter(
       (f) =>
-        f.name.toLowerCase().includes(term) ||
-        (f.rep.Mobile && numTerm && f.rep.Mobile.includes(numTerm)) ||
-        f.rep.Village.toLowerCase().includes(term) ||
-        f.rep.Mandal.toLowerCase().includes(term) ||
-        (f.rep.Farmer_ID && f.rep.Farmer_ID.toLowerCase().includes(term))
+        f.name.toLowerCase().includes(q) ||
+        f.rep.Mobile.includes(q) ||
+        f.rep.Village.toLowerCase().includes(q) ||
+        f.rep.Mandal.toLowerCase().includes(q) ||
+        (f.rep.Farmer_ID && f.rep.Farmer_ID.toLowerCase().includes(q))
     );
   }, [farmerList, searchQuery]);
 
-  // If a farmer is selected, show their full profile
-  if (selectedFarmer) {
-    return (
-      <div className="max-w-5xl mx-auto px-4 py-6">
+  const selectedFarmerInsts = selectedFarmer ? farmerMap.get(selectedFarmer) : null;
+
+  return (
+    <div className="space-y-6">
+      {/* Edit Farmer Modal */}
+      {editingInst && (
+        <EditFarmerModal
+          inst={editingInst}
+          onSave={(updated) => {
+            onUpdateInstallation?.(updated);
+            setEditingInst(null);
+          }}
+          onClose={() => setEditingInst(null)}
+        />
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {deleteConfirmTarget && ReactDOM.createPortal(
+        <div className="fixed inset-0 bg-slate-900/65 backdrop-blur-md z-[10000] flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 space-y-5 shadow-2xl border border-slate-200 animate-in fade-in zoom-in duration-150">
+            <div className="flex items-center gap-3">
+              <div className="p-3 bg-red-100 text-red-600 rounded-2xl">
+                <AlertTriangle className="w-6 h-6" />
+              </div>
+              <div>
+                <h3 className="text-base font-extrabold text-slate-900">
+                  Delete Farmer Installation
+                </h3>
+                <p className="text-[11px] text-slate-500 font-bold uppercase tracking-wider mt-0.5">
+                  Permanent Action
+                </p>
+              </div>
+            </div>
+
+            <p className="text-xs font-semibold text-slate-700 leading-relaxed bg-slate-50 p-3.5 rounded-2xl border border-slate-200/80">
+              Are you sure you want to permanently delete the field registration for farmer <strong className="text-slate-900">{deleteConfirmTarget.farmerName}</strong> (Pipe ID: <strong className="font-mono text-emerald-600">{deleteConfirmTarget.pipeId}</strong>)? All related monitoring logs will also be removed.
+            </p>
+
+            <div className="flex items-center justify-end gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setDeleteConfirmTarget(null)}
+                className="px-5 py-2.5 rounded-xl text-xs font-extrabold text-slate-600 hover:bg-slate-100 transition cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  if (deleteConfirmTarget) {
+                    const pipeId = deleteConfirmTarget.pipeId;
+                    const fName = deleteConfirmTarget.farmerName;
+                    onDeleteInstallation?.(pipeId);
+                    const remainingPipes = installations.filter(
+                      (i) => i.Pipe_ID !== pipeId && i.Farmer_Name === fName
+                    );
+                    if (remainingPipes.length === 0) {
+                      setSelectedFarmer(null);
+                    }
+                  }
+                  setDeleteConfirmTarget(null);
+                }}
+                className="px-5 py-2.5 rounded-xl text-xs font-extrabold bg-red-600 hover:bg-red-700 text-white shadow-lg shadow-red-900/20 transition cursor-pointer flex items-center gap-1.5"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                Yes, Delete Record
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {selectedFarmer ? (
         <FarmerFullProfile
           farmerName={selectedFarmer}
           installations={installations.filter((i) => i.Farmer_Name === selectedFarmer)}
           monitoringList={monitoringList}
           pipes={pipes}
           onBack={() => setSelectedFarmer(null)}
+          onEditInst={(inst) => setEditingInst(inst)}
+          onDeleteInst={(pipeId, farmerName) => setDeleteConfirmTarget({ pipeId, farmerName })}
         />
-      </div>
-    );
-  }
+      ) : (
+        <>
+          {/* Header + Search bar */}
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+            <div>
+              <h2 className="text-lg font-extrabold text-slate-900 flex items-center gap-2">
+                <User className="w-5 h-5 text-emerald-600" />
+                Farmer Database &amp; Field Profiles
+              </h2>
+              <p className="text-xs text-slate-500 font-medium mt-1">
+                Registered farmers under {currentUser.role === 'Admin' ? 'all territories' : currentUser.areaName || currentUser.district || currentUser.state} • {farmerList.length} Farmers registered
+              </p>
+            </div>
 
-  return (
-    <div className="min-h-screen bg-slate-50 py-6 px-4">
-      <div className="max-w-5xl mx-auto space-y-6">
-
-        {/* Header */}
-        <div>
-          <h1 className="text-2xl font-extrabold text-slate-800 flex items-center gap-2">
-            <User className="w-7 h-7 text-emerald-600" />
-            Farmer Profiles
-          </h1>
-          <p className="text-sm text-slate-500 mt-1">
-            Search any farmer to view all their pipes, plots, acreage and full monitoring history.
-          </p>
-        </div>
-
-        {/* Search Bar */}
-        <div className="relative">
-          <Search className="absolute left-4 top-3.5 w-5 h-5 text-slate-400" />
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search by farmer name, mobile number, Farmer ID, village or mandal..."
-            className="w-full pl-12 pr-12 py-3.5 text-sm border border-slate-300 rounded-2xl bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-            autoFocus
-          />
-          {searchQuery && (
-            <button
-              onClick={() => setSearchQuery('')}
-              className="absolute right-3 top-3 p-1 rounded-full hover:bg-slate-100 transition"
-            >
-              <X className="w-4 h-4 text-slate-400" />
-            </button>
-          )}
-        </div>
-
-        {/* Stats row */}
-        <div className="flex flex-wrap gap-3 text-xs text-slate-500">
-          <span className="bg-white border border-slate-200 px-3 py-1.5 rounded-full font-semibold">
-            👨‍🌾 {farmerList.length} total farmers
-          </span>
-          <span className="bg-white border border-slate-200 px-3 py-1.5 rounded-full font-semibold">
-            📡 {installations.length} AWD pipes registered
-          </span>
-          <span className="bg-white border border-slate-200 px-3 py-1.5 rounded-full font-semibold">
-            📋 {monitoringList.length} monitoring visits
-          </span>
-          {searchQuery && (
-            <span className="bg-emerald-50 border border-emerald-200 text-emerald-700 px-3 py-1.5 rounded-full font-semibold">
-              🔍 {filteredFarmers.length} result{filteredFarmers.length !== 1 ? 's' : ''} for "{searchQuery}"
-            </span>
-          )}
-        </div>
-
-        {/* Farmer List */}
-        {filteredFarmers.length === 0 ? (
-          <div className="text-center py-20 text-slate-400">
-            <Search className="w-10 h-10 mx-auto mb-3 opacity-30" />
-            <p className="font-semibold text-slate-500">No farmers found</p>
-            <p className="text-xs mt-1">Try a different name, mobile number, or village.</p>
+            <div className="relative w-full md:w-80">
+              <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                placeholder="Search by farmer, mobile, village..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:bg-white focus:ring-2 focus:ring-emerald-500 outline-none transition"
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery('')}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 font-bold text-xs"
+                >
+                  ✕
+                </button>
+              )}
+            </div>
           </div>
-        ) : (
-          <div className="space-y-3">
-            {filteredFarmers.map(({ name, insts, totalAcres, totalVisits, lastVisit, rep }) => (
-              <button
-                key={name}
-                type="button"
-                onClick={() => setSelectedFarmer(name)}
-                className="w-full text-left bg-white border border-slate-200 rounded-2xl p-4 shadow-sm hover:border-emerald-400 hover:shadow-md hover:-translate-y-0.5 transition-all group"
+
+          {/* Farmer Cards Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {filteredFarmers.map((f) => (
+              <div
+                key={f.name}
+                onClick={() => setSelectedFarmer(f.name)}
+                className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm hover:shadow-md hover:border-emerald-300 transition-all cursor-pointer flex flex-col justify-between group"
               >
-                <div className="flex items-center justify-between gap-4">
-                  {/* Left: farmer info */}
-                  <div className="flex items-center gap-4 flex-1 min-w-0">
-                    <div className="w-12 h-12 rounded-xl bg-emerald-100 flex items-center justify-center text-2xl shrink-0 group-hover:bg-emerald-200 transition">
-                      🧑‍🌾
-                    </div>
-                    <div className="min-w-0">
-                      <div className="font-extrabold text-slate-800 text-sm truncate">{name}</div>
-                      <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-slate-500 mt-0.5">
-                        <span className="flex items-center gap-1"><Phone className="w-3 h-3" />{rep.Mobile}</span>
-                        <span className="flex items-center gap-1"><MapPin className="w-3 h-3" />{rep.Village}, {rep.Mandal}</span>
-                        {rep.Farmer_ID && <span className="text-slate-400">ID: {rep.Farmer_ID}</span>}
+                <div>
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-800 font-extrabold flex items-center justify-center text-lg shrink-0 group-hover:scale-105 transition-transform">
+                        🧑‍🌾
+                      </div>
+                      <div>
+                        <h3 className="font-extrabold text-slate-900 text-sm group-hover:text-emerald-700 transition">
+                          {f.name}
+                        </h3>
+                        <div className="text-xs font-semibold text-slate-500 flex items-center gap-1 mt-0.5">
+                          <Phone className="w-3 h-3 text-slate-400" />
+                          {f.rep.Mobile}
+                        </div>
                       </div>
                     </div>
+                    <span className="text-[11px] font-extrabold px-2.5 py-1 rounded-lg bg-slate-100 text-slate-700 border border-slate-200">
+                      {f.insts.length} Pipe{f.insts.length > 1 ? 's' : ''}
+                    </span>
                   </div>
 
-                  {/* Right: stats chips */}
-                  <div className="flex items-center gap-2 shrink-0 flex-wrap justify-end">
-                    <div className="text-center px-3 py-1.5 bg-emerald-50 border border-emerald-200 rounded-xl">
-                      <div className="text-xs font-extrabold text-emerald-700">{insts.length}</div>
-                      <div className="text-[9px] text-emerald-600 font-semibold">PIPES</div>
+                  <div className="mt-4 pt-3 border-t border-slate-100 space-y-1 text-xs text-slate-600">
+                    <div className="flex items-center justify-between">
+                      <span className="text-slate-400 font-medium">Location:</span>
+                      <span className="font-bold text-slate-800">{f.rep.Village}, {f.rep.Mandal}</span>
                     </div>
-                    <div className="text-center px-3 py-1.5 bg-blue-50 border border-blue-200 rounded-xl">
-                      <div className="text-xs font-extrabold text-blue-700">{totalAcres.toFixed(1)} Ac</div>
-                      <div className="text-[9px] text-blue-600 font-semibold">AREA</div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-slate-400 font-medium">Total Plot Area:</span>
+                      <span className="font-extrabold text-emerald-700">{f.totalAcres.toFixed(2)} Acres</span>
                     </div>
-                    <div className="text-center px-3 py-1.5 bg-violet-50 border border-violet-200 rounded-xl">
-                      <div className="text-xs font-extrabold text-violet-700">{totalVisits}</div>
-                      <div className="text-[9px] text-violet-600 font-semibold">VISITS</div>
-                    </div>
-                    <ArrowRight className="w-4 h-4 text-slate-300 group-hover:text-emerald-500 transition ml-1 hidden sm:block" />
                   </div>
                 </div>
 
-                {/* Last visit info */}
-                {lastVisit && (
-                  <div className="mt-3 flex flex-wrap gap-2 pl-16">
-                    <span className="text-[10px] text-slate-400">Last visit: <strong className="text-slate-600">{formatDate(lastVisit.Visit_Date)}</strong></span>
-                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${AWD_COLOR(lastVisit.AWD_Followed)}`}>
-                      AWD: {lastVisit.AWD_Followed}
-                    </span>
-                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${COND_COLOR(lastVisit.Pipe_Condition)}`}>
-                      {lastVisit.Pipe_Condition}
-                    </span>
-                  </div>
-                )}
-                {!lastVisit && (
-                  <div className="mt-2 pl-16 text-[10px] text-amber-500 font-semibold flex items-center gap-1">
-                    <AlertTriangle className="w-3 h-3" /> No monitoring visits yet
-                  </div>
-                )}
-              </button>
+                <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500 font-medium">
+                  <span>Installed {formatDate(f.latestDate)}</span>
+                  <span className="text-emerald-600 font-bold group-hover:translate-x-1 transition-transform flex items-center gap-1">
+                    View Profile →
+                  </span>
+                </div>
+              </div>
             ))}
           </div>
-        )}
-      </div>
+        </>
+      )}
     </div>
   );
 };

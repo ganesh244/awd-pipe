@@ -89,7 +89,11 @@ export const Dashboard: React.FC<DashboardProps> = ({ pipes, installations, moni
   const goodPipes        = monitoringList.filter(m => m.Pipe_Condition === 'Good').length;
   const damagedPipes     = monitoringList.filter(m => m.Pipe_Condition === 'Damaged').length;
   const avgWaterLevel    = monitoringList.length > 0
-    ? (monitoringList.reduce((s, m) => s + (Number(m.Water_Level) || 0), 0) / monitoringList.length).toFixed(1)
+    ? (monitoringList.reduce((s, m) => {
+        // Support both numeric ("5", "-5") and descriptive ("+5 cm above...", "-10 cm below...")
+        const parsed = parseFloat(String(m.Water_Level ?? ''));
+        return s + (isNaN(parsed) ? 0 : parsed);
+      }, 0) / monitoringList.length).toFixed(1)
     : '—';
 
   // ── Method breakdown ─────────────────────────────────────────────────────
@@ -184,7 +188,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ pipes, installations, moni
   const waterBuckets = useMemo(() => {
     const buckets = { 'Below 5cm': 0, '5–15cm': 0, '15–25cm': 0, 'Above 25cm': 0 };
     monitoringList.forEach(m => {
-      const wl = Number(m.Water_Level) || 0;
+      const wl = parseFloat(String(m.Water_Level ?? '')) || 0;
       if (wl < 5) buckets['Below 5cm']++;
       else if (wl < 15) buckets['5–15cm']++;
       else if (wl < 25) buckets['15–25cm']++;

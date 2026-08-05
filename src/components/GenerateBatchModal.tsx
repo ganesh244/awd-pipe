@@ -49,13 +49,6 @@ const PIPE_SPECS = [
   'Custom Certified Heavy-Duty AWD Pipe',
 ];
 
-const PROGRAM_SPONSORS = [
-  { code: 'GOVT-AGRI', name: 'State Dept of Agriculture' },
-  { code: 'IRRI-AWD', name: 'IRRI Climate Resilient Rice Program' },
-  { code: 'NABARD', name: 'NABARD Sustainable Paddy Initiative' },
-  { code: 'CARBON-CO', name: 'Verra / Gold Standard Carbon Project' },
-];
-
 export const GenerateBatchModal: React.FC<GenerateBatchModalProps> = ({
   isOpen,
   onClose,
@@ -67,7 +60,6 @@ export const GenerateBatchModal: React.FC<GenerateBatchModalProps> = ({
   const [year, setYear] = useState('2026');
   const [districtCode, setDistrictCode] = useState('KRM');
   const [customDistrict, setCustomDistrict] = useState('');
-  const [programCode, setProgramCode] = useState('GOVT-AGRI');
   const [specification, setSpecification] = useState('150mm (6") Perforated PVC Pipe (Standard)');
   const [count, setCount] = useState(10);
   const [startSequence, setStartSequence] = useState(existingPipeCount + 1);
@@ -80,7 +72,7 @@ export const GenerateBatchModal: React.FC<GenerateBatchModalProps> = ({
   if (!isOpen) return null;
 
   const effectiveDistrict = districtCode === 'CUSTOM' ? (customDistrict.trim().toUpperCase() || 'DIST') : districtCode;
-  const batchNo = `BATCH-${stateCode}-${year}-${effectiveDistrict}-${programCode}`;
+  const batchNo = `BATCH-${stateCode}-${year}-${effectiveDistrict}`;
 
   // Generate sample format preview
   const samplePipesPreview = Array.from({ length: Math.min(3, count) }).map((_, idx) => {

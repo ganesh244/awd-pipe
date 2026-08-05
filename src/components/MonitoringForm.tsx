@@ -29,6 +29,7 @@ export const MonitoringForm: React.FC<MonitoringFormProps> = ({
   const [remarks, setRemarks] = useState('');
   const [photoUrl, setPhotoUrl] = useState<string | undefined>(undefined);
   const [gpsCaptured, setGpsCaptured] = useState<{ lat: number; lng: number } | null>(null);
+  const [showGpsWarning, setShowGpsWarning] = useState(false);
 
   if (!isOpen) return null;
 
@@ -53,6 +54,10 @@ export const MonitoringForm: React.FC<MonitoringFormProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!gpsCaptured) {
+      setShowGpsWarning(true);
+      // Allow submit through after showing warning — GPS will fall back to last known
+    }
 
     const record: MonitoringRecord = {
       Timestamp: new Date().toISOString().replace('T', ' ').substring(0, 19),
@@ -124,12 +129,12 @@ export const MonitoringForm: React.FC<MonitoringFormProps> = ({
               onChange={(e) => setWaterLevel(e.target.value)}
               className="w-full border rounded-xl p-2.5 text-sm bg-white focus:ring-2 focus:ring-emerald-500 outline-none font-medium"
             >
-              <option value="+5 cm above soil surface">+5 cm (Flooded stage)</option>
-              <option value="+2 cm above soil surface">+2 cm (Shallow water)</option>
-              <option value="0 cm (At soil surface)">0 cm (Soil surface saturated)</option>
-              <option value="-5 cm below soil surface">-5 cm below surface</option>
-              <option value="-10 cm below soil surface">-10 cm below surface</option>
-              <option value="-15 cm below soil surface (Irrigate Now!)">-15 cm below surface (Threshold reached!)</option>
+              <option value="5">+5 cm (Flooded stage)</option>
+              <option value="2">+2 cm (Shallow water)</option>
+              <option value="0">0 cm (Soil surface saturated)</option>
+              <option value="-5">-5 cm below surface</option>
+              <option value="-10">-10 cm below surface</option>
+              <option value="-15">-15 cm below surface (Threshold reached! ⚠️)</option>
             </select>
           </div>
 
@@ -191,20 +196,28 @@ export const MonitoringForm: React.FC<MonitoringFormProps> = ({
           </div>
 
           {/* GPS Quick Capture in Modal */}
-          <div className="bg-slate-50 border border-slate-200 rounded-xl p-2.5 flex items-center justify-between text-xs">
-            <span className="text-slate-600 flex items-center gap-1 font-medium">
-              <MapPin className="w-3.5 h-3.5 text-emerald-600" />
-              {gpsCaptured
-                ? `GPS Captured: ${gpsCaptured.lat}, ${gpsCaptured.lng}`
-                : 'Optional Visit GPS'}
-            </span>
-            <button
-              type="button"
-              onClick={handleCaptureGPS}
-              className="bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold px-2.5 py-1 rounded-lg text-[11px] transition"
-            >
-              {gpsCaptured ? 'Recapture' : 'Capture GPS'}
-            </button>
+          <div className="space-y-1.5">
+            <div className="bg-slate-50 border border-slate-200 rounded-xl p-2.5 flex items-center justify-between text-xs">
+              <span className="text-slate-600 flex items-center gap-1 font-medium">
+                <MapPin className="w-3.5 h-3.5 text-emerald-600" />
+                {gpsCaptured
+                  ? `✅ GPS Captured: ${gpsCaptured.lat}, ${gpsCaptured.lng}`
+                  : 'Visit GPS (Recommended)'}
+              </span>
+              <button
+                type="button"
+                onClick={handleCaptureGPS}
+                className="bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold px-2.5 py-1 rounded-lg text-[11px] transition"
+              >
+                {gpsCaptured ? 'Recapture' : 'Capture GPS'}
+              </button>
+            </div>
+            {showGpsWarning && !gpsCaptured && (
+              <div className="flex items-start gap-2 bg-amber-50 border border-amber-200 text-amber-800 rounded-xl p-2.5 text-xs">
+                <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-0.5 text-amber-600" />
+                <span><strong>GPS not captured</strong> — visit location will default to last known position. Capture GPS to verify field presence.</span>
+              </div>
+            )}
           </div>
 
           {/* Field Photo Capture */}

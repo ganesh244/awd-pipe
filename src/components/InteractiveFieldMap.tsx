@@ -21,7 +21,8 @@ export const InteractiveFieldMap: React.FC<InteractiveFieldMapProps> = ({
   const markersGroupRef = useRef<L.LayerGroup | null>(null);
 
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState<'All' | 'Installed' | 'Available' | 'Damaged'>('All');
+  // Default to 'Installed' so installed pipes are shown first upon opening the map
+  const [statusFilter, setStatusFilter] = useState<'All' | 'Installed' | 'Available' | 'Damaged'>('Installed');
   const [villageFilter, setVillageFilter] = useState<string>('All');
   const [tileType, setTileType] = useState<'streets' | 'satellite'>('satellite');
   const [selectedPipeDetails, setSelectedPipeDetails] = useState<{
@@ -35,22 +36,40 @@ export const InteractiveFieldMap: React.FC<InteractiveFieldMapProps> = ({
     new Set(installations.map((i) => i.Village).filter(Boolean))
   );
 
+  // Map of coordinate occurrences to prevent identical coordinate stacking
+  const coordCounts = new Map<string, number>();
+
   // Prepare map markers data combining installations & pipes
-  const mapPipes = pipes.map((pipe) => {
+  const mapPipes = pipes.map((pipe, idx) => {
     const inst = installations.find((i) => i.Pipe_ID === pipe.Pipe_ID);
     const lastMon = monitoringList
       .filter((m) => m.Pipe_ID === pipe.Pipe_ID)
       .sort((a, b) => new Date(b.Timestamp).getTime() - new Date(a.Timestamp).getTime())[0];
 
-    // Default regional coordinates if pipe not installed yet
+    // Base coordinates
     let lat = inst?.Latitude;
     let lng = inst?.Longitude;
 
-    if (!lat || !lng) {
-      // Assign realistic staggered coordinates around Telangana paddy belt for uninstalled pipes
-      const pipeIndex = parseInt(pipe.Pipe_ID.replace(/\D/g, ''), 10) || 1;
-      lat = 18.2000 + (pipeIndex * 0.035) % 0.45;
-      lng = 78.9000 + (pipeIndex * 0.042) % 0.55;
+    const hasValidGps = lat && lng && lat !== 0 && lng !== 0;
+
+    if (!hasValidGps) {
+      // Assign realistic staggered coordinates around paddy belt
+      const pipeIndex = parseInt(pipe.Pipe_ID.replace(/\D/g, ''), 10) || (idx + 1);
+      lat = 18.2000 + ((pipeIndex * 0.038) % 0.45);
+      lng = 78.9000 + ((pipeIndex * 0.045) % 0.55);
+    } else {
+      // Check if coordinates overlap with another pipe
+      const coordKey = `${lat.toFixed(4)},${lng.toFixed(4)}`;
+      const count = coordCounts.get(coordKey) || 0;
+      coordCounts.set(coordKey, count + 1);
+
+      if (count > 0) {
+        // Apply slight staggering (~150 meters offset) so overlapping field markers do not stack directly on top of each other
+        const angle = count * (Math.PI / 3);
+        const radius = 0.0022 * count;
+        lat = lat + Math.sin(angle) * radius;
+        lng = lng + Math.cos(angle) * radius;
+      }
     }
 
     return {
@@ -413,11 +432,13 @@ export const InteractiveFieldMap: React.FC<InteractiveFieldMapProps> = ({
                       <span className="text-slate-500 text-[10px] font-bold block uppercase mb-1">
                         Field Pipe Installation Photo:
                       </span>
-                      <img
-                        src={selectedPipeDetails.installation.Photo_URL}
-                        alt="Installed Pipe"
-                        className="w-full h-32 object-cover rounded-xl border border-emerald-300 shadow-sm"
-                      />
+                      <div className="w-full bg-slate-900 rounded-xl p-1 flex items-center justify-center min-h-[120px] max-h-44 border border-slate-800">
+                        <img
+                          src={selectedPipeDetails.installation.Photo_URL}
+                          alt="Installed Pipe"
+                          className="max-h-40 max-w-full w-auto object-contain rounded-lg shadow-sm"
+                        />
+                      </div>
                     </div>
                   )}
 

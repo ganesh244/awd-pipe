@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { AWDPipe, Installation, MonitoringRecord } from '../types';
-import { MapPin, Plus, CheckCircle2, UserCheck, ShieldAlert, History, Calendar, Sprout, Phone } from 'lucide-react';
+import { MapPin, Plus, CheckCircle2, UserCheck, ShieldAlert, History, Calendar, Sprout, Phone, ZoomIn, Camera } from 'lucide-react';
+import { PhotoLightbox } from './PhotoLightbox';
 
 interface PipeInfoCardProps {
   pipe: AWDPipe;
@@ -17,6 +18,13 @@ export const PipeInfoCard: React.FC<PipeInfoCardProps> = ({
   allInstallations = [],
   onOpenMonitoringModal,
 }) => {
+  const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
+  const [lightboxCaption, setLightboxCaption] = useState<string>('');
+
+  const openLightbox = (url: string, caption: string) => {
+    setLightboxUrl(url);
+    setLightboxCaption(caption);
+  };
   // Find all pipes owned by this farmer
   const farmerPipes = allInstallations.filter(
     (i) => i.Farmer_Name.toLowerCase() === installation.Farmer_Name.toLowerCase()
@@ -43,6 +51,14 @@ export const PipeInfoCard: React.FC<PipeInfoCardProps> = ({
 
   return (
     <div className="space-y-6">
+      {/* Photo Lightbox */}
+      {lightboxUrl && (
+        <PhotoLightbox
+          url={lightboxUrl}
+          caption={lightboxCaption}
+          onClose={() => setLightboxUrl(null)}
+        />
+      )}      
       {/* Privacy Warning Banner */}
       <div className="bg-amber-500/10 border border-amber-500/30 text-amber-900 rounded-xl p-3 text-xs flex items-center gap-2 shadow-xs">
         <ShieldAlert className="w-4 h-4 text-amber-600 shrink-0" />
@@ -168,8 +184,24 @@ export const PipeInfoCard: React.FC<PipeInfoCardProps> = ({
                 </div>
                 {installation.Photo_URL && (
                   <div className="pt-2">
-                    <span className="text-slate-400 block text-[10px] mb-1 font-bold uppercase">Installation Field Photo</span>
-                    <img src={installation.Photo_URL} alt="AWD Installation Photo" className="w-full h-40 object-cover rounded-xl border border-slate-200" />
+                    <div className="text-slate-400 text-[10px] mb-1.5 font-bold uppercase flex items-center gap-1">
+                      <Camera className="w-3 h-3" /> Installation Field Photo
+                      <span className="ml-auto text-slate-300 font-normal flex items-center gap-0.5">
+                        <ZoomIn className="w-3 h-3" /> Click to expand
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => openLightbox(installation.Photo_URL!, `Installation Photo — ${pipe.Pipe_ID}`)}
+                      className="w-full group relative overflow-hidden rounded-xl border border-slate-700 bg-slate-950 p-1.5 shadow-inner hover:border-emerald-400 transition-all cursor-pointer"
+                    >
+                      <div className="w-full flex items-center justify-center min-h-[140px] max-h-48 overflow-hidden bg-slate-900 rounded-lg p-1">
+                        <img src={installation.Photo_URL} alt="AWD Installation Photo" className="max-h-44 max-w-full w-auto object-contain rounded group-hover:scale-102 transition-transform duration-300" />
+                      </div>
+                      <div className="absolute inset-0 bg-slate-950/0 group-hover:bg-slate-950/30 transition-all flex items-center justify-center">
+                        <ZoomIn className="w-7 h-7 text-white opacity-0 group-hover:opacity-100 transition-all drop-shadow-lg" />
+                      </div>
+                    </button>
                   </div>
                 )}
               </div>
@@ -248,7 +280,19 @@ export const PipeInfoCard: React.FC<PipeInfoCardProps> = ({
                 )}
                 {visit.Photo_URL && (
                   <div className="mt-1.5">
-                    <img src={visit.Photo_URL} alt="Visit Photo" className="w-full h-32 object-cover rounded-lg border border-slate-200" />
+                    <button
+                      type="button"
+                      onClick={() => openLightbox(visit.Photo_URL!, `Visit Photo — ${visit.Visit_Date} · ${pipe.Pipe_ID}`)}
+                      className="w-full group relative overflow-hidden rounded-lg border border-slate-200 hover:border-blue-400 transition-all"
+                    >
+                      <div className="flex items-center gap-1 text-[10px] text-slate-400 font-bold uppercase tracking-wider px-2 pt-1.5 pb-1">
+                        <Camera className="w-3 h-3" /> Visit Photo <ZoomIn className="w-3 h-3 ml-auto" />
+                      </div>
+                      <img src={visit.Photo_URL} alt="Visit Photo" className="w-full h-32 object-cover group-hover:scale-105 transition-transform duration-300" />
+                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all flex items-center justify-center">
+                        <ZoomIn className="w-6 h-6 text-white opacity-0 group-hover:opacity-100 transition-all drop-shadow-lg" />
+                      </div>
+                    </button>
                   </div>
                 )}
               </div>

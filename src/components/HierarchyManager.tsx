@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
+import ReactDOM from 'react-dom';
 import { User, StateNode, DistrictNode, AreaNode, UserRole } from '../types';
-import { Building2, MapPin, Map, Users, Plus, Trash2, Edit2, Shield, UserPlus, Key, CheckCircle2, XCircle, Eye, EyeOff } from 'lucide-react';
+import { Building2, MapPin, Map, Users, Plus, Trash2, Edit2, Shield, UserPlus, Key, CheckCircle2, XCircle, Eye, EyeOff, AlertTriangle } from 'lucide-react';
 
 interface HierarchyManagerProps {
   states: StateNode[];
@@ -11,6 +12,19 @@ interface HierarchyManagerProps {
   onAddUser: (user: User) => void;
   onUpdateUser?: (updatedUser: User) => void;
   onDeleteUser?: (userId: string) => void;
+  onUpdateState?: (state: StateNode) => void;
+  onUpdateDistrict?: (district: DistrictNode) => void;
+  onUpdateArea?: (area: AreaNode) => void;
+  onAddState?: (state: StateNode) => void;
+  onAddDistrict?: (district: DistrictNode) => void;
+  onAddArea?: (area: AreaNode) => void;
+  onDeleteState?: (stateId: string) => void;
+  onDeleteDistrict?: (districtId: string) => void;
+  onDeleteArea?: (areaId: string) => void;
+  onSaveHierarchy?: () => void;
+  hierarchyDirty?: boolean;
+  isSavingHierarchy?: boolean;
+  dbStatus?: 'cloud' | 'local' | 'loading';
 }
 
 export const HierarchyManager: React.FC<HierarchyManagerProps> = ({
@@ -22,6 +36,19 @@ export const HierarchyManager: React.FC<HierarchyManagerProps> = ({
   onAddUser,
   onUpdateUser,
   onDeleteUser,
+  onUpdateState,
+  onUpdateDistrict,
+  onUpdateArea,
+  onAddState,
+  onAddDistrict,
+  onAddArea,
+  onDeleteState,
+  onDeleteDistrict,
+  onDeleteArea,
+  onSaveHierarchy,
+  hierarchyDirty = false,
+  isSavingHierarchy = false,
+  dbStatus = 'loading',
 }) => {
   // Scoping based on logged in user
   const isDM = currentUser.role === 'District Manager';
@@ -43,6 +70,33 @@ export const HierarchyManager: React.FC<HierarchyManagerProps> = ({
   // Modals state
   const [isAddUserOpen, setIsAddUserOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
+
+  // Custom Delete Confirmation Modal State
+  const [confirmDeleteModal, setConfirmDeleteModal] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    confirmButtonText?: string;
+    onConfirm: () => void;
+  } | null>(null);
+
+  const requestDeleteConfirmation = (
+    title: string,
+    message: string,
+    onConfirm: () => void,
+    confirmButtonText = 'Yes, Delete Permanently'
+  ) => {
+    setConfirmDeleteModal({
+      isOpen: true,
+      title,
+      message,
+      confirmButtonText,
+      onConfirm: () => {
+        onConfirm();
+        setConfirmDeleteModal(null);
+      },
+    });
+  };
   const [showPasswordMap, setShowPasswordMap] = useState<Record<string, boolean>>({});
 
   // Add user form state
@@ -52,7 +106,18 @@ export const HierarchyManager: React.FC<HierarchyManagerProps> = ({
   const [newUserRole, setNewUserRole] = useState<UserRole>(isDM ? 'Area Manager' : isAM ? 'CF' : 'Area Manager');
   const [newUserEmail, setNewUserEmail] = useState('');
   const [newUserPhone, setNewUserPhone] = useState('');
+  const [targetStateName, setTargetStateName] = useState<string>('');
+  const [targetDistrictName, setTargetDistrictName] = useState<string>('');
   const [targetAreaName, setTargetAreaName] = useState<string>('');
+  const [targetNewDistrictName, setTargetNewDistrictName] = useState<string>('');
+  const [targetNewAreaName, setTargetNewAreaName] = useState<string>('');
+
+  const [editingHierarchyItem, setEditingHierarchyItem] = useState<any>(null);
+  const [editingHierarchyType, setEditingHierarchyType] = useState<'state' | 'district' | 'area' | null>(null);
+
+  const [isAddingHierarchy, setIsAddingHierarchy] = useState(false);
+  const [addingHierarchyType, setAddingHierarchyType] = useState<'state' | 'district' | 'area' | null>(null);
+  const [newHierarchyName, setNewHierarchyName] = useState('');
 
   // Filter lists based on role and selection
   const visibleStates = states.filter(st => {
@@ -61,8 +126,9 @@ export const HierarchyManager: React.FC<HierarchyManagerProps> = ({
   });
 
   const visibleDistricts = districts.filter(d => {
-    if (d.stateId !== selectedStateId) return false;
     if (isDM || isAM) return d.name === currentUser.district;
+    if (d.stateId !== selectedStateId) return false;
+    if (isSM) return d.stateName === currentUser.state;
     return true;
   });
 
@@ -74,11 +140,49 @@ export const HierarchyManager: React.FC<HierarchyManagerProps> = ({
 
   const selectedState = states.find(s => s.id === selectedStateId);
   const selectedDistrict = districts.find(d => d.id === selectedDistrictId);
+  const availableStateOptions = useMemo(
+    () => (isAdmin ? states : visibleStates),
+    [isAdmin, states, visibleStates]
+  );
+  const targetState = states.find((s) => s.name === targetStateName);
+  const targetDistrictOptions = useMemo(
+    () => districts.filter((d) => d.stateId === targetState?.id),
+    [districts, targetState?.id]
+  );
+  const targetDistrict = targetDistrictOptions.find((d) => d.name === targetDistrictName);
+  const targetAreaOptions = useMemo(
+    () => areas.filter((a) => a.districtId === targetDistrict?.id),
+    [areas, targetDistrict?.id]
+  );
+  const needsCustomDistrict = newUserRole === 'District Manager' && targetDistrictOptions.length === 0;
+  const needsCustomArea = (newUserRole === 'Area Manager' || newUserRole === 'CF' || newUserRole === 'JCF') && targetAreaOptions.length === 0;
+  const effectiveAreaName = targetAreaName === '__new__' ? targetNewAreaName.trim() : targetAreaName;
+  const effectiveDistrictName = needsCustomDistrict ? targetNewDistrictName.trim() : targetDistrictName;
+  const managerPreview = useMemo(() => {
+    if (newUserRole === 'District Manager') {
+      return users.find((u) => u.role === 'State Manager' && u.state === targetStateName)?.name || 'Unassigned';
+    }
+    if (newUserRole === 'Area Manager') {
+      return users.find((u) => u.role === 'District Manager' && u.district === effectiveDistrictName)?.name || 'Unassigned';
+    }
+    if (newUserRole === 'CF' || newUserRole === 'JCF') {
+      return users.find((u) => u.role === 'Area Manager' && u.areaName === effectiveAreaName)?.name || 'Unassigned';
+    }
+    return 'System Admin';
+  }, [newUserRole, users, targetStateName, effectiveDistrictName, effectiveAreaName]);
 
   // When opening add modal, pre-fill defaults
   const openAddModal = (defaultRole?: UserRole, defaultArea?: string) => {
-    setNewUserRole(defaultRole || (isDM ? 'Area Manager' : isAM ? 'CF' : 'Area Manager'));
-    setTargetAreaName(defaultArea || visibleAreas[0]?.name || '');
+    const role = defaultRole || (isDM ? 'Area Manager' : isAM ? 'CF' : 'Area Manager');
+    const initialStateName = selectedState?.name || availableStateOptions[0]?.name || states[0]?.name || '';
+    const initialDistrictName = selectedDistrict?.name || districts.find((d) => d.stateId === selectedState?.id)?.name || '';
+    const initialAreaName = defaultArea || visibleAreas[0]?.name || '';
+    setNewUserRole(role);
+    setTargetStateName(initialStateName);
+    setTargetDistrictName(initialDistrictName);
+    setTargetAreaName(initialAreaName);
+    setTargetNewDistrictName('');
+    setTargetNewAreaName('');
     setNewUserName('');
     setNewUserUsername('');
     setNewUserPassword(`Pwd@${Math.floor(1000 + Math.random() * 9000)}`);
@@ -91,6 +195,51 @@ export const HierarchyManager: React.FC<HierarchyManagerProps> = ({
     e.preventDefault();
     if (!newUserName.trim() || !newUserUsername.trim() || !newUserPassword.trim()) return;
 
+    let intelligentReportsToId = currentUser.id;
+    const assignedState = newUserRole === 'Admin' ? undefined : targetStateName || selectedState?.name;
+    const assignedDistrict = newUserRole === 'District Manager'
+      ? effectiveDistrictName
+      : (newUserRole === 'Area Manager' || newUserRole === 'CF' || newUserRole === 'JCF' ? effectiveDistrictName : undefined);
+    const assignedArea = (newUserRole === 'Area Manager' || newUserRole === 'CF' || newUserRole === 'JCF') ? effectiveAreaName : undefined;
+
+    if (newUserRole === 'District Manager' && !assignedDistrict) return;
+    if ((newUserRole === 'Area Manager' || newUserRole === 'CF' || newUserRole === 'JCF') && (!assignedDistrict || !assignedArea)) return;
+
+    if (newUserRole === 'District Manager' && needsCustomDistrict && onAddDistrict && targetState) {
+      onAddDistrict({
+        id: `dist-${Date.now()}`,
+        stateId: targetState.id,
+        stateName: targetState.name,
+        name: assignedDistrict,
+        managerId: '',
+        managerName: ''
+      });
+    }
+
+    if ((newUserRole === 'Area Manager' || newUserRole === 'CF' || newUserRole === 'JCF') && targetAreaName === '__new__' && onAddArea && targetDistrict && assignedArea) {
+      onAddArea({
+        id: `area-${Date.now()}`,
+        districtId: targetDistrict.id,
+        districtName: targetDistrict.name,
+        stateName: targetState?.name || '',
+        name: assignedArea,
+        managerId: '',
+        managerName: ''
+      });
+    }
+
+    // Intelligent Reporting Structure:
+    if (newUserRole === 'District Manager') {
+      const stateManager = users.find(u => u.role === 'State Manager' && u.state === assignedState);
+      if (stateManager) intelligentReportsToId = stateManager.id;
+    } else if (newUserRole === 'Area Manager') {
+      const districtManager = users.find(u => u.role === 'District Manager' && u.district === assignedDistrict);
+      if (districtManager) intelligentReportsToId = districtManager.id;
+    } else if (newUserRole === 'CF' || newUserRole === 'JCF') {
+      const areaManager = users.find(u => u.role === 'Area Manager' && u.areaName === assignedArea);
+      if (areaManager) intelligentReportsToId = areaManager.id;
+    }
+
     const newUser: User = {
       id: `usr-${Date.now()}`,
       name: newUserName.trim(),
@@ -100,16 +249,62 @@ export const HierarchyManager: React.FC<HierarchyManagerProps> = ({
       email: newUserEmail || `${newUserUsername.toLowerCase()}@awdpipe.org`,
       phone: newUserPhone || '+91 98765 00000',
       isActive: true,
-      state: selectedState?.name,
-      district: selectedDistrict?.name,
-      areaName: (newUserRole === 'Area Manager' || newUserRole === 'CF' || newUserRole === 'JCF') ? targetAreaName : undefined,
-      reportsToId: currentUser.id,
+      state: assignedState,
+      district: assignedDistrict,
+      areaName: assignedArea,
+      reportsToId: intelligentReportsToId,
       createdById: currentUser.id,
       createdAt: new Date().toISOString().split('T')[0],
     };
 
     onAddUser(newUser);
     setIsAddUserOpen(false);
+  };
+
+  useEffect(() => {
+    if (!isAddUserOpen) return;
+
+    if (!targetStateName && availableStateOptions.length > 0) {
+      setTargetStateName(selectedState?.name || availableStateOptions[0].name);
+      return;
+    }
+
+    if ((newUserRole === 'District Manager' || newUserRole === 'Area Manager' || newUserRole === 'CF' || newUserRole === 'JCF') && targetDistrictOptions.length > 0) {
+      if (!targetDistrictOptions.some((d) => d.name === targetDistrictName)) {
+        setTargetDistrictName(targetDistrictOptions[0].name);
+      }
+    } else if (newUserRole === 'District Manager') {
+      setTargetDistrictName('');
+    }
+
+    if ((newUserRole === 'Area Manager' || newUserRole === 'CF' || newUserRole === 'JCF') && targetAreaOptions.length > 0) {
+      if (!targetAreaOptions.some((a) => a.name === targetAreaName)) {
+        setTargetAreaName(targetAreaOptions[0].name);
+      }
+    } else if (newUserRole === 'Area Manager' || newUserRole === 'CF' || newUserRole === 'JCF') {
+      setTargetAreaName('__new__');
+    }
+  }, [isAddUserOpen, newUserRole, targetStateName, targetDistrictName, targetAreaName, targetDistrictOptions, targetAreaOptions, availableStateOptions, selectedState?.name]);
+
+  useEffect(() => {
+    if (!editingUser) return;
+
+    if (editingUser.role === 'Area Manager' || editingUser.role === 'CF' || editingUser.role === 'JCF') {
+      const area = areas.find((a) => a.name === editingUser.areaName);
+      if (area && (editingUser.district !== area.districtName || editingUser.state !== area.stateName)) {
+        setEditingUser({ ...editingUser, district: area.districtName, state: area.stateName });
+      }
+    }
+  }, [editingUser, areas]);
+
+  const confirmAndDeleteUser = (userId: string, userName?: string) => {
+    const nameStr = userName ? ` "${userName}"` : '';
+    const title = `Delete User${nameStr}`;
+    const message = `Are you sure you want to permanently delete user${nameStr}? This action cannot be undone.`;
+
+    requestDeleteConfirmation(title, message, () => {
+      onDeleteUser?.(userId);
+    });
   };
 
   const handleEditSubmit = (e: React.FormEvent) => {
@@ -119,6 +314,104 @@ export const HierarchyManager: React.FC<HierarchyManagerProps> = ({
       onUpdateUser(editingUser);
     }
     setEditingUser(null);
+  };
+
+  const handleHierarchyEditSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingHierarchyItem) return;
+    if (editingHierarchyType === 'state' && onUpdateState) {
+      onUpdateState(editingHierarchyItem);
+    } else if (editingHierarchyType === 'district' && onUpdateDistrict) {
+      onUpdateDistrict(editingHierarchyItem);
+    } else if (editingHierarchyType === 'area' && onUpdateArea) {
+      onUpdateArea(editingHierarchyItem);
+    }
+    setEditingHierarchyType(null);
+    setEditingHierarchyItem(null);
+  };
+
+  const handleHierarchyDelete = () => {
+    if (!editingHierarchyItem || !editingHierarchyType) return;
+    const item = editingHierarchyItem;
+    const type = editingHierarchyType;
+
+    const hasChildren =
+      (type === 'state' && districts.some((d) => d.stateId === item.id || d.stateName === item.name)) ||
+      (type === 'district' && areas.some((a) => a.districtId === item.id || a.districtName === item.name));
+
+    const title = `Delete ${type.toUpperCase()}: ${item.name}`;
+    const message = hasChildren
+      ? `This ${type} "${item.name}" contains child locations and users. Are you sure you want to permanently delete it and all associated items?`
+      : `Are you sure you want to permanently delete ${type} "${item.name}"?`;
+
+    requestDeleteConfirmation(title, message, () => {
+      if (type === 'state') onDeleteState?.(item.id);
+      if (type === 'district') onDeleteDistrict?.(item.id);
+      if (type === 'area') onDeleteArea?.(item.id);
+      setEditingHierarchyType(null);
+      setEditingHierarchyItem(null);
+    });
+  };
+
+  const handleInlineHierarchyDelete = (type: 'state' | 'district' | 'area', item: any) => {
+    const hasChildren =
+      (type === 'state' && districts.some((d) => d.stateId === item.id || d.stateName === item.name)) ||
+      (type === 'district' && areas.some((a) => a.districtId === item.id || a.districtName === item.name));
+
+    const title = `Delete ${type.toUpperCase()}: ${item.name}`;
+    const message = hasChildren
+      ? `This ${type} "${item.name}" contains child locations and users. Are you sure you want to permanently delete it and all associated items?`
+      : `Are you sure you want to permanently delete ${type} "${item.name}"?`;
+
+    requestDeleteConfirmation(title, message, () => {
+      if (type === 'state') onDeleteState?.(item.id);
+      if (type === 'district') onDeleteDistrict?.(item.id);
+      if (type === 'area') onDeleteArea?.(item.id);
+    });
+  };
+
+  const clearNodeManager = (type: 'state' | 'district' | 'area', item: any) => {
+    const cleared = { ...item, managerId: '', managerName: '' };
+    if (type === 'state' && onUpdateState) onUpdateState(cleared);
+    if (type === 'district' && onUpdateDistrict) onUpdateDistrict(cleared);
+    if (type === 'area' && onUpdateArea) onUpdateArea(cleared);
+  };
+
+  const handleOpenAddHierarchy = (type: 'state' | 'district' | 'area') => {
+    setAddingHierarchyType(type);
+    setNewHierarchyName('');
+    setIsAddingHierarchy(true);
+  };
+
+  const handleSubmitAddHierarchy = () => {
+    if (!newHierarchyName.trim()) return;
+
+    if (addingHierarchyType === 'state' && onAddState) {
+      onAddState({
+        id: `state-${Date.now()}`,
+        name: newHierarchyName,
+        managerId: '',
+        managerName: ''
+      });
+    } else if (addingHierarchyType === 'district' && onAddDistrict && selectedStateId) {
+      onAddDistrict({
+        id: `dist-${Date.now()}`,
+        stateId: selectedStateId,
+        name: newHierarchyName,
+        managerId: '',
+        managerName: ''
+      });
+    } else if (addingHierarchyType === 'area' && onAddArea && selectedDistrictId) {
+      onAddArea({
+        id: `area-${Date.now()}`,
+        districtId: selectedDistrictId,
+        name: newHierarchyName,
+        managerId: '',
+        managerName: ''
+      });
+    }
+
+    setIsAddingHierarchy(false);
   };
 
   const togglePasswordVisibility = (userId: string) => {
@@ -155,6 +448,13 @@ export const HierarchyManager: React.FC<HierarchyManagerProps> = ({
           <UserPlus className="w-4 h-4 text-purple-200" />
           <span>Add Team Member / Assign Credentials</span>
         </button>
+        <button
+          onClick={onSaveHierarchy}
+          disabled={!onSaveHierarchy || isSavingHierarchy}
+          className="bg-white/10 hover:bg-white/15 disabled:opacity-60 text-white text-xs font-extrabold px-4 py-3 rounded-xl transition border border-white/15 shrink-0"
+        >
+          {isSavingHierarchy ? 'Saving...' : hierarchyDirty ? 'Save Hierarchy' : dbStatus === 'cloud' ? 'Saved to Cloud' : 'Saved Locally'}
+        </button>
       </div>
 
       {/* CASCADING HIERARCHY COLUMNS */}
@@ -166,9 +466,20 @@ export const HierarchyManager: React.FC<HierarchyManagerProps> = ({
             <h3 className="font-extrabold text-slate-800 text-sm flex items-center gap-2">
               <MapPin className="w-4 h-4 text-amber-600" /> 1. States ({visibleStates.length})
             </h3>
-            <span className="text-[10px] font-bold bg-amber-100 text-amber-800 px-2 py-0.5 rounded-md uppercase">
-              State Level
-            </span>
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] font-bold bg-amber-100 text-amber-800 px-2 py-0.5 rounded-md uppercase">
+                State Level
+              </span>
+              {(isAdmin || isSM) && (
+                <button
+                  onClick={() => handleOpenAddHierarchy('state')}
+                  className="p-1 bg-amber-100 hover:bg-amber-200 text-amber-700 rounded-md transition cursor-pointer"
+                  title="Add New State"
+                >
+                  <Plus className="w-3 h-3" />
+                </button>
+              )}
+            </div>
           </div>
 
           <div className="space-y-2">
@@ -191,9 +502,70 @@ export const HierarchyManager: React.FC<HierarchyManagerProps> = ({
                   }`}
                 >
                   <div>
-                    <span className="text-xs font-black text-slate-900 block">{st.name} ({st.code})</span>
-                    <span className="text-[11px] text-slate-500 block mt-0.5">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-black text-slate-900 block">{st.name} ({st.code})</span>
+                      {(isAdmin || isSM) && (
+                        <div className="flex items-center gap-1">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setEditingHierarchyType('state');
+                              setEditingHierarchyItem(st);
+                            }}
+                            className="p-1 text-slate-400 hover:text-amber-600 rounded-md hover:bg-amber-100 transition cursor-pointer"
+                            title="Edit State"
+                          >
+                            <Edit2 className="w-3 h-3" />
+                          </button>
+                          {isAdmin && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleInlineHierarchyDelete('state', st);
+                              }}
+                              className="p-1 text-slate-400 hover:text-red-600 rounded-md hover:bg-red-100 transition cursor-pointer"
+                              title="Delete State"
+                            >
+                              <Trash2 className="w-3 h-3" />
+                            </button>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                    <span className="text-[11px] text-slate-500 mt-0.5 flex items-center gap-1">
                       Manager: <strong className="text-slate-800">{stateUser?.name || st.managerName || 'Unassigned'}</strong>
+                      {stateUser && (isAdmin || isSM) && (
+                        <div className="flex items-center gap-1 ml-2">
+                          <button
+                            onClick={(e) => { e.stopPropagation(); setEditingUser(stateUser); }}
+                            title="Edit State Manager"
+                            className="p-1 text-slate-400 hover:text-blue-600 rounded hover:bg-blue-50 transition cursor-pointer"
+                          >
+                            <Edit2 className="w-3 h-3" />
+                          </button>
+                          {isAdmin && onDeleteUser && (
+                            <button
+                              onClick={(e) => { e.stopPropagation(); confirmAndDeleteUser(stateUser.id, stateUser.name); }}
+                              title="Remove State Manager"
+                              className="p-1 text-slate-400 hover:text-red-600 rounded hover:bg-red-50 transition cursor-pointer"
+                            >
+                              <Trash2 className="w-3 h-3" />
+                            </button>
+                          )}
+                        </div>
+                      )}
+                      {!stateUser && st.managerName && isAdmin && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            clearNodeManager('state', st);
+                          }}
+                          title="Clear State Manager Label"
+                          className="p-1 text-slate-400 hover:text-red-600 rounded hover:bg-red-50 transition cursor-pointer ml-2"
+                        >
+                          <Trash2 className="w-3 h-3" />
+                        </button>
+                      )}
                     </span>
                   </div>
                   <span className="text-xs font-bold font-mono text-amber-800 bg-amber-200/60 px-2.5 py-1 rounded-lg">
@@ -211,9 +583,20 @@ export const HierarchyManager: React.FC<HierarchyManagerProps> = ({
             <h3 className="font-extrabold text-slate-800 text-sm flex items-center gap-2">
               <Building2 className="w-4 h-4 text-blue-600" /> 2. Districts ({visibleDistricts.length})
             </h3>
-            <span className="text-[10px] font-bold bg-blue-100 text-blue-800 px-2 py-0.5 rounded-md uppercase">
-              District Level
-            </span>
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] font-bold bg-blue-100 text-blue-800 px-2 py-0.5 rounded-md uppercase">
+                District Level
+              </span>
+              {(isAdmin || isSM || isDM) && selectedStateId && (
+                <button
+                  onClick={() => handleOpenAddHierarchy('district')}
+                  className="p-1 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded-md transition cursor-pointer"
+                  title="Add New District"
+                >
+                  <Plus className="w-3 h-3" />
+                </button>
+              )}
+            </div>
           </div>
 
           <div className="space-y-2">
@@ -237,9 +620,70 @@ export const HierarchyManager: React.FC<HierarchyManagerProps> = ({
                     }`}
                   >
                     <div>
-                      <span className="text-xs font-black text-slate-900 block">{dt.name}</span>
-                      <span className="text-[11px] text-slate-500 block mt-0.5">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-black text-slate-900 block">{dt.name}</span>
+                        {(isAdmin || isSM || isDM) && (
+                          <div className="flex items-center gap-1">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setEditingHierarchyType('district');
+                                setEditingHierarchyItem(dt);
+                              }}
+                              className="p-1 text-slate-400 hover:text-blue-600 rounded-md hover:bg-blue-100 transition cursor-pointer"
+                              title="Edit District"
+                            >
+                              <Edit2 className="w-3 h-3" />
+                            </button>
+                            {(isAdmin || isSM) && (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleInlineHierarchyDelete('district', dt);
+                                }}
+                                className="p-1 text-slate-400 hover:text-red-600 rounded-md hover:bg-red-100 transition cursor-pointer"
+                                title="Delete District"
+                              >
+                                <Trash2 className="w-3 h-3" />
+                              </button>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                      <span className="text-[11px] text-slate-500 mt-0.5 flex items-center gap-1">
                         DM: <strong className="text-slate-800">{distUser?.name || dt.managerName || 'Unassigned'}</strong>
+                        {distUser && (isAdmin || isSM || isDM) && (
+                          <div className="flex items-center gap-1 ml-2">
+                            <button
+                              onClick={(e) => { e.stopPropagation(); setEditingUser(distUser); }}
+                              title="Edit District Manager"
+                              className="p-1 text-slate-400 hover:text-blue-600 rounded hover:bg-blue-50 transition cursor-pointer"
+                            >
+                              <Edit2 className="w-3 h-3" />
+                            </button>
+                            {(isAdmin || isSM) && onDeleteUser && (
+                              <button
+                                onClick={(e) => { e.stopPropagation(); confirmAndDeleteUser(distUser.id, distUser.name); }}
+                                title="Remove District Manager"
+                                className="p-1 text-slate-400 hover:text-red-600 rounded hover:bg-red-50 transition cursor-pointer"
+                              >
+                                <Trash2 className="w-3 h-3" />
+                              </button>
+                            )}
+                          </div>
+                        )}
+                        {!distUser && dt.managerName && isAdmin && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              clearNodeManager('district', dt);
+                            }}
+                            title="Clear District Manager Label"
+                            className="p-1 text-slate-400 hover:text-red-600 rounded hover:bg-red-50 transition cursor-pointer ml-2"
+                          >
+                            <Trash2 className="w-3 h-3" />
+                          </button>
+                        )}
                       </span>
                     </div>
                     <span className="text-xs font-bold font-mono text-blue-800 bg-blue-200/60 px-2.5 py-1 rounded-lg">
@@ -258,9 +702,20 @@ export const HierarchyManager: React.FC<HierarchyManagerProps> = ({
             <h3 className="font-extrabold text-slate-800 text-sm flex items-center gap-2">
               <Map className="w-4 h-4 text-teal-600" /> 3. Areas & Field Teams
             </h3>
-            <span className="text-[10px] font-bold bg-teal-100 text-teal-800 px-2 py-0.5 rounded-md uppercase">
-              Field Operations
-            </span>
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] font-bold bg-teal-100 text-teal-800 px-2 py-0.5 rounded-md uppercase">
+                Field Operations
+              </span>
+              {(isAdmin || isSM || isDM || isAM) && selectedDistrictId && (
+                <button
+                  onClick={() => handleOpenAddHierarchy('area')}
+                  className="p-1 bg-teal-100 hover:bg-teal-200 text-teal-700 rounded-md transition cursor-pointer"
+                  title="Add New Area"
+                >
+                  <Plus className="w-3 h-3" />
+                </button>
+              )}
+            </div>
           </div>
 
           <div className="space-y-4 max-h-[600px] overflow-y-auto pr-1">
@@ -278,10 +733,71 @@ export const HierarchyManager: React.FC<HierarchyManagerProps> = ({
                     {/* Area Header */}
                     <div className="flex items-start justify-between border-b border-slate-200/80 pb-2.5">
                       <div>
-                        <span className="text-xs font-black text-slate-900 block">{ar.name} Area</span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-black text-slate-900 block">{ar.name} Area</span>
+                          {(isAdmin || isSM || isDM || isAM) && (
+                            <div className="flex items-center gap-1">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setEditingHierarchyType('area');
+                                  setEditingHierarchyItem(ar);
+                                }}
+                                className="p-1 text-slate-400 hover:text-teal-600 rounded-md hover:bg-teal-100 transition cursor-pointer"
+                                title="Edit Area"
+                              >
+                                <Edit2 className="w-3 h-3" />
+                              </button>
+                              {(isAdmin || isSM || isDM) && (
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleInlineHierarchyDelete('area', ar);
+                                  }}
+                                  className="p-1 text-slate-400 hover:text-red-600 rounded-md hover:bg-red-100 transition cursor-pointer"
+                                  title="Delete Area"
+                                >
+                                  <Trash2 className="w-3 h-3" />
+                                </button>
+                              )}
+                            </div>
+                          )}
+                        </div>
                         <div className="flex items-center gap-1.5 mt-1">
-                          <span className="text-[11px] text-teal-800 font-bold bg-teal-100 px-2 py-0.5 rounded-md">
-                            AM: {areaUser?.name || 'Unassigned'}
+                          <span className="text-[11px] text-teal-800 font-bold bg-teal-100 px-2 py-0.5 rounded-md flex items-center gap-2">
+                            <span>AM: {areaUser?.name || 'Unassigned'}</span>
+                            {areaUser && (isAdmin || isSM || isDM || isAM) && (
+                              <div className="flex items-center gap-1">
+                                <button
+                                  onClick={(e) => { e.stopPropagation(); setEditingUser(areaUser); }}
+                                  title="Edit Area Manager"
+                                  className="p-0.5 text-teal-600 hover:text-blue-600 transition cursor-pointer"
+                                >
+                                  <Edit2 className="w-3 h-3" />
+                                </button>
+                                {(isAdmin || isSM || isDM) && onDeleteUser && (
+                                  <button
+                                    onClick={(e) => { e.stopPropagation(); confirmAndDeleteUser(areaUser.id, areaUser.name); }}
+                                    title="Remove Area Manager"
+                                    className="p-0.5 text-teal-600 hover:text-red-600 transition cursor-pointer"
+                                  >
+                                    <Trash2 className="w-3 h-3" />
+                                  </button>
+                                )}
+                              </div>
+                            )}
+                            {!areaUser && ar.managerName && isAdmin && (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  clearNodeManager('area', ar);
+                                }}
+                                title="Clear Area Manager Label"
+                                className="p-0.5 text-teal-600 hover:text-red-600 transition cursor-pointer"
+                              >
+                                <Trash2 className="w-3 h-3" />
+                              </button>
+                            )}
                           </span>
                         </div>
                       </div>
@@ -341,7 +857,7 @@ export const HierarchyManager: React.FC<HierarchyManagerProps> = ({
                                   )}
                                   {(isAdmin || isDM) && onDeleteUser && (
                                     <button
-                                      onClick={() => onDeleteUser(staff.id)}
+                                      onClick={() => confirmAndDeleteUser(staff.id, staff.name)}
                                       title="Remove User"
                                       className="p-1 text-slate-400 hover:text-red-600 rounded-lg hover:bg-red-50 transition cursor-pointer"
                                     >
@@ -406,11 +922,38 @@ export const HierarchyManager: React.FC<HierarchyManagerProps> = ({
             })
             .map((u) => {
               const showPwd = showPasswordMap[u.id] || false;
+              const canEdit = isAdmin || 
+                (isSM && ['District Manager', 'Area Manager', 'CF', 'JCF'].includes(u.role)) ||
+                (isDM && ['Area Manager', 'CF', 'JCF'].includes(u.role)) ||
+                (isAM && ['CF', 'JCF'].includes(u.role));
+                
               return (
                 <div key={u.id} className="p-3 rounded-2xl border border-slate-200 bg-slate-50/70 space-y-2">
                   <div className="flex items-start justify-between">
                     <div>
-                      <div className="font-extrabold text-xs text-slate-900">{u.name}</div>
+                      <div className="font-extrabold text-xs text-slate-900 flex items-center gap-2">
+                        {u.name}
+                        {canEdit && (
+                          <div className="flex items-center gap-0.5">
+                            <button
+                              onClick={() => setEditingUser(u)}
+                              title="Edit User"
+                              className="p-1 text-slate-400 hover:text-blue-600 rounded hover:bg-blue-50 transition cursor-pointer"
+                            >
+                              <Edit2 className="w-3 h-3" />
+                            </button>
+                            {onDeleteUser && (
+                              <button
+                                onClick={() => confirmAndDeleteUser(u.id, u.name)}
+                                title="Remove User"
+                                className="p-1 text-slate-400 hover:text-red-600 rounded hover:bg-red-50 transition cursor-pointer"
+                              >
+                                <Trash2 className="w-3 h-3" />
+                              </button>
+                            )}
+                          </div>
+                        )}
+                      </div>
                       <div className="text-[11px] text-slate-500 font-medium">
                         {u.areaName || u.district || u.state || 'System Admin'}
                       </div>
@@ -438,9 +981,9 @@ export const HierarchyManager: React.FC<HierarchyManagerProps> = ({
         </div>
       </div>
 
-      {/* MODAL: ADD TEAM MEMBER & ASSIGN CREDENTIALS */}
-      {isAddUserOpen && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fadeIn">
+      {/* MODAL: ADD TEAM MEMBER */}
+      {isAddUserOpen && ReactDOM.createPortal(
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-4 overflow-y-auto">
           <div className="bg-white rounded-3xl max-w-lg w-full p-6 space-y-5 shadow-2xl border border-slate-200">
             <div className="flex items-center justify-between border-b pb-3">
               <div className="flex items-center gap-2">
@@ -491,21 +1034,162 @@ export const HierarchyManager: React.FC<HierarchyManagerProps> = ({
                 </div>
               </div>
 
-              {(newUserRole === 'Area Manager' || newUserRole === 'CF' || newUserRole === 'JCF') && (
+              {newUserRole === 'State Manager' && (
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wider">Assign to Area *</label>
-                  <select
-                    value={targetAreaName}
-                    onChange={(e) => setTargetAreaName(e.target.value)}
-                    required
-                    className="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-xs font-semibold outline-none focus:ring-2 focus:ring-purple-500 bg-white cursor-pointer"
-                  >
-                    {visibleAreas.map((ar) => (
-                      <option key={ar.id} value={ar.name}>
-                        {ar.name} ({ar.districtName})
-                      </option>
-                    ))}
-                  </select>
+                  <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wider">Assign to State *</label>
+                  {availableStateOptions.length === 0 ? (
+                    <input
+                      type="text"
+                      required
+                      value={targetStateName}
+                      onChange={(e) => setTargetStateName(e.target.value)}
+                      placeholder="Enter state name"
+                      className="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-xs font-semibold outline-none focus:ring-2 focus:ring-purple-500"
+                    />
+                  ) : (
+                    <select
+                      value={targetStateName}
+                      onChange={(e) => setTargetStateName(e.target.value)}
+                      required
+                      className="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-xs font-semibold outline-none focus:ring-2 focus:ring-purple-500 bg-white cursor-pointer"
+                    >
+                      {availableStateOptions.map((st) => (
+                        <option key={st.id} value={st.name}>{st.name}</option>
+                      ))}
+                    </select>
+                  )}
+                </div>
+              )}
+
+              {newUserRole === 'District Manager' && (
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wider">Assign to State *</label>
+                    <select
+                      value={targetStateName}
+                      onChange={(e) => {
+                        setTargetStateName(e.target.value);
+                        const stateId = states.find(s => s.name === e.target.value)?.id;
+                        const dists = districts.filter(d => d.stateId === stateId);
+                        setTargetDistrictName(dists[0]?.name || '');
+                      }}
+                      required
+                      className="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-xs font-semibold outline-none focus:ring-2 focus:ring-purple-500 bg-white cursor-pointer"
+                    >
+                      {availableStateOptions.map((st) => (
+                        <option key={st.id} value={st.name}>{st.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wider">Assign to District *</label>
+                    {needsCustomDistrict ? (
+                      <input
+                        type="text"
+                        required
+                        value={targetNewDistrictName}
+                        onChange={(e) => setTargetNewDistrictName(e.target.value)}
+                        placeholder="Enter new district name"
+                        className="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-xs font-semibold outline-none focus:ring-2 focus:ring-purple-500"
+                      />
+                    ) : (
+                      <select
+                        value={targetDistrictName}
+                        onChange={(e) => setTargetDistrictName(e.target.value)}
+                        required
+                        className="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-xs font-semibold outline-none focus:ring-2 focus:ring-purple-500 bg-white cursor-pointer"
+                      >
+                        {targetDistrictOptions.map((dt) => (
+                          <option key={dt.id} value={dt.name}>{dt.name}</option>
+                        ))}
+                      </select>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {(newUserRole === 'Area Manager' || newUserRole === 'CF' || newUserRole === 'JCF') && (
+                <div className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wider">State *</label>
+                      <select
+                        value={targetStateName}
+                        onChange={(e) => setTargetStateName(e.target.value)}
+                        required
+                        className="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-xs font-semibold outline-none focus:ring-2 focus:ring-purple-500 bg-white cursor-pointer"
+                      >
+                        {availableStateOptions.length === 0 ? null : availableStateOptions.map((st) => (
+                          <option key={st.id} value={st.name}>{st.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wider">District *</label>
+                      {targetDistrictOptions.length === 0 ? (
+                        <input
+                          type="text"
+                          required
+                          value={targetNewDistrictName}
+                          onChange={(e) => setTargetNewDistrictName(e.target.value)}
+                          placeholder="Enter new district name"
+                          className="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-xs font-semibold outline-none focus:ring-2 focus:ring-purple-500"
+                        />
+                      ) : (
+                        <select
+                          value={targetDistrictName}
+                          onChange={(e) => setTargetDistrictName(e.target.value)}
+                          required
+                          className="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-xs font-semibold outline-none focus:ring-2 focus:ring-purple-500 bg-white cursor-pointer"
+                        >
+                          {targetDistrictOptions.map((dt) => (
+                            <option key={dt.id} value={dt.name}>{dt.name}</option>
+                          ))}
+                        </select>
+                      )}
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wider">Assign to Area *</label>
+                    {needsCustomArea ? (
+                      <input
+                        type="text"
+                        required
+                        value={targetNewAreaName}
+                        onChange={(e) => setTargetNewAreaName(e.target.value)}
+                        placeholder="Enter new area name"
+                        className="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-xs font-semibold outline-none focus:ring-2 focus:ring-purple-500"
+                      />
+                    ) : (
+                      <select
+                        value={targetAreaName}
+                        onChange={(e) => setTargetAreaName(e.target.value)}
+                        required
+                        className="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-xs font-semibold outline-none focus:ring-2 focus:ring-purple-500 bg-white cursor-pointer"
+                      >
+                        {targetAreaOptions.map((ar) => (
+                          <option key={ar.id} value={ar.name}>
+                            {ar.name} ({ar.districtName})
+                          </option>
+                        ))}
+                        <option value="__new__">+ Create new area</option>
+                      </select>
+                    )}
+                    {targetAreaName === '__new__' && !needsCustomArea && (
+                      <input
+                        type="text"
+                        required
+                        value={targetNewAreaName}
+                        onChange={(e) => setTargetNewAreaName(e.target.value)}
+                        placeholder="Enter new area name"
+                        className="w-full mt-3 bg-slate-50 border border-slate-300 rounded-xl p-3 text-xs font-semibold outline-none focus:ring-2 focus:ring-purple-500"
+                      />
+                    )}
+                  </div>
+                  <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-xs">
+                    <span className="font-bold text-emerald-900">Reports to:</span>{' '}
+                    <span className="text-emerald-800">{managerPreview}</span>
+                  </div>
                 </div>
               )}
 
@@ -571,11 +1255,11 @@ export const HierarchyManager: React.FC<HierarchyManagerProps> = ({
             </form>
           </div>
         </div>
-      )}
+      , document.body)}
 
       {/* MODAL: EDIT ROLES & RESPONSIBILITIES */}
-      {editingUser && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fadeIn">
+      {editingUser && ReactDOM.createPortal(
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-4 overflow-y-auto">
           <div className="bg-white rounded-3xl max-w-lg w-full p-6 space-y-5 shadow-2xl border border-slate-200">
             <div className="flex items-center justify-between border-b pb-3">
               <div className="flex items-center gap-2">
@@ -609,9 +1293,22 @@ export const HierarchyManager: React.FC<HierarchyManagerProps> = ({
                   <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wider">Role Assignment</label>
                   <select
                     value={editingUser.role}
-                    onChange={(e) => setEditingUser({ ...editingUser, role: e.target.value as any })}
+                    onChange={(e) => {
+                      const nextRole = e.target.value as UserRole;
+                      const fallbackState = editingUser.state || states[0]?.name || '';
+                      const fallbackDistrict = districts.find((district) => district.stateName === fallbackState)?.name || '';
+                      const fallbackArea = areas.find((area) => area.districtName === fallbackDistrict)?.name || '';
+                      setEditingUser({
+                        ...editingUser,
+                        role: nextRole,
+                        state: nextRole === 'Admin' ? undefined : fallbackState,
+                        district: nextRole === 'State Manager' || nextRole === 'Admin' ? undefined : (editingUser.district || fallbackDistrict),
+                        areaName: nextRole === 'Area Manager' || nextRole === 'CF' || nextRole === 'JCF' ? (editingUser.areaName || fallbackArea) : undefined
+                      });
+                    }}
                     className="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-xs font-bold outline-none focus:ring-2 focus:ring-blue-500 bg-white cursor-pointer"
                   >
+                    <option value="Admin">Admin</option>
                     <option value="State Manager">State Manager</option>
                     <option value="District Manager">District Manager</option>
                     <option value="Area Manager">Area Manager</option>
@@ -632,20 +1329,105 @@ export const HierarchyManager: React.FC<HierarchyManagerProps> = ({
                 </div>
               </div>
 
-              {(editingUser.role === 'Area Manager' || editingUser.role === 'CF' || editingUser.role === 'JCF') && (
+              {editingUser.role === 'State Manager' && (
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wider">Assigned Jurisdiction Area</label>
+                  <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wider">Assigned State</label>
                   <select
-                    value={editingUser.areaName || ''}
-                    onChange={(e) => setEditingUser({ ...editingUser, areaName: e.target.value })}
+                    value={editingUser.state || ''}
+                    onChange={(e) => setEditingUser({ ...editingUser, state: e.target.value, district: undefined, areaName: undefined })}
                     className="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-xs font-semibold outline-none focus:ring-2 focus:ring-blue-500 bg-white cursor-pointer"
                   >
-                    {areas.map((ar) => (
-                      <option key={ar.id} value={ar.name}>
-                        {ar.name} ({ar.districtName})
-                      </option>
+                    {states.map((st) => (
+                      <option key={st.id} value={st.name}>{st.name}</option>
                     ))}
                   </select>
+                </div>
+              )}
+
+              {editingUser.role === 'District Manager' && (
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wider">Assigned State</label>
+                    <select
+                      value={editingUser.state || ''}
+                      onChange={(e) => {
+                        const nextState = e.target.value;
+                        const nextDistrict = districts.find((district) => district.stateName === nextState)?.name || '';
+                        setEditingUser({ ...editingUser, state: nextState, district: nextDistrict, areaName: undefined });
+                      }}
+                      className="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-xs font-semibold outline-none focus:ring-2 focus:ring-blue-500 bg-white cursor-pointer"
+                    >
+                      {states.map((st) => (
+                        <option key={st.id} value={st.name}>{st.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wider">Assigned District</label>
+                    <select
+                      value={editingUser.district || ''}
+                      onChange={(e) => setEditingUser({ ...editingUser, district: e.target.value, areaName: undefined })}
+                      className="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-xs font-semibold outline-none focus:ring-2 focus:ring-blue-500 bg-white cursor-pointer"
+                    >
+                      {districts.filter((district) => district.stateName === editingUser.state).map((district) => (
+                        <option key={district.id} value={district.name}>{district.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              )}
+
+              {(editingUser.role === 'Area Manager' || editingUser.role === 'CF' || editingUser.role === 'JCF') && (
+                <div className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wider">State</label>
+                      <select
+                        value={editingUser.state || ''}
+                        onChange={(e) => {
+                          const nextState = e.target.value;
+                          const nextDistrict = districts.find((d) => d.stateName === nextState)?.name || '';
+                          const nextArea = areas.find((a) => a.stateName === nextState && (!nextDistrict || a.districtName === nextDistrict))?.name || '';
+                          setEditingUser({ ...editingUser, state: nextState, district: nextDistrict, areaName: nextArea });
+                        }}
+                        className="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-xs font-semibold outline-none focus:ring-2 focus:ring-blue-500 bg-white cursor-pointer"
+                      >
+                        {states.map((st) => (
+                          <option key={st.id} value={st.name}>{st.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wider">District</label>
+                      <select
+                        value={editingUser.district || ''}
+                        onChange={(e) => {
+                          const nextDistrict = e.target.value;
+                          const nextArea = areas.find((a) => a.districtName === nextDistrict)?.name || '';
+                          setEditingUser({ ...editingUser, district: nextDistrict, areaName: nextArea });
+                        }}
+                        className="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-xs font-semibold outline-none focus:ring-2 focus:ring-blue-500 bg-white cursor-pointer"
+                      >
+                        {districts.filter((d) => d.stateName === editingUser.state).map((dt) => (
+                          <option key={dt.id} value={dt.name}>{dt.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wider">Assigned Jurisdiction Area</label>
+                    <select
+                      value={editingUser.areaName || ''}
+                      onChange={(e) => setEditingUser({ ...editingUser, areaName: e.target.value })}
+                      className="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-xs font-semibold outline-none focus:ring-2 focus:ring-blue-500 bg-white cursor-pointer"
+                    >
+                      {areas.filter((ar) => ar.districtName === editingUser.district).map((ar) => (
+                        <option key={ar.id} value={ar.name}>
+                          {ar.name} ({ar.districtName})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
               )}
 
@@ -677,24 +1459,203 @@ export const HierarchyManager: React.FC<HierarchyManagerProps> = ({
                 </div>
               </div>
 
-              <div className="pt-3 flex items-center justify-end gap-3 border-t">
+              <div className="pt-3 flex items-center justify-between gap-3 border-t">
+                {onDeleteUser && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const idToDelete = editingUser.id;
+                      const nameToDelete = editingUser.name;
+                      setEditingUser(null);
+                      confirmAndDeleteUser(idToDelete, nameToDelete);
+                    }}
+                    className="px-4 py-2.5 rounded-xl text-xs font-extrabold text-red-600 bg-red-50 hover:bg-red-100 transition cursor-pointer flex items-center gap-1"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" /> Delete User
+                  </button>
+                )}
+                <div className="flex items-center gap-2 ml-auto">
+                  <button
+                    type="button"
+                    onClick={() => setEditingUser(null)}
+                    className="px-5 py-2.5 rounded-xl text-xs font-extrabold text-slate-600 hover:bg-slate-100 transition cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-5 py-2.5 rounded-xl text-xs font-extrabold bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-900/30 transition cursor-pointer"
+                  >
+                    Save Changes
+                  </button>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+      , document.body)}
+
+    {/* MODAL: EDIT HIERARCHY */}
+      {editingHierarchyItem && ReactDOM.createPortal(
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-white rounded-3xl max-w-sm w-full p-6 space-y-5 shadow-2xl border border-slate-200">
+            <div className="flex items-center justify-between border-b pb-3">
+              <div className="flex items-center gap-2">
+                <Edit2 className="w-5 h-5 text-indigo-600" />
+                <h3 className="text-base font-extrabold text-slate-900 capitalize">
+                  Edit {editingHierarchyType}
+                </h3>
+              </div>
+              <button
+                onClick={() => {
+                  setEditingHierarchyType(null);
+                  setEditingHierarchyItem(null);
+                }}
+                className="text-slate-400 hover:text-slate-600 font-bold p-1 cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleHierarchyEditSubmit} className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wider">Name</label>
+                <input
+                  type="text"
+                  required
+                  value={editingHierarchyItem.name}
+                  onChange={(e) => setEditingHierarchyItem({ ...editingHierarchyItem, name: e.target.value })}
+                  className="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-xs font-semibold outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+
+              <div className="pt-3 flex items-center justify-between gap-3 border-t mt-4">
                 <button
                   type="button"
-                  onClick={() => setEditingUser(null)}
+                  onClick={handleHierarchyDelete}
+                  className="px-5 py-2.5 rounded-xl text-xs font-extrabold text-red-600 bg-red-50 hover:bg-red-100 transition cursor-pointer flex items-center gap-1"
+                >
+                  <Trash2 className="w-3.5 h-3.5" /> Remove {editingHierarchyType}
+                </button>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEditingHierarchyType(null);
+                      setEditingHierarchyItem(null);
+                    }}
+                    className="px-5 py-2.5 rounded-xl text-xs font-extrabold text-slate-600 hover:bg-slate-100 transition cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-5 py-2.5 rounded-xl text-xs font-extrabold bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-900/30 transition cursor-pointer"
+                  >
+                    Save
+                  </button>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+      , document.body)}
+
+      {/* Add Hierarchy Modal */}
+      {isAddingHierarchy && addingHierarchyType && ReactDOM.createPortal(
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fadeIn">
+          <div className="bg-white rounded-3xl shadow-2xl border border-slate-200 w-full max-w-sm overflow-hidden flex flex-col max-h-[90vh]">
+            <div className="flex items-center justify-between p-5 border-b border-slate-100 bg-slate-50/50">
+              <div className="flex items-center gap-2 text-slate-800">
+                <Plus className="w-5 h-5 text-indigo-500" />
+                <h3 className="font-extrabold text-sm uppercase tracking-wide">
+                  Add New {addingHierarchyType}
+                </h3>
+              </div>
+              <button
+                onClick={() => setIsAddingHierarchy(false)}
+                className="text-slate-400 hover:text-slate-600 font-bold p-1 cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="p-5">
+              <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wider">
+                {addingHierarchyType} Name
+              </label>
+              <input
+                type="text"
+                required
+                value={newHierarchyName}
+                onChange={(e) => setNewHierarchyName(e.target.value)}
+                placeholder={`Enter ${addingHierarchyType} name`}
+                className="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-xs font-semibold outline-none focus:ring-2 focus:ring-indigo-500"
+              />
+
+              <div className="pt-3 flex items-center justify-end gap-3 mt-4">
+                <button
+                  type="button"
+                  onClick={() => setIsAddingHierarchy(false)}
                   className="px-5 py-2.5 rounded-xl text-xs font-extrabold text-slate-600 hover:bg-slate-100 transition cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
-                  type="submit"
-                  className="px-5 py-2.5 rounded-xl text-xs font-extrabold bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-900/30 transition cursor-pointer"
+                  onClick={handleSubmitAddHierarchy}
+                  disabled={!newHierarchyName.trim()}
+                  className="px-5 py-2.5 rounded-xl text-xs font-extrabold bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-400 disabled:cursor-not-allowed text-white shadow-lg shadow-indigo-900/30 transition cursor-pointer"
                 >
-                  Save Changes
+                  Create {addingHierarchyType}
                 </button>
               </div>
-            </form>
+            </div>
           </div>
         </div>
+      , document.body)}
+
+      {/* CUSTOM CONFIRM DELETE MODAL */}
+      {confirmDeleteModal && confirmDeleteModal.isOpen && ReactDOM.createPortal(
+        <div className="fixed inset-0 bg-slate-900/65 backdrop-blur-md z-[10000] flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 space-y-5 shadow-2xl border border-slate-200 animate-in fade-in zoom-in duration-150">
+            <div className="flex items-center gap-3">
+              <div className="p-3 bg-red-100 text-red-600 rounded-2xl">
+                <AlertTriangle className="w-6 h-6" />
+              </div>
+              <div>
+                <h3 className="text-base font-extrabold text-slate-900">
+                  {confirmDeleteModal.title}
+                </h3>
+                <p className="text-[11px] text-slate-500 font-bold uppercase tracking-wider mt-0.5">
+                  Permanent Action Required
+                </p>
+              </div>
+            </div>
+
+            <p className="text-xs font-semibold text-slate-700 leading-relaxed bg-slate-50 p-3.5 rounded-2xl border border-slate-200/80">
+              {confirmDeleteModal.message}
+            </p>
+
+            <div className="flex items-center justify-end gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setConfirmDeleteModal(null)}
+                className="px-5 py-2.5 rounded-xl text-xs font-extrabold text-slate-600 hover:bg-slate-100 transition cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={confirmDeleteModal.onConfirm}
+                className="px-5 py-2.5 rounded-xl text-xs font-extrabold bg-red-600 hover:bg-red-700 text-white shadow-lg shadow-red-900/20 transition cursor-pointer flex items-center gap-1.5"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                {confirmDeleteModal.confirmButtonText || 'Yes, Delete Permanently'}
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
       )}
 
     </div>
