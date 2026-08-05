@@ -838,41 +838,74 @@ export default function App() {
     }
   };
 
-  // Transitive subordinate tree helper: returns all user IDs reporting to managerId (directly, created-by, or territory match)
-  const getSubordinateUserIds = React.useCallback((managerId: string, allUsers: User[]): Set<string> => {
-    const manager = allUsers.find((u) => u.id === managerId);
-    const result = new Set<string>([managerId]);
-    const norm = (s?: string) => (s || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+  // Build the full upward chain of manager IDs for a given user.
+  // E.g. Sai Teja → [Kumar, Lahari, Rajinikanth, Admin]
+  const getManagerChain = React.useCallback((userId: string, allUsers: User[]): Set<string> => {
+    const result = new Set<string>();
+    const user = allUsers.find((u) => u.id === userId);
+    if (!user) return result;
 
+    const visited = new Set<string>([userId]);
+    // Walk up reportsToId chain
+    let cur = user;
+    while (cur.reportsToId && !visited.has(cur.reportsToId)) {
+      visited.add(cur.reportsToId);
+      result.add(cur.reportsToId);
+      cur = allUsers.find((u) => u.id === cur.reportsToId) || cur;
+      if (!cur.reportsToId) break;
+    }
+    // Walk up createdById chain as fallback
+    cur = user;
+    while (cur.createdById && !visited.has(cur.createdById)) {
+      visited.add(cur.createdById);
+      result.add(cur.createdById);
+      cur = allUsers.find((u) => u.id === cur.createdById) || cur;
+      if (!cur.createdById) break;
+    }
+    // Also add managers from the area chain via reportsToId of the user's reportsTo
+    // (handles case where Sai Teja → Kumar, but Kumar has no reportsToId to Lahari,
+    //  so we also trace through territory: any DM/SM whose district/state matches)
+    const norm = (s?: string) => (s || '').toLowerCase().replace(/[^a-z0-9]/g, '');
     const matchLoc = (a?: string, b?: string) => {
       if (!a || !b) return false;
-      const na = norm(a);
-      const nb = norm(b);
+      const na = norm(a); const nb = norm(b);
       return na.length >= 2 && nb.length >= 2 && (na.includes(nb) || nb.includes(na));
     };
 
+    for (const m of allUsers) {
+      if (result.has(m.id) || m.id === userId) continue;
+      if (m.role === 'Admin') { result.add(m.id); continue; }
+
+      // Walk upward from known managers in result set to find territory-level managers
+      for (const knownMgrId of Array.from(result)) {
+        const knownMgr = allUsers.find((u) => u.id === knownMgrId);
+        if (!knownMgr) continue;
+        if (m.role === 'District Manager' && (matchLoc(m.district, knownMgr.district) || matchLoc(m.state, knownMgr.state))) {
+          result.add(m.id); break;
+        }
+        if (m.role === 'State Manager' && matchLoc(m.state, knownMgr.state)) {
+          result.add(m.id); break;
+        }
+        if (m.role === 'Area Manager' && (matchLoc(m.areaName, knownMgr.areaName) || matchLoc(m.district, knownMgr.district))) {
+          result.add(m.id); break;
+        }
+      }
+    }
+    return result;
+  }, []);
+
+  // Transitive subordinate tree helper: returns all user IDs below a manager (direct reports + territory)
+  const getSubordinateUserIds = React.useCallback((managerId: string, allUsers: User[]): Set<string> => {
+    const result = new Set<string>([managerId]);
     let added = true;
     while (added) {
       added = false;
       for (const u of allUsers) {
         if (result.has(u.id)) continue;
-
+        // Direct or created-by report to anyone already in the set
         const directReport = u.reportsToId && result.has(u.reportsToId);
         const createdReport = u.createdById && result.has(u.createdById);
-
-        // Role-level hierarchy rules
-        let territoryReport = false;
-        if (manager) {
-          if (manager.role === 'State Manager') {
-            territoryReport = matchLoc(u.state, manager.state);
-          } else if (manager.role === 'District Manager') {
-            territoryReport = matchLoc(u.district, manager.district) || matchLoc(u.state, manager.state);
-          } else if (manager.role === 'Area Manager') {
-            territoryReport = matchLoc(u.areaName, manager.areaName) || matchLoc(u.district, manager.district);
-          }
-        }
-
-        if (directReport || createdReport || territoryReport) {
+        if (directReport || createdReport) {
           result.add(u.id);
           added = true;
         }
@@ -888,15 +921,23 @@ export default function App() {
 
     const norm = (s?: string) => (s || '').toLowerCase().replace(/[^a-z0-9]/g, '');
 
-    // Get all user IDs & names in this manager's reporting tree
+    // Get all user IDs in this manager's subordinate tree (direct chain only)
     const subUserIds = getSubordinateUserIds(currentUser.id, users);
     const subNamesList = users.filter((u) => subUserIds.has(u.id)).map((u) => norm(u.name)).filter(Boolean);
 
-    const isSubordinateInstallation = (inst: Installation) => {
+    // For each installation, check if it was registered by anyone whose upward manager chain includes currentUser
+    const isMyInstallation = (inst: Installation): boolean => {
+      // Direct subordinate by user ID
       if (inst.Registered_By_User_ID && subUserIds.has(inst.Registered_By_User_ID)) return true;
+      // Direct subordinate by name match
       if (inst.Installed_By) {
         const iNorm = norm(inst.Installed_By);
-        if (subNamesList.some((sName) => iNorm.includes(sName) || sName.includes(iNorm))) return true;
+        if (subNamesList.some((sName) => sName.length >= 2 && (iNorm.includes(sName) || sName.includes(iNorm)))) return true;
+      }
+      // Upward chain: trace from the registrar's manager chain to see if currentUser is in it
+      if (inst.Registered_By_User_ID) {
+        const chain = getManagerChain(inst.Registered_By_User_ID, users);
+        if (chain.has(currentUser.id)) return true;
       }
       return false;
     };
@@ -904,10 +945,9 @@ export default function App() {
     if (currentUser.role === 'State Manager') {
       const uState = norm(currentUser.state);
       return installations.filter((inst) => {
-        const isSub = isSubordinateInstallation(inst);
         const iState = norm(inst.State);
         const stateMatch = !uState || !iState || iState.includes(uState) || uState.includes(iState);
-        return isSub || stateMatch;
+        return isMyInstallation(inst) || stateMatch;
       });
     }
 
@@ -915,12 +955,11 @@ export default function App() {
       const uDist = norm(currentUser.district);
       const uState = norm(currentUser.state);
       return installations.filter((inst) => {
-        const isSub = isSubordinateInstallation(inst);
         const iDist = norm(inst.District);
         const iState = norm(inst.State);
         const distMatch = !uDist || !iDist || iDist.includes(uDist) || uDist.includes(iDist);
         const stateMatch = !uState || !iState || iState.includes(uState) || uState.includes(iState);
-        return isSub || (distMatch && stateMatch);
+        return isMyInstallation(inst) || (distMatch && stateMatch);
       });
     }
 
@@ -928,14 +967,13 @@ export default function App() {
       const uArea = norm(currentUser.areaName);
       const uDist = norm(currentUser.district);
       return installations.filter((inst) => {
-        const isSub = isSubordinateInstallation(inst);
         const iAreaMgr = inst.Area_Manager_User_ID === currentUser.id;
         const iDist = norm(inst.District);
         const iMandal = norm(inst.Mandal);
         const iVillage = norm(inst.Village);
         const areaMatch = uArea && (iMandal.includes(uArea) || uArea.includes(iMandal) || iVillage.includes(uArea));
         const distMatch = !uDist || !iDist || iDist.includes(uDist) || uDist.includes(iDist);
-        return isSub || iAreaMgr || areaMatch || (!inst.Registered_By_User_ID && distMatch);
+        return isMyInstallation(inst) || iAreaMgr || areaMatch || (!inst.Registered_By_User_ID && distMatch);
       });
     }
 
@@ -950,7 +988,7 @@ export default function App() {
       });
     }
     return installations;
-  }, [installations, currentUser, users, getSubordinateUserIds]);
+  }, [installations, currentUser, users, getSubordinateUserIds, getManagerChain]);
 
   const scopedMonitoringList = React.useMemo(() => {
     if (!currentUser) return [];
