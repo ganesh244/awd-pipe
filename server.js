@@ -618,6 +618,10 @@ app.delete('/api/pipes/batch/:batchNo', authenticateToken, async (req, res) => {
 app.post('/api/users', authenticateToken, async (req, res, next) => { if (req.user.role !== 'Admin') return res.status(403).json({error: 'Admin only'}); return next(); }, async (req, res) => {
   const { newUser } = req.body;
   try {
+    if (newUser.password) {
+      newUser.passwordHash = bcrypt.hashSync(newUser.password, 10);
+      delete newUser.password;
+    }
     if (isMongoConnected) {
       await new User(newUser).save();
     } else {
@@ -635,6 +639,10 @@ app.put('/api/users/:id', authenticateToken, async (req, res, next) => { if (req
   const { id } = req.params;
   const { updatedUser } = req.body;
   try {
+    if (updatedUser.password) {
+      updatedUser.passwordHash = bcrypt.hashSync(updatedUser.password, 10);
+      delete updatedUser.password;
+    }
     if (isMongoConnected) {
       await User.findOneAndUpdate({ id }, updatedUser);
     } else {

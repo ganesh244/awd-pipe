@@ -92,8 +92,10 @@ export interface User {
   id: string;
   name: string;
   username: string;
-  /** Plain-text password for demo — in production use hashed + secure auth */
-  password: string;
+  /** Plain-text password during creation (never stored) */
+  password?: string;
+  /** Hashed password for secure auth */
+  passwordHash?: string;
   role: UserRole;
   email: string;
   phone: string;
