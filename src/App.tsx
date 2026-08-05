@@ -1098,7 +1098,10 @@ export default function App() {
 
   // Render Login Gate if no user is active
   if (!currentUser) {
-    return <LoginScreen users={users} onLogin={(user) => setCurrentUser(user)} />;
+    return <LoginScreen users={users} onLogin={(user) => {
+      setCurrentUser(user);
+      refreshHierarchyFromServer().catch(err => console.error("Failed to load initial data after login", err));
+    }} />;
   }
 
   return (
