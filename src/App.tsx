@@ -805,14 +805,25 @@ export default function App() {
     }
   };
 
-  // Transitive subordinate tree helper: returns all user IDs reporting to managerId (directly or transitively)
+  // Transitive subordinate tree helper: returns all user IDs reporting to managerId (directly, created-by, or territory match)
   const getSubordinateUserIds = React.useCallback((managerId: string, allUsers: User[]): Set<string> => {
+    const manager = allUsers.find((u) => u.id === managerId);
     const result = new Set<string>([managerId]);
+    const norm = (s?: string) => (s || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+
     let added = true;
     while (added) {
       added = false;
       for (const u of allUsers) {
-        if (u.reportsToId && result.has(u.reportsToId) && !result.has(u.id)) {
+        if (result.has(u.id)) continue;
+
+        const directReport = u.reportsToId && result.has(u.reportsToId);
+        const createdReport = u.createdById && result.has(u.createdById);
+        const areaMatch = manager?.areaName && u.areaName && norm(u.areaName) === norm(manager.areaName);
+        const distMatch = manager?.district && u.district && norm(u.district) === norm(manager.district);
+        const stateMatch = manager?.state && u.state && norm(u.state) === norm(manager.state);
+
+        if (directReport || createdReport || areaMatch || distMatch || stateMatch) {
           result.add(u.id);
           added = true;
         }
@@ -891,31 +902,15 @@ export default function App() {
   const scopedMonitoringList = React.useMemo(() => {
     if (!currentUser) return [];
     if (currentUser.role === 'Admin') return monitoringList;
-    if (currentUser.role === 'State Manager' || currentUser.role === 'District Manager') {
-      const allowedPipeIds = new Set(scopedInstallations.map((i) => i.Pipe_ID));
-      return monitoringList.filter((m) => allowedPipeIds.has(m.Pipe_ID));
-    }
-    if (currentUser.role === 'Area Manager') {
-      const allowedPipeIds = new Set(scopedInstallations.map((i) => i.Pipe_ID));
-      const subordinateIds = users
-        .filter((u) => u.reportsToId === currentUser.id || u.id === currentUser.id)
-        .map((u) => u.id);
-      return monitoringList.filter(
-        (m) =>
-          allowedPipeIds.has(m.Pipe_ID) ||
-          (m.Visited_By_User_ID && subordinateIds.includes(m.Visited_By_User_ID))
-      );
-    }
-    if (currentUser.role === 'CF' || currentUser.role === 'JCF') {
-      const allowedPipeIds = new Set(scopedInstallations.map((i) => i.Pipe_ID));
-      return monitoringList.filter(
-        (m) =>
-          allowedPipeIds.has(m.Pipe_ID) ||
-          m.Visited_By_User_ID === currentUser.id
-      );
-    }
-    return monitoringList;
-  }, [monitoringList, scopedInstallations, currentUser, users]);
+    const allowedPipeIds = new Set(scopedInstallations.map((i) => i.Pipe_ID));
+    const subordinateIds = getSubordinateUserIds(currentUser.id, users);
+
+    return monitoringList.filter(
+      (m) =>
+        allowedPipeIds.has(m.Pipe_ID) ||
+        (m.Visited_By_User_ID && subordinateIds.has(m.Visited_By_User_ID))
+    );
+  }, [monitoringList, scopedInstallations, currentUser, users, getSubordinateUserIds]);
 
   const scopedPipes = React.useMemo(() => {
     if (!currentUser) return [];
