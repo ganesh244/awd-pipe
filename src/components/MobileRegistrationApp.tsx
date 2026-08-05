@@ -307,6 +307,17 @@ export const MobileRegistrationApp: React.FC<MobileRegistrationAppProps> = ({
       setIsSubmitting(false);
     }, 600);
   };
+  if (!selectedPipe) {
+    return (
+      <div className="max-w-md mx-auto my-8 p-6 bg-white rounded-3xl shadow-xl text-center">
+        <AlertTriangle className="w-12 h-12 text-amber-500 mx-auto mb-4" />
+        <h2 className="text-xl font-bold text-slate-800 mb-2">No Pipes Available</h2>
+        <p className="text-slate-600 text-xs mb-6">
+          There are no available pipes to register in your territory. Please contact your administrator.
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6 animate-fadeIn">
