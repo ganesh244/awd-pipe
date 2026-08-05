@@ -231,8 +231,40 @@ export default function App() {
       throw new Error(data?.error || `HTTP ${res.status}`);
     }
 
+    const norm = (s?: string) => (s || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+    const matchLoc = (a?: string, b?: string) => {
+      if (!a || !b) return false;
+      const na = norm(a); const nb = norm(b);
+      return na.length >= 2 && nb.length >= 2 && (na.includes(nb) || nb.includes(na));
+    };
+
+    // Auto-repair: ensure every user has the correct reportsToId by traversing role hierarchy
+    const repairedUsers: User[] = (data.users || []).map((u: User) => {
+      if (u.reportsToId) return u; // already linked — don't overwrite
+      if (u.role === 'Admin') return u;
+      const allU: User[] = data.users || [];
+      if (u.role === 'State Manager') return u; // SM reports to Admin — no auto-link needed
+      if (u.role === 'District Manager') {
+        const sm = allU.find((m: User) => m.role === 'State Manager' && matchLoc(m.state, u.state));
+        return sm ? { ...u, reportsToId: sm.id } : u;
+      }
+      if (u.role === 'Area Manager') {
+        const dm = allU.find((m: User) => m.role === 'District Manager' && (matchLoc(m.district, u.district) || matchLoc(m.state, u.state)));
+        if (dm) return { ...u, reportsToId: dm.id };
+        const sm = allU.find((m: User) => m.role === 'State Manager' && matchLoc(m.state, u.state));
+        return sm ? { ...u, reportsToId: sm.id } : u;
+      }
+      if (u.role === 'CF' || u.role === 'JCF') {
+        const am = allU.find((m: User) => m.role === 'Area Manager' && matchLoc(m.areaName, u.areaName));
+        if (am) return { ...u, reportsToId: am.id };
+        const dm = allU.find((m: User) => m.role === 'District Manager' && matchLoc(m.district, u.district));
+        return dm ? { ...u, reportsToId: dm.id } : u;
+      }
+      return u;
+    });
+
     applyHierarchySnapshot({
-      users: data.users || [],
+      users: repairedUsers,
       states: data.states || [],
       districts: data.districts || [],
       areas: data.areas || [],
