@@ -254,7 +254,10 @@ export const PipeInventory: React.FC<PipeInventoryProps> = ({
       {selectedQrPipe && modalOverlay(
         <div className="bg-white rounded-2xl max-w-sm w-full p-6 text-center space-y-4 shadow-2xl border border-slate-200">
           <div className="flex justify-between items-center border-b pb-2">
-            <span className="font-mono font-black text-lg text-emerald-900">{selectedQrPipe.Pipe_ID}</span>
+            <div className="text-left">
+              <div className="text-[10px] font-black text-emerald-700 uppercase tracking-widest">DR. REDDY'S FOUNDATION</div>
+              <span className="font-mono font-black text-base text-slate-900">{selectedQrPipe.Pipe_ID}</span>
+            </div>
             <button onClick={() => setSelectedQrPipe(null)} className="text-slate-400 hover:text-slate-600">
               <X className="w-5 h-5" />
             </button>
@@ -270,11 +273,11 @@ export const PipeInventory: React.FC<PipeInventoryProps> = ({
           </div>
           <div className="text-xs text-slate-600 space-y-1">
             <div className="font-mono font-extrabold text-sm text-slate-800">{selectedQrPipe.Pipe_ID}</div>
-            <p className="text-[11px] text-slate-400">Scanned URL: ?id={selectedQrPipe.Pipe_ID}</p>
+            <p className="text-[11px] font-semibold text-emerald-700">DR. REDDY'S FOUNDATION • AWD PADDY SYSTEM</p>
           </div>
           <button
             onClick={() => onSelectPipe(selectedQrPipe.Pipe_ID)}
-            className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 rounded-xl text-xs transition"
+            className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 rounded-xl text-xs transition shadow-md"
           >
             Load in Mobile Registration View
           </button>
