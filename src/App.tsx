@@ -274,7 +274,14 @@ export default function App() {
     const params = new URLSearchParams(window.location.search);
     const scannedId = params.get('id');
     if (scannedId) {
-      // Find or add if valid
+      // Security Guard: If not logged in as authorized staff, redirect public mobile scan to Dr. Reddy's Foundation website
+      const savedUser = localStorage.getItem(SESSION_STORAGE_KEY);
+      if (!currentUser && !savedUser) {
+        window.location.href = 'https://drreddysfoundation.org/';
+        return;
+      }
+
+      // Find or add if valid for logged-in authorized field user
       const existing = pipes.find((p) => p.Pipe_ID.toUpperCase() === scannedId.toUpperCase());
       if (existing) {
         setActivePipeId(existing.Pipe_ID);
@@ -291,7 +298,7 @@ export default function App() {
       }
       setActiveTab('mobile');
     }
-  }, []);
+  }, [currentUser]);
 
   // Handler: Add User to Hierarchy
   const handleAddUser = (newUser: User) => {
