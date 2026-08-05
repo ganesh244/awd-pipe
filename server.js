@@ -183,7 +183,12 @@ const connectDB = async () => {
 connectDB();
 
 
-const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret-key-for-dev';
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) {
+  console.warn('WARNING: JWT_SECRET not set in environment. Using securely generated ephemeral secret.');
+}
+import crypto from 'crypto';
+const ACTIVE_JWT_SECRET = JWT_SECRET || crypto.randomBytes(32).toString('hex');
 
 const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
@@ -195,7 +200,7 @@ const authenticateToken = (req, res, next) => {
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1];
   if (!token) return res.status(401).json({ error: 'Authentication required' });
-  jwt.verify(token, JWT_SECRET, (err, user) => {
+  jwt.verify(token, ACTIVE_ACTIVE_JWT_SECRET, (err, user) => {
     if (err) return res.status(403).json({ error: 'Invalid or expired token' });
     req.user = user;
     next();
@@ -283,13 +288,13 @@ app.post('/api/login', loginLimiter, async (req, res) => {
     
     let isValid = false;
     if (user.passwordHash) isValid = await bcrypt.compare(password, user.passwordHash);
-    else if (user.password === password) isValid = true;
+    // Removed insecure plaintext fallback
     
     if (!isValid) return res.status(401).json({ error: 'Invalid credentials' });
     
     const token = jwt.sign(
       { id: user.id, role: user.role, state: user.state, district: user.district, areaName: user.areaName, name: user.name },
-      JWT_SECRET,
+      ACTIVE_JWT_SECRET,
       { expiresIn: '4h' }
     );
     res.json({ token, user });
@@ -487,7 +492,7 @@ app.delete('/api/installations/:pipeId', authenticateToken, async (req, res) => 
 });
 
 // 2d. DELETE /api/installations/clear/all -> Clear all test installations & monitoring records
-app.delete('/api/installations/clear/all', async (req, res) => {
+app.delete('/api/installations/clear/all', authenticateToken, async (req, res, next) => { if (req.user.role !== 'Admin') return res.status(403).json({error: 'Admin only'}); return next(); }, async (req, res) => {
   try {
     if (isMongoConnected) {
       await Installation.deleteMany({});
