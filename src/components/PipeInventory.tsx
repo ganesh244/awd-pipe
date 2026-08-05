@@ -56,7 +56,11 @@ export const PipeInventory: React.FC<PipeInventoryProps> = ({
 
   const handleShowQrModal = async (pipe: AWDPipe) => {
     setSelectedQrPipe(pipe);
-    const targetUrl = `${window.location.origin}${window.location.pathname}?id=${pipe.Pipe_ID}`;
+    const rawOrigin = window.location.origin;
+    const origin = rawOrigin.includes('localhost') || rawOrigin.includes('127.0.0.1')
+      ? 'https://awd-pipe-system.onrender.com'
+      : rawOrigin;
+    const targetUrl = `${origin}/?id=${pipe.Pipe_ID}`;
     try {
       const url = await QRCode.toDataURL(targetUrl, { width: 250, margin: 2 });
       setQrCanvasUrl(url);

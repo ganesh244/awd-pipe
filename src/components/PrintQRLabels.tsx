@@ -32,10 +32,13 @@ export const PrintQRLabels: React.FC<PrintQRLabelsProps> = ({ pipes, onOpenGener
 
     const generateBatchQR = async () => {
       const generated: QRLabelData[] = [];
-      const origin = window.location.origin;
+      const rawOrigin = window.location.origin;
+      const origin = rawOrigin.includes('localhost') || rawOrigin.includes('127.0.0.1')
+        ? 'https://awd-pipe-system.onrender.com'
+        : rawOrigin;
 
       for (const pipe of filteredPipes) {
-        const targetUrl = `${origin}?id=${pipe.Pipe_ID}`;
+        const targetUrl = `${origin}/?id=${pipe.Pipe_ID}`;
         try {
           const dataUrl = await QRCode.toDataURL(targetUrl, {
             width: 200,
