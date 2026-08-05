@@ -805,6 +805,22 @@ export default function App() {
     }
   };
 
+  // Transitive subordinate tree helper: returns all user IDs reporting to managerId (directly or transitively)
+  const getSubordinateUserIds = React.useCallback((managerId: string, allUsers: User[]): Set<string> => {
+    const result = new Set<string>([managerId]);
+    let added = true;
+    while (added) {
+      added = false;
+      for (const u of allUsers) {
+        if (u.reportsToId && result.has(u.reportsToId) && !result.has(u.id)) {
+          result.add(u.id);
+          added = true;
+        }
+      }
+    }
+    return result;
+  }, []);
+
   // Data Scoping logic: Filter installations and monitoring records based on currentUser role and hierarchy
   const scopedInstallations = React.useMemo(() => {
     if (!currentUser) return [];
@@ -812,12 +828,20 @@ export default function App() {
 
     const norm = (s?: string) => (s || '').toLowerCase().replace(/[^a-z0-9]/g, '');
 
+    // Get all user IDs & names in this manager's reporting tree
+    const subUserIds = getSubordinateUserIds(currentUser.id, users);
+    const subNames = new Set(
+      users.filter((u) => subUserIds.has(u.id)).map((u) => norm(u.name))
+    );
+
     if (currentUser.role === 'State Manager') {
       const uState = norm(currentUser.state);
       return installations.filter((inst) => {
-        if (!uState) return true;
+        const isRegisteredBySub = inst.Registered_By_User_ID ? subUserIds.has(inst.Registered_By_User_ID) : false;
+        const isInstalledBySub = inst.Installed_By ? subNames.has(norm(inst.Installed_By)) : false;
         const iState = norm(inst.State);
-        return !iState || iState.includes(uState) || uState.includes(iState);
+        const stateMatch = !uState || !iState || iState.includes(uState) || uState.includes(iState);
+        return isRegisteredBySub || isInstalledBySub || stateMatch;
       });
     }
 
@@ -825,48 +849,44 @@ export default function App() {
       const uDist = norm(currentUser.district);
       const uState = norm(currentUser.state);
       return installations.filter((inst) => {
+        const isRegisteredBySub = inst.Registered_By_User_ID ? subUserIds.has(inst.Registered_By_User_ID) : false;
+        const isInstalledBySub = inst.Installed_By ? subNames.has(norm(inst.Installed_By)) : false;
         const iDist = norm(inst.District);
         const iState = norm(inst.State);
         const distMatch = !uDist || !iDist || iDist.includes(uDist) || uDist.includes(iDist);
         const stateMatch = !uState || !iState || iState.includes(uState) || uState.includes(iState);
-        return distMatch && stateMatch;
+        return isRegisteredBySub || isInstalledBySub || (distMatch && stateMatch);
       });
     }
 
     if (currentUser.role === 'Area Manager') {
       const uArea = norm(currentUser.areaName);
       const uDist = norm(currentUser.district);
-      const subordinateIds = new Set(
-        users
-          .filter((u) => u.reportsToId === currentUser.id || u.id === currentUser.id || (uArea && norm(u.areaName) === uArea))
-          .map((u) => u.id)
-      );
-
       return installations.filter((inst) => {
+        const isRegisteredBySub = inst.Registered_By_User_ID ? subUserIds.has(inst.Registered_By_User_ID) : false;
+        const isInstalledBySub = inst.Installed_By ? subNames.has(norm(inst.Installed_By)) : false;
+        const iAreaMgr = inst.Area_Manager_User_ID === currentUser.id;
         const iDist = norm(inst.District);
         const iMandal = norm(inst.Mandal);
         const iVillage = norm(inst.Village);
-
-        return (
-          (inst.Area_Manager_User_ID && inst.Area_Manager_User_ID === currentUser.id) ||
-          (inst.Registered_By_User_ID && subordinateIds.has(inst.Registered_By_User_ID)) ||
-          (uArea && (iMandal.includes(uArea) || uArea.includes(iMandal) || iVillage.includes(uArea))) ||
-          (!inst.Registered_By_User_ID && (!uDist || iDist.includes(uDist) || uDist.includes(iDist)))
-        );
+        const areaMatch = uArea && (iMandal.includes(uArea) || uArea.includes(iMandal) || iVillage.includes(uArea));
+        const distMatch = !uDist || !iDist || iDist.includes(uDist) || uDist.includes(iDist);
+        return isRegisteredBySub || isInstalledBySub || iAreaMgr || areaMatch || (!inst.Registered_By_User_ID && distMatch);
       });
     }
 
     if (currentUser.role === 'CF' || currentUser.role === 'JCF') {
       const uDist = norm(currentUser.district);
-      return installations.filter(
-        (inst) =>
-          inst.Registered_By_User_ID === currentUser.id ||
-          inst.Installed_By === currentUser.name ||
-          (!inst.Registered_By_User_ID && (!uDist || norm(inst.District).includes(uDist) || uDist.includes(norm(inst.District))))
-      );
+      const myNameNorm = norm(currentUser.name);
+      return installations.filter((inst) => {
+        const isMyId = inst.Registered_By_User_ID === currentUser.id;
+        const isMyName = inst.Installed_By ? norm(inst.Installed_By).includes(myNameNorm) : false;
+        const distMatch = !inst.Registered_By_User_ID && (!uDist || norm(inst.District).includes(uDist) || uDist.includes(norm(inst.District)));
+        return isMyId || isMyName || distMatch;
+      });
     }
     return installations;
-  }, [installations, currentUser, users]);
+  }, [installations, currentUser, users, getSubordinateUserIds]);
 
   const scopedMonitoringList = React.useMemo(() => {
     if (!currentUser) return [];
