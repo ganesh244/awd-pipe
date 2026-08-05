@@ -1255,14 +1255,16 @@ export default function App() {
         )}
 
         {activeTab === 'farmers' && (
-          <FarmerProfiles
-            currentUser={currentUser}
-            installations={scopedInstallations}
-            monitoringList={scopedMonitoringList}
-            pipes={pipes}
-            onUpdateInstallation={handleUpdateInstallation}
-            onDeleteInstallation={handleDeleteInstallation}
-          />
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 animate-fadeIn">
+            <FarmerProfiles
+              currentUser={currentUser}
+              installations={scopedInstallations}
+              monitoringList={scopedMonitoringList}
+              pipes={pipes}
+              onUpdateInstallation={handleUpdateInstallation}
+              onDeleteInstallation={handleDeleteInstallation}
+            />
+          </div>
         )}
 
         {activeTab === 'code' && <AppsScriptCodeViewer />}

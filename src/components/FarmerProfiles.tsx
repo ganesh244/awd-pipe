@@ -988,31 +988,36 @@ export const FarmerProfiles: React.FC<FarmerProfilesProps> = ({
         />
       ) : (
         <>
-          {/* Header + Search bar */}
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-            <div>
-              <h2 className="text-lg font-extrabold text-slate-900 flex items-center gap-2">
-                <User className="w-5 h-5 text-emerald-600" />
-                Farmer Database &amp; Field Profiles
-              </h2>
-              <p className="text-xs text-slate-500 font-medium mt-1">
-                Registered farmers under {currentUser.role === 'Admin' ? 'all territories' : currentUser.areaName || currentUser.district || currentUser.state} • {farmerList.length} Farmers registered
+          {/* ── HEADER BANNER ── */}
+          <div className="bg-gradient-to-r from-slate-900 via-emerald-950 to-slate-900 text-white rounded-3xl p-6 shadow-xl border border-emerald-500/20 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-2">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <User className="w-6 h-6 text-emerald-400" />
+                <h1 className="text-2xl font-black uppercase tracking-wide">Farmer Profiles</h1>
+                <span className="bg-emerald-500/20 text-emerald-300 text-xs font-bold px-2.5 py-1 rounded-lg border border-emerald-500/30">
+                  {currentUser.role} View
+                </span>
+              </div>
+              <p className="text-xs text-emerald-200">
+                {currentUser.role === 'Admin'
+                  ? `All territories — ${farmerList.length} farmers registered`
+                  : `Scope: ${currentUser.areaName || currentUser.district || currentUser.state || 'Your territory'} — ${farmerList.length} farmers registered`}
               </p>
             </div>
-
-            <div className="relative w-full md:w-80">
+            {/* Search bar inside banner on right */}
+            <div className="relative w-full md:w-80 shrink-0">
               <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
               <input
                 type="text"
-                placeholder="Search by farmer, mobile, village..."
+                placeholder="Search farmer, mobile, village..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:bg-white focus:ring-2 focus:ring-emerald-500 outline-none transition"
+                className="w-full pl-10 pr-10 py-2.5 bg-white/10 backdrop-blur border border-white/20 rounded-xl text-xs font-semibold text-white placeholder:text-white/50 focus:bg-white/20 focus:ring-2 focus:ring-emerald-400 outline-none transition"
               />
               {searchQuery && (
                 <button
                   onClick={() => setSearchQuery('')}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 font-bold text-xs"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-white/60 hover:text-white font-bold text-xs"
                 >
                   ✕
                 </button>
