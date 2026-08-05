@@ -69,6 +69,10 @@ export const MobileRegistrationApp: React.FC<MobileRegistrationAppProps> = ({
   const [successRecord, setSuccessRecord] = useState<Installation | null>(null);
   const [isMonitoringModalOpen, setIsMonitoringModalOpen] = useState(false);
   const [isQrScannerOpen, setIsQrScannerOpen] = useState(false);
+  const [currentStep, setCurrentStep] = useState(1);
+  const [pipeSearch, setPipeSearch] = useState('');
+  const [showPipeDropdown, setShowPipeDropdown] = useState(false);
+  const [gpsIsFallback, setGpsIsFallback] = useState(false);
 
   // Farmer Mode: 'new' or 'existing'
   const [farmerSelectionMode, setFarmerSelectionMode] = useState<'new' | 'existing'>('new');
@@ -102,11 +106,54 @@ export const MobileRegistrationApp: React.FC<MobileRegistrationAppProps> = ({
     setFormError(null);
     setGpsData(null);
     setGpsError(null);
+    setGpsIsFallback(false);
     setGeoAutoFilledNotice(null);
     setPhotoUrl(undefined);
+    setCurrentStep(1);
+    setPipeSearch('');
   }, [activePipeId]);
 
-  // Helper to update GPS and reverse geocode location
+  const filteredPipes = pipes.filter((p) => {
+    const term = pipeSearch.trim().toLowerCase();
+    if (!term) return true;
+    return (
+      p.Pipe_ID.toLowerCase().includes(term) ||
+      (p.Farmer_Name || '').toLowerCase().includes(term) ||
+      p.Status.toLowerCase().includes(term)
+    );
+  });
+
+  const validateStep = (step: number): string | null => {
+    if (step === 1) {
+      const cleanMobile = mobile.replace(/\D/g, '');
+      if (!farmerName.trim()) return 'Farmer name is required.';
+      if (!/^[6-9]\d{9}$/.test(cleanMobile)) return 'Enter a valid 10-digit Indian mobile number.';
+      if (!village.trim() || !mandal.trim() || !district.trim()) return 'Village, Mandal, and District are required.';
+    }
+    if (step === 2) {
+      if (!plotSize || Number(plotSize) <= 0) return 'Plot size must be greater than zero.';
+      if (irrigationSource === 'Other' && !irrigationSourceOther.trim()) return 'Please specify the irrigation source.';
+    }
+    if (step === 3) {
+      if (!gpsData) return 'GPS location is required. Tap "Capture Current Location" first.';
+      if (gpsIsFallback) return 'Real GPS coordinates are required. Enable location permissions and recapture.';
+    }
+    return null;
+  };
+
+  const handleNextStep = () => {
+    const err = validateStep(currentStep);
+    if (err) { setFormError(err); return; }
+    setFormError(null);
+    setCurrentStep((s) => Math.min(3, s + 1));
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handlePrevStep = () => {
+    setFormError(null);
+    setCurrentStep((s) => Math.max(1, s - 1));
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
   const processCapturedGPS = async (lat: number, lng: number, accuracy: number) => {
     setGpsData({
       latitude: lat,

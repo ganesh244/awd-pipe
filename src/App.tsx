@@ -17,6 +17,15 @@ import { ReportsExport } from './components/ReportsExport';
 import { FarmerProfiles } from './components/FarmerProfiles';
 import { Home } from './components/Home';
 import { SyncQueueManager } from './components/SyncQueueManager';
+import { AppLoadingScreen } from './components/AppLoadingScreen';
+
+const apiFetch = (url: RequestInfo | URL, options?: RequestInit) => {
+  const token = localStorage.getItem("awd_auth_token");
+  const headers = new Headers(options?.headers);
+  if (token) headers.set("Authorization", `Bearer ${token}`);
+  return fetch(url, { ...options, headers });
+};
+
 
 const HIERARCHY_STORAGE_KEY = 'awd_hierarchy_snapshot';
 const SESSION_STORAGE_KEY = 'awd_current_user';
@@ -160,6 +169,7 @@ export default function App() {
   
   // Database Connection Status State
   const [dbStatus, setDbStatus] = useState<'cloud' | 'local' | 'loading'>('loading');
+  const [isAppReady, setIsAppReady] = useState(false);
   const [hierarchyDirty, setHierarchyDirty] = useState<boolean>(() => localStorage.getItem(HIERARCHY_DIRTY_KEY) === 'true');
   const [isSavingHierarchy, setIsSavingHierarchy] = useState<boolean>(false);
 
@@ -225,7 +235,7 @@ export default function App() {
   };
 
   const refreshHierarchyFromServer = async () => {
-    const res = await fetch('/api/init');
+    const res = await apiFetch('/api/init');
     const data = await res.json();
     if (!res.ok) {
       throw new Error(data?.error || `HTTP ${res.status}`);
@@ -301,13 +311,29 @@ export default function App() {
 
   // Fetch initial data from Backend API / MongoDB on mount
   useEffect(() => {
-    refreshHierarchyFromServer().catch((err) => {
-      console.warn('Backend API not reachable, using local draft if present:', err);
-      if (persistedHierarchy) {
-        applyHierarchySnapshot(persistedHierarchy);
-      }
-      setDbStatus('local');
-    });
+    refreshHierarchyFromServer()
+      .catch((err) => {
+        console.warn('Backend API not reachable, using local draft if present:', err);
+        if (persistedHierarchy) {
+          applyHierarchySnapshot(persistedHierarchy);
+        }
+        setDbStatus('local');
+      })
+      .finally(() => setIsAppReady(true));
+  }, []);
+
+  // Reflect real browser network state alongside manual offline toggle
+  useEffect(() => {
+    const syncNetwork = () => {
+      if (!navigator.onLine) setIsOnline(false);
+    };
+    window.addEventListener('online', syncNetwork);
+    window.addEventListener('offline', () => setIsOnline(false));
+    syncNetwork();
+    return () => {
+      window.removeEventListener('online', syncNetwork);
+      window.removeEventListener('offline', () => setIsOnline(false));
+    };
   }, []);
 
   // URL Parameter Detection: Check if ?id=AWD-XXXX exists in current URL
@@ -376,7 +402,7 @@ export default function App() {
     setAreas(nextAreas);
     setHierarchyDirty(true);
     void syncHierarchyMutation(() =>
-      fetch('/api/users', {
+      apiFetch('/api/users', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ newUser: scopedNewUser }),
@@ -399,7 +425,7 @@ export default function App() {
       setCurrentUser(scopedUpdatedUser);
     }
     void syncHierarchyMutation(() =>
-      fetch(`/api/users/${updatedUser.id}`, {
+      apiFetch(`/api/users/${updatedUser.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ updatedUser: scopedUpdatedUser }),
@@ -420,7 +446,7 @@ export default function App() {
       setCurrentUser(null);
     }
     void syncHierarchyMutation(() =>
-      fetch(`/api/users/${userId}`, {
+      apiFetch(`/api/users/${userId}`, {
         method: 'DELETE',
       })
     );
@@ -446,7 +472,7 @@ export default function App() {
     );
 
     if (isOnline) {
-      fetch('/api/installations', {
+      apiFetch('/api/installations', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ installation: newInstallation, updatedPipe }),
@@ -480,7 +506,7 @@ export default function App() {
     );
 
     if (isOnline) {
-      fetch(`/api/installations/${encodeURIComponent(updated.Pipe_ID)}`, {
+      apiFetch(`/api/installations/${encodeURIComponent(updated.Pipe_ID)}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(updated),
@@ -509,7 +535,7 @@ export default function App() {
     );
 
     if (isOnline) {
-      fetch(`/api/installations/${encodeURIComponent(pipeId)}`, {
+      apiFetch(`/api/installations/${encodeURIComponent(pipeId)}`, {
         method: 'DELETE',
       }).catch((err) => console.error('Failed to delete installation on server:', err));
     }
@@ -527,7 +553,7 @@ export default function App() {
     }
 
     if (isOnline) {
-      fetch('/api/monitoring', {
+      apiFetch('/api/monitoring', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ record }),
@@ -541,23 +567,23 @@ export default function App() {
   };
 
   // Synchronize all offline items sequentially
-  const handleSyncAll = async () => {
-    if (!isOnline || offlineQueue.length === 0) return;
-    
+  const handleSyncAll = async (): Promise<{ synced: number; failed: number }> => {
+    if (!isOnline || offlineQueue.length === 0) return { synced: 0, failed: 0 };
+
     const pending = [...offlineQueue];
     const failedIds = new Set<string>();
-    
+
     for (const item of pending) {
       try {
         if (item.type === 'registration') {
-          const res = await fetch('/api/installations', {
+          const res = await apiFetch('/api/installations', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(item.payload),
           });
           if (!res.ok) throw new Error(`HTTP Error ${res.status}`);
         } else {
-          const res = await fetch('/api/monitoring', {
+          const res = await apiFetch('/api/monitoring', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ record: item.payload }),
@@ -571,9 +597,9 @@ export default function App() {
         failedIds.add(item.id);
       }
     }
-    
-    // Filter out successfully synced items
+
     setOfflineQueue((prev) => prev.filter(item => failedIds.has(item.id)));
+    return { synced: pending.length - failedIds.size, failed: failedIds.size };
   };
 
   const handleDeleteQueueItem = (id: string) => {
@@ -596,7 +622,7 @@ export default function App() {
       });
     }
     setPipes((prev) => [...prev, ...newPipes]);
-    fetch('/api/pipes/batch', {
+    apiFetch('/api/pipes/batch', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ newPipes }),
@@ -610,7 +636,7 @@ export default function App() {
     );
     
     if (isOnline) {
-      fetch(`/api/pipes/${pipeId}`, {
+      apiFetch(`/api/pipes/${pipeId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(updates),
@@ -628,7 +654,7 @@ export default function App() {
       prev.map((p) => (p.Batch_No === oldBatchNo ? { ...p, Batch_No: newBatchNo } : p))
     );
     if (isOnline) {
-      fetch('/api/pipes/batch/rename', {
+      apiFetch('/api/pipes/batch/rename', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ oldBatchNo, newBatchNo }),
@@ -640,7 +666,7 @@ export default function App() {
   const handleDeleteBatch = (batchNo: string) => {
     setPipes((prev) => prev.filter((p) => p.Batch_No !== batchNo));
     if (isOnline) {
-      fetch(`/api/pipes/batch/${batchNo}`, {
+      apiFetch(`/api/pipes/batch/${batchNo}`, {
         method: 'DELETE',
       }).catch((err) => console.error('Failed to delete batch:', err));
     }
@@ -649,7 +675,7 @@ export default function App() {
   // Handler: Generated Custom QR Batch
   const handleCustomBatchGenerated = (newPipes: AWDPipe[]) => {
     setPipes((prev) => [...newPipes, ...prev]);
-    fetch('/api/pipes/batch', {
+    apiFetch('/api/pipes/batch', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ newPipes }),
@@ -661,7 +687,7 @@ export default function App() {
     setHierarchyDirty(true);
     if (isOnline) {
       void syncHierarchyMutation(() =>
-        fetch('/api/hierarchy/states', {
+        apiFetch('/api/hierarchy/states', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(newState),
@@ -679,7 +705,7 @@ export default function App() {
     setHierarchyDirty(true);
     if (isOnline) {
       void syncHierarchyMutation(() =>
-        fetch('/api/hierarchy/districts', {
+        apiFetch('/api/hierarchy/districts', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(districtWithState),
@@ -699,7 +725,7 @@ export default function App() {
     setHierarchyDirty(true);
     if (isOnline) {
       void syncHierarchyMutation(() =>
-        fetch('/api/hierarchy/areas', {
+        apiFetch('/api/hierarchy/areas', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(areaWithParents),
@@ -729,7 +755,7 @@ export default function App() {
 
     if (isOnline) {
       void syncHierarchyMutation(() =>
-        fetch(`/api/hierarchy/states/${stateId}`, { method: 'DELETE' })
+        apiFetch(`/api/hierarchy/states/${stateId}`, { method: 'DELETE' })
       );
     }
   };
@@ -751,7 +777,7 @@ export default function App() {
 
     if (isOnline) {
       void syncHierarchyMutation(() =>
-        fetch(`/api/hierarchy/districts/${districtId}`, { method: 'DELETE' })
+        apiFetch(`/api/hierarchy/districts/${districtId}`, { method: 'DELETE' })
       );
     }
   };
@@ -768,7 +794,7 @@ export default function App() {
 
     if (isOnline) {
       void syncHierarchyMutation(() =>
-        fetch(`/api/hierarchy/areas/${areaId}`, { method: 'DELETE' })
+        apiFetch(`/api/hierarchy/areas/${areaId}`, { method: 'DELETE' })
       );
     }
   };
@@ -799,7 +825,7 @@ export default function App() {
     setHierarchyDirty(true);
     if (isOnline) {
       void syncHierarchyMutation(() =>
-        fetch('/api/hierarchy/state', {
+        apiFetch('/api/hierarchy/state', {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(updated),
@@ -835,7 +861,7 @@ export default function App() {
     setHierarchyDirty(true);
     if (isOnline) {
       void syncHierarchyMutation(() =>
-        fetch('/api/hierarchy/district', {
+        apiFetch('/api/hierarchy/district', {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(updated),
@@ -861,7 +887,7 @@ export default function App() {
     setHierarchyDirty(true);
     if (isOnline) {
       void syncHierarchyMutation(() =>
-        fetch('/api/hierarchy/area', {
+        apiFetch('/api/hierarchy/area', {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(updated),
@@ -1049,7 +1075,7 @@ export default function App() {
     setIsSavingHierarchy(true);
     try {
       const saved = await syncHierarchyMutation(() =>
-        fetch('/api/hierarchy/save', {
+        apiFetch('/api/hierarchy/save', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ users, states, districts, areas }),
@@ -1066,6 +1092,10 @@ export default function App() {
     }
   };
 
+  if (!isAppReady) {
+    return <AppLoadingScreen />;
+  }
+
   // Render Login Gate if no user is active
   if (!currentUser) {
     return <LoginScreen users={users} onLogin={(user) => setCurrentUser(user)} />;
@@ -1080,7 +1110,12 @@ export default function App() {
         setActiveTab={setActiveTab}
         activePipeId={activePipeId}
         currentUser={currentUser}
-        onLogout={() => setCurrentUser(null)}
+        onLogout={() => {
+          setCurrentUser(null);
+          localStorage.removeItem('awd_auth_token');
+          localStorage.removeItem(HIERARCHY_STORAGE_KEY);
+          localStorage.removeItem('awd_offline_queue');
+        }}
         onOpenGenerateModal={() => setIsGenerateModalOpen(true)}
         isOnline={isOnline}
         onToggleOnline={() => setIsOnline(!isOnline)}

@@ -2,6 +2,10 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import mongoose from 'mongoose';
+import jwt from 'jsonwebtoken';
+import bcrypt from 'bcryptjs';
+import rateLimit from 'express-rate-limit';
+
 import { INITIAL_PIPES, INITIAL_INSTALLATIONS, INITIAL_MONITORING } from './src/data/initialData.ts';
 import { INITIAL_STATES, INITIAL_DISTRICTS, INITIAL_AREAS, INITIAL_USERS } from './src/data/hierarchyData.ts';
 
@@ -178,10 +182,125 @@ const connectDB = async () => {
 
 connectDB();
 
+
+const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret-key-for-dev';
+
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  message: { error: 'Too many login attempts' }
+});
+
+const authenticateToken = (req, res, next) => {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
+  if (!token) return res.status(401).json({ error: 'Authentication required' });
+  jwt.verify(token, JWT_SECRET, (err, user) => {
+    if (err) return res.status(403).json({ error: 'Invalid or expired token' });
+    req.user = user;
+    next();
+  });
+};
+
+const getScopeFilter = async (user) => {
+  if (!user) return { mongo: { _id: null }, memory: () => false };
+  
+  if (user.role === 'Admin') {
+    return { mongo: {}, memory: () => true };
+  } else if (user.role === 'State Manager') {
+    const s = user.state || '';
+    return { 
+      mongo: { State: new RegExp('^' + s.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&') + '$', 'i') }, 
+      memory: (item) => (item.State || '').toLowerCase() === s.toLowerCase()
+    };
+  } else if (user.role === 'District Manager') {
+    const d = user.district || '';
+    return { 
+      mongo: { District: new RegExp('^' + d.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&') + '$', 'i') }, 
+      memory: (item) => (item.District || '').toLowerCase() === d.toLowerCase()
+    };
+  } else {
+    let allUsers = [];
+    if (isMongoConnected) {
+      allUsers = await User.find({}).lean();
+    } else {
+      allUsers = inMemoryData.users;
+    }
+    
+    const subUserIds = new Set([user.id]);
+    let added = true;
+    while (added) {
+      added = false;
+      for (const u of allUsers) {
+        if (subUserIds.has(u.id)) continue;
+        const directReport = u.reportsToId && subUserIds.has(u.reportsToId);
+        const createdReport = u.createdById && subUserIds.has(u.createdById);
+        if (directReport || createdReport) {
+          subUserIds.add(u.id);
+          added = true;
+        }
+      }
+    }
+    
+    const subIdsArray = Array.from(subUserIds);
+    const subNames = allUsers.filter(u => subUserIds.has(u.id)).map(u => (u.name || '').toLowerCase().replace(/[^a-z0-9]/g, '')).filter(Boolean);
+    const nameRegexes = subNames.map(n => new RegExp(n.split('').join('.*'), 'i'));
+
+    return {
+      mongo: {
+        $or: [
+          { Registered_By_User_ID: { $in: subIdsArray } },
+          { Visited_By_User_ID: { $in: subIdsArray } },
+          ...(user.role === 'Area Manager' && user.areaName ? [{ Area: new RegExp('^' + user.areaName.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&') + '$', 'i') }] : []),
+          ...(nameRegexes.length > 0 ? [{ Installed_By: { $in: nameRegexes } }] : [])
+        ]
+      },
+      memory: (item) => {
+        if (item.Registered_By_User_ID && subUserIds.has(item.Registered_By_User_ID)) return true;
+        if (item.Visited_By_User_ID && subUserIds.has(item.Visited_By_User_ID)) return true;
+        if (user.role === 'Area Manager' && item.Area && item.Area.toLowerCase() === (user.areaName || '').toLowerCase()) return true;
+        if (item.Installed_By) {
+          const iNorm = (item.Installed_By || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+          if (subNames.some(sName => sName.length >= 2 && (iNorm.includes(sName) || sName.includes(iNorm)))) return true;
+        }
+        return false;
+      }
+    };
+  }
+};
+
 // API Endpoints
 
+app.post('/api/login', loginLimiter, async (req, res) => {
+  const { username, password } = req.body;
+  if (!username || !password) return res.status(400).json({ error: 'Required' });
+  try {
+    let user = null;
+    if (isMongoConnected) user = await User.findOne({ username: username.trim() }).lean();
+    else user = inMemoryData.users.find((u) => u.username === username.trim());
+    
+    if (!user) return res.status(401).json({ error: 'Invalid credentials' });
+    
+    let isValid = false;
+    if (user.passwordHash) isValid = await bcrypt.compare(password, user.passwordHash);
+    else if (user.password === password) isValid = true;
+    
+    if (!isValid) return res.status(401).json({ error: 'Invalid credentials' });
+    
+    const token = jwt.sign(
+      { id: user.id, role: user.role, state: user.state, district: user.district, areaName: user.areaName, name: user.name },
+      JWT_SECRET,
+      { expiresIn: '4h' }
+    );
+    res.json({ token, user });
+  } catch (err) {
+    res.status(500).json({ error: 'Login failed' });
+  }
+});
+
+
 // 1. GET /api/init -> Load all initial data for frontend
-app.get('/api/init', async (req, res) => {
+app.get('/api/init', authenticateToken, async (req, res) => {
   try {
     if (!isMongoConnected) {
       await connectDB();
@@ -233,7 +352,9 @@ app.get('/api/init', async (req, res) => {
 });
 
 // 2. POST /api/installations -> Create new field registration and update pipe
-app.post('/api/installations', async (req, res) => {
+app.post('/api/installations', authenticateToken, async (req, res) => {
+  const scope = await getScopeFilter(req.user);
+  if (req.body.installation && !scope.memory(req.body.installation)) return res.status(403).json({ error: 'Out of scope' });
   const { installation, updatedPipe } = req.body;
   try {
     if (isMongoConnected) {
@@ -253,7 +374,8 @@ app.post('/api/installations', async (req, res) => {
 });
 
 // 2b. PUT /api/installations/:pipeId -> Update farmer installation details
-app.put('/api/installations/:pipeId', async (req, res) => {
+app.put('/api/installations/:pipeId', authenticateToken, async (req, res) => {
+  const scope = await getScopeFilter(req.user);
   const { pipeId } = req.params;
   const targetId = decodeURIComponent(pipeId).trim();
   const updated = req.body;
@@ -264,7 +386,7 @@ app.put('/api/installations/:pipeId', async (req, res) => {
         ? { $or: [{ Pipe_ID: targetId }, { _id: targetId }] }
         : { Pipe_ID: new RegExp(`^${targetId.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&')}$`, 'i') };
 
-      await Installation.findOneAndUpdate(query, updated, { new: true });
+      await Installation.findOneAndUpdate({ $and: [query, scope.mongo] }, updated, { new: true });
       await Pipe.findOneAndUpdate(
         { Pipe_ID: new RegExp(`^${targetId.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&')}$`, 'i') },
         {
@@ -300,7 +422,8 @@ app.put('/api/installations/:pipeId', async (req, res) => {
 });
 
 // 2c. DELETE /api/installations/:pipeId -> Delete farmer installation record
-app.delete('/api/installations/:pipeId', async (req, res) => {
+app.delete('/api/installations/:pipeId', authenticateToken, async (req, res) => {
+  const scope = await getScopeFilter(req.user);
   const { pipeId } = req.params;
   const targetId = decodeURIComponent(pipeId).trim();
   try {
@@ -310,7 +433,7 @@ app.delete('/api/installations/:pipeId', async (req, res) => {
         ? { $or: [{ Pipe_ID: targetId }, { _id: targetId }] }
         : { Pipe_ID: new RegExp(`^${targetId.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&')}$`, 'i') };
 
-      const foundInst = await Installation.findOne(query);
+      const foundInst = await Installation.findOne({ $and: [query, scope.mongo] });
       const actualPipeId = foundInst ? foundInst.Pipe_ID : targetId;
 
       await Installation.deleteMany(query);
@@ -393,7 +516,9 @@ app.delete('/api/installations/clear/all', async (req, res) => {
 });
 
 // 3. POST /api/monitoring -> Save monitoring log & update pipe condition
-app.post('/api/monitoring', async (req, res) => {
+app.post('/api/monitoring', authenticateToken, async (req, res) => {
+  const scope = await getScopeFilter(req.user);
+  if (req.body.record && !scope.memory(req.body.record)) return res.status(403).json({ error: 'Out of scope' });
   const { record } = req.body;
   try {
     if (isMongoConnected) {
@@ -417,7 +542,8 @@ app.post('/api/monitoring', async (req, res) => {
 });
 
 // 4. POST /api/pipes/batch -> Insert newly generated pipe batches
-app.post('/api/pipes/batch', async (req, res) => {
+app.post('/api/pipes/batch', authenticateToken, async (req, res) => {
+  if (req.user.role !== 'Admin') return res.status(403).json({ error: 'Admin only' });
   const { newPipes } = req.body;
   try {
     if (isMongoConnected) {
@@ -433,12 +559,13 @@ app.post('/api/pipes/batch', async (req, res) => {
 });
 
 // 4.5 PUT /api/pipes/:id -> Update an existing pipe
-app.put('/api/pipes/:id', async (req, res) => {
+app.put('/api/pipes/:id', authenticateToken, async (req, res) => {
+  const scope = await getScopeFilter(req.user);
   const pipeId = req.params.id;
   const updates = req.body;
   try {
     if (isMongoConnected) {
-      await Pipe.findOneAndUpdate({ Pipe_ID: pipeId }, updates);
+      await Pipe.findOneAndUpdate({ $and: [{ Pipe_ID: pipeId }, scope.mongo] }, updates);
     } else {
       inMemoryData.pipes = inMemoryData.pipes.map((p) =>
         p.Pipe_ID === pipeId ? { ...p, ...updates } : p
@@ -452,7 +579,8 @@ app.put('/api/pipes/:id', async (req, res) => {
 });
 
 // 4.6 PUT /api/pipes/batch/rename -> Rename a batch
-app.put('/api/pipes/batch/rename', async (req, res) => {
+app.put('/api/pipes/batch/rename', authenticateToken, async (req, res) => {
+  if (req.user.role !== 'Admin') return res.status(403).json({ error: 'Admin only' });
   const { oldBatchNo, newBatchNo } = req.body;
   try {
     if (isMongoConnected) {
@@ -470,7 +598,8 @@ app.put('/api/pipes/batch/rename', async (req, res) => {
 });
 
 // 4.7 DELETE /api/pipes/batch/:batchNo -> Delete a batch
-app.delete('/api/pipes/batch/:batchNo', async (req, res) => {
+app.delete('/api/pipes/batch/:batchNo', authenticateToken, async (req, res) => {
+  if (req.user.role !== 'Admin') return res.status(403).json({ error: 'Admin only' });
   const batchNo = req.params.batchNo;
   try {
     if (isMongoConnected) {
@@ -486,7 +615,7 @@ app.delete('/api/pipes/batch/:batchNo', async (req, res) => {
 });
 
 // 5. POST /api/users -> Add user to hierarchy
-app.post('/api/users', async (req, res) => {
+app.post('/api/users', authenticateToken, async (req, res, next) => { if (req.user.role !== 'Admin') return res.status(403).json({error: 'Admin only'}); return next(); }, async (req, res) => {
   const { newUser } = req.body;
   try {
     if (isMongoConnected) {
@@ -502,7 +631,7 @@ app.post('/api/users', async (req, res) => {
 });
 
 // 6. PUT /api/users/:id -> Update user credentials/roles
-app.put('/api/users/:id', async (req, res) => {
+app.put('/api/users/:id', authenticateToken, async (req, res, next) => { if (req.user.role !== 'Admin') return res.status(403).json({error: 'Admin only'}); return next(); }, async (req, res) => {
   const { id } = req.params;
   const { updatedUser } = req.body;
   try {
@@ -519,7 +648,7 @@ app.put('/api/users/:id', async (req, res) => {
 });
 
 // 6. DELETE /api/users/:id -> Delete a user
-app.delete('/api/users/:id', async (req, res) => {
+app.delete('/api/users/:id', authenticateToken, async (req, res, next) => { if (req.user.role !== 'Admin') return res.status(403).json({error: 'Admin only'}); return next(); }, async (req, res) => {
   const userId = req.params.id;
   try {
     if (isMongoConnected) {
@@ -541,7 +670,7 @@ app.delete('/api/users/:id', async (req, res) => {
 });
 
 // 7. PUT /api/hierarchy/state -> Update a state
-app.put('/api/hierarchy/state', async (req, res) => {
+app.put('/api/hierarchy/state', authenticateToken, async (req, res, next) => { if (req.user.role !== 'Admin') return res.status(403).json({error: 'Admin only'}); return next(); }, async (req, res) => {
   const { id, name, managerId, managerName } = req.body;
   try {
     if (isMongoConnected) {
@@ -565,7 +694,7 @@ app.put('/api/hierarchy/state', async (req, res) => {
 });
 
 // 8. PUT /api/hierarchy/district -> Update a district
-app.put('/api/hierarchy/district', async (req, res) => {
+app.put('/api/hierarchy/district', authenticateToken, async (req, res, next) => { if (req.user.role !== 'Admin') return res.status(403).json({error: 'Admin only'}); return next(); }, async (req, res) => {
   const { id, name, stateId, stateName, managerId, managerName } = req.body;
   try {
     if (isMongoConnected) {
@@ -594,7 +723,7 @@ app.put('/api/hierarchy/district', async (req, res) => {
 });
 
 // 9. PUT /api/hierarchy/area -> Update an area
-app.put('/api/hierarchy/area', async (req, res) => {
+app.put('/api/hierarchy/area', authenticateToken, async (req, res, next) => { if (req.user.role !== 'Admin') return res.status(403).json({error: 'Admin only'}); return next(); }, async (req, res) => {
   const { id, name, districtId, districtName, stateName, managerId, managerName } = req.body;
   try {
     if (isMongoConnected) {
@@ -620,7 +749,7 @@ app.put('/api/hierarchy/area', async (req, res) => {
 });
 
 // POST routes for creation
-app.post('/api/hierarchy/states', async (req, res) => {
+app.post('/api/hierarchy/states', authenticateToken, async (req, res, next) => { if (req.user.role !== 'Admin') return res.status(403).json({error: 'Admin only'}); return next(); }, async (req, res) => {
   try {
     const newState = req.body;
     if (isMongoConnected) {
@@ -634,7 +763,7 @@ app.post('/api/hierarchy/states', async (req, res) => {
   }
 });
 
-app.post('/api/hierarchy/districts', async (req, res) => {
+app.post('/api/hierarchy/districts', authenticateToken, async (req, res, next) => { if (req.user.role !== 'Admin') return res.status(403).json({error: 'Admin only'}); return next(); }, async (req, res) => {
   try {
     const newDistrict = req.body;
     if (isMongoConnected) {
@@ -648,7 +777,7 @@ app.post('/api/hierarchy/districts', async (req, res) => {
   }
 });
 
-app.post('/api/hierarchy/areas', async (req, res) => {
+app.post('/api/hierarchy/areas', authenticateToken, async (req, res, next) => { if (req.user.role !== 'Admin') return res.status(403).json({error: 'Admin only'}); return next(); }, async (req, res) => {
   try {
     const newArea = req.body;
     if (isMongoConnected) {
@@ -663,7 +792,7 @@ app.post('/api/hierarchy/areas', async (req, res) => {
 });
 
 // DELETE routes
-app.delete('/api/hierarchy/states/:id', async (req, res) => {
+app.delete('/api/hierarchy/states/:id', authenticateToken, async (req, res, next) => { if (req.user.role !== 'Admin') return res.status(403).json({error: 'Admin only'}); return next(); }, async (req, res) => {
   try {
     const { id } = req.params;
     if (isMongoConnected) {
@@ -757,7 +886,7 @@ app.delete('/api/hierarchy/states/:id', async (req, res) => {
   }
 });
 
-app.delete('/api/hierarchy/districts/:id', async (req, res) => {
+app.delete('/api/hierarchy/districts/:id', authenticateToken, async (req, res, next) => { if (req.user.role !== 'Admin') return res.status(403).json({error: 'Admin only'}); return next(); }, async (req, res) => {
   try {
     const { id } = req.params;
     if (isMongoConnected) {
@@ -806,7 +935,7 @@ app.delete('/api/hierarchy/districts/:id', async (req, res) => {
   }
 });
 
-app.delete('/api/hierarchy/areas/:id', async (req, res) => {
+app.delete('/api/hierarchy/areas/:id', authenticateToken, async (req, res, next) => { if (req.user.role !== 'Admin') return res.status(403).json({error: 'Admin only'}); return next(); }, async (req, res) => {
   try {
     const { id } = req.params;
     if (isMongoConnected) {
@@ -844,7 +973,7 @@ app.delete('/api/hierarchy/areas/:id', async (req, res) => {
   }
 });
 
-app.post('/api/hierarchy/save', async (req, res) => {
+app.post('/api/hierarchy/save', authenticateToken, async (req, res, next) => { if (req.user.role !== 'Admin') return res.status(403).json({error: 'Admin only'}); return next(); }, async (req, res) => {
   const { users, states, districts, areas } = req.body;
   try {
     if (isMongoConnected) {

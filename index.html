@@ -9,7 +9,7 @@
         try {
           var params = new URLSearchParams(window.location.search);
           if (params.has('id')) {
-            var savedUser = localStorage.getItem('awd_user_session_v1');
+            var savedUser = localStorage.getItem('awd_current_user');
             if (!savedUser) {
               window.location.replace('https://drreddysfoundation.org/');
             }
