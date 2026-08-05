@@ -204,3 +204,79 @@ input:focus, select:focus, textarea:focus {
 .badge-red { background: #fee2e2; color: #dc2626; border: 1px solid #fecaca; }
 .badge-slate { background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; }
 .badge-violet { background: #ede9fe; color: #7c3aed; border: 1px solid #ddd6fe; }
+
+/* ── Mobile Optimisations ── */
+
+/* Prevent horizontal overflow on mobile */
+html, body {
+  overflow-x: hidden;
+  max-width: 100vw;
+}
+
+/* Safe-area insets for notched phones (iPhone etc.) */
+.safe-top    { padding-top:    env(safe-area-inset-top, 0px); }
+.safe-bottom { padding-bottom: env(safe-area-inset-bottom, 0px); }
+
+/* Minimum touch target size (Apple HIG: 44×44pt) */
+.touch-target {
+  min-height: 44px;
+  min-width:  44px;
+  display:    flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Mobile-specific tap highlight removal */
+* { -webkit-tap-highlight-color: transparent; }
+
+/* Prevent text zoom on input focus on iOS */
+input, select, textarea {
+  font-size: max(16px, 1em);
+}
+
+/* Sub-tab bar scrollable on mobile */
+@media (max-width: 640px) {
+  .sub-tab-bar {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    flex-wrap: nowrap;
+    width: 100%;
+    max-width: 100%;
+    scrollbar-width: none;
+  }
+  .sub-tab-bar::-webkit-scrollbar { display: none; }
+
+  .sub-tab-btn {
+    padding: 0.45rem 0.75rem;
+    font-size: 0.75rem;
+    flex-shrink: 0;
+  }
+
+  /* Compact stat cards on mobile */
+  .stat-card {
+    padding: 0.875rem;
+  }
+}
+
+/* Hierarchy 3-column grid — stack on mobile */
+@media (max-width: 768px) {
+  .hierarchy-cols {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* Gradient banner text shrinks on mobile */
+@media (max-width: 480px) {
+  .banner-title {
+    font-size: 1.25rem !important;
+  }
+}
+
+/* Mobile card-hover — disable translateY to avoid layout shift */
+@media (hover: none) {
+  .card-hover:hover {
+    transform: none;
+    box-shadow: none;
+  }
+}
+
