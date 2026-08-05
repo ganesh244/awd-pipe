@@ -119,29 +119,43 @@ export const HierarchyManager: React.FC<HierarchyManagerProps> = ({
   const [addingHierarchyType, setAddingHierarchyType] = useState<'state' | 'district' | 'area' | null>(null);
   const [newHierarchyName, setNewHierarchyName] = useState('');
 
-  // Filter lists based on role and selection
+  const norm = (s?: string) => (s || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+  const matchLoc = (a?: string, b?: string) => {
+    if (!a || !b) return false;
+    const na = norm(a); const nb = norm(b);
+    return na.length >= 2 && nb.length >= 2 && (na.includes(nb) || nb.includes(na));
+  };
+
+  // Filter lists based on role and selection — use both ID AND name matching for robustness
   const visibleStates = states.filter(st => {
     if (isAdmin) return true;
-    return st.name === currentUser.state;
-  });
-
-  const visibleDistricts = districts.filter(d => {
-    if (isDM || isAM) return d.name === currentUser.district;
-    if (d.stateId !== selectedStateId) return false;
-    if (isSM) return d.stateName === currentUser.state;
-    return true;
+    return matchLoc(st.name, currentUser.state);
   });
 
   const selectedState = states.find(s => s.id === selectedStateId);
   const selectedDistrict = districts.find(d => d.id === selectedDistrictId);
 
-  const visibleAreas = areas.filter(a => {
-    if (isAM) return a.name.trim().toLowerCase() === (currentUser.areaName || '').trim().toLowerCase();
-    if (selectedDistrictId && a.districtId === selectedDistrictId) return true;
-    if (selectedDistrict && a.districtName.trim().toLowerCase() === selectedDistrict.name.trim().toLowerCase()) return true;
-    if (!selectedDistrictId) return true;
-    return false;
-  });
+  const visibleDistricts = useMemo(() => {
+    if (isDM || isAM) return districts.filter(d => matchLoc(d.name, currentUser.district));
+    if (!selectedStateId && !selectedState) return [];
+    return districts.filter(d => {
+      // Match by stateId (if properly set)
+      if (selectedStateId && d.stateId === selectedStateId) return true;
+      // Fallback: match by stateName string
+      if (selectedState && matchLoc(d.stateName, selectedState.name)) return true;
+      return false;
+    });
+  }, [districts, selectedStateId, selectedState, isDM, isAM, currentUser.district]);
+
+  const visibleAreas = useMemo(() => {
+    if (isAM) return areas.filter(a => matchLoc(a.name, currentUser.areaName));
+    if (!selectedDistrictId && !selectedDistrict) return [];
+    return areas.filter(a => {
+      if (selectedDistrictId && a.districtId === selectedDistrictId) return true;
+      if (selectedDistrict && matchLoc(a.districtName, selectedDistrict.name)) return true;
+      return false;
+    });
+  }, [areas, selectedDistrictId, selectedDistrict, isAM, currentUser.areaName]);
   const availableStateOptions = useMemo(
     () => (isAdmin ? states : visibleStates),
     [isAdmin, states, visibleStates]
@@ -391,23 +405,27 @@ export const HierarchyManager: React.FC<HierarchyManagerProps> = ({
     if (addingHierarchyType === 'state' && onAddState) {
       onAddState({
         id: `state-${Date.now()}`,
-        name: newHierarchyName,
+        name: newHierarchyName.trim(),
+        code: newHierarchyName.trim().slice(0, 3).toUpperCase(),
         managerId: '',
         managerName: ''
       });
-    } else if (addingHierarchyType === 'district' && onAddDistrict && selectedStateId) {
+    } else if (addingHierarchyType === 'district' && onAddDistrict && selectedStateId && selectedState) {
       onAddDistrict({
         id: `dist-${Date.now()}`,
         stateId: selectedStateId,
-        name: newHierarchyName,
+        stateName: selectedState.name,
+        name: newHierarchyName.trim(),
         managerId: '',
         managerName: ''
       });
-    } else if (addingHierarchyType === 'area' && onAddArea && selectedDistrictId) {
+    } else if (addingHierarchyType === 'area' && onAddArea && selectedDistrictId && selectedDistrict) {
       onAddArea({
         id: `area-${Date.now()}`,
         districtId: selectedDistrictId,
-        name: newHierarchyName,
+        districtName: selectedDistrict.name,
+        stateName: selectedDistrict.stateName || selectedState?.name || '',
+        name: newHierarchyName.trim(),
         managerId: '',
         managerName: ''
       });
@@ -487,14 +505,16 @@ export const HierarchyManager: React.FC<HierarchyManagerProps> = ({
           <div className="space-y-2">
             {visibleStates.map((st) => {
               const isSelected = st.id === selectedStateId;
-              const stateUser = users.find((u) => u.role === 'State Manager' && u.state === st.name);
+              const stateUser = users.find((u) => u.role === 'State Manager' && matchLoc(u.state, st.name));
 
               return (
                 <div
                   key={st.id}
                   onClick={() => {
                     setSelectedStateId(st.id);
-                    const firstDist = districts.find((d) => d.stateId === st.id);
+                    setSelectedDistrictId(''); // Reset district when switching state
+                    // Auto-select first district (match by stateId or stateName)
+                    const firstDist = districts.find((d) => d.stateId === st.id || matchLoc(d.stateName, st.name));
                     if (firstDist) setSelectedDistrictId(firstDist.id);
                   }}
                   className={`p-3.5 rounded-xl border transition cursor-pointer flex items-center justify-between ${
@@ -571,7 +591,7 @@ export const HierarchyManager: React.FC<HierarchyManagerProps> = ({
                     </span>
                   </div>
                   <span className="text-xs font-bold font-mono text-amber-800 bg-amber-200/60 px-2.5 py-1 rounded-lg">
-                    {districts.filter((d) => d.stateId === st.id).length} Dists
+                    {districts.filter((d) => d.stateId === st.id || matchLoc(d.stateName, st.name)).length} Dists
                   </span>
                 </div>
               );
@@ -609,7 +629,7 @@ export const HierarchyManager: React.FC<HierarchyManagerProps> = ({
             ) : (
               visibleDistricts.map((dt) => {
                 const isSelected = dt.id === selectedDistrictId;
-                const distUser = users.find((u) => u.role === 'District Manager' && u.district === dt.name);
+                const distUser = users.find((u) => u.role === 'District Manager' && matchLoc(u.district, dt.name));
 
                 return (
                   <div
@@ -689,7 +709,7 @@ export const HierarchyManager: React.FC<HierarchyManagerProps> = ({
                       </span>
                     </div>
                     <span className="text-xs font-bold font-mono text-blue-800 bg-blue-200/60 px-2.5 py-1 rounded-lg">
-                      {areas.filter((a) => a.districtId === dt.id).length} Areas
+                      {areas.filter((a) => a.districtId === dt.id || matchLoc(a.districtName, dt.name)).length} Areas
                     </span>
                   </div>
                 );
@@ -727,8 +747,8 @@ export const HierarchyManager: React.FC<HierarchyManagerProps> = ({
               </p>
             ) : (
               visibleAreas.map((ar) => {
-                const areaUser = users.find((u) => u.role === 'Area Manager' && u.areaName && ar.name && u.areaName.trim().toLowerCase() === ar.name.trim().toLowerCase());
-                const fieldStaff = users.filter((u) => (u.role === 'CF' || u.role === 'JCF') && u.areaName && ar.name && u.areaName.trim().toLowerCase() === ar.name.trim().toLowerCase());
+                const areaUser = users.find((u) => u.role === 'Area Manager' && u.areaName && ar.name && matchLoc(u.areaName, ar.name));
+                const fieldStaff = users.filter((u) => (u.role === 'CF' || u.role === 'JCF') && u.areaName && ar.name && matchLoc(u.areaName, ar.name));
 
                 return (
                   <div key={ar.id} className="bg-slate-50 border border-slate-200 rounded-2xl p-4 space-y-3 shadow-sm">
