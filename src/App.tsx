@@ -312,8 +312,32 @@ export default function App() {
   // Handler: Add User to Hierarchy
   const handleAddUser = (newUser: User) => {
     const scopedNewUser = buildScopedUser(newUser, users, states, districts, areas);
+
+    // Auto-create AreaNode if user has an areaName that doesn't exist in areas array yet!
+    let updatedAreas = [...areas];
+    if (scopedNewUser.areaName && scopedNewUser.district) {
+      const existingArea = updatedAreas.find(
+        (a) => a.name.trim().toLowerCase() === scopedNewUser.areaName!.trim().toLowerCase()
+      );
+      if (!existingArea) {
+        const distObj = districts.find(
+          (d) => d.name.trim().toLowerCase() === scopedNewUser.district!.trim().toLowerCase()
+        );
+        const newAreaObj: AreaNode = {
+          id: `area-${Date.now()}`,
+          districtId: distObj?.id || `dist-${Date.now()}`,
+          districtName: scopedNewUser.district,
+          stateName: scopedNewUser.state || distObj?.stateName || 'Telangana',
+          name: scopedNewUser.areaName.trim(),
+          managerId: scopedNewUser.role === 'Area Manager' ? scopedNewUser.id : '',
+          managerName: scopedNewUser.role === 'Area Manager' ? scopedNewUser.name : '',
+        };
+        updatedAreas.push(newAreaObj);
+      }
+    }
+
     const nextUsers = [...users, scopedNewUser];
-    const { nextStates, nextDistricts, nextAreas } = syncHierarchyManagers(nextUsers, states, districts, areas);
+    const { nextStates, nextDistricts, nextAreas } = syncHierarchyManagers(nextUsers, states, districts, updatedAreas);
     setUsers(nextUsers);
     setStates(nextStates);
     setDistricts(nextDistricts);
