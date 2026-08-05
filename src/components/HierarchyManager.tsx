@@ -132,14 +132,16 @@ export const HierarchyManager: React.FC<HierarchyManagerProps> = ({
     return true;
   });
 
-  const visibleAreas = areas.filter(a => {
-    if (a.districtId !== selectedDistrictId) return false;
-    if (isAM) return a.name === currentUser.areaName;
-    return true;
-  });
-
   const selectedState = states.find(s => s.id === selectedStateId);
   const selectedDistrict = districts.find(d => d.id === selectedDistrictId);
+
+  const visibleAreas = areas.filter(a => {
+    if (isAM) return a.name.trim().toLowerCase() === (currentUser.areaName || '').trim().toLowerCase();
+    if (selectedDistrictId && a.districtId === selectedDistrictId) return true;
+    if (selectedDistrict && a.districtName.trim().toLowerCase() === selectedDistrict.name.trim().toLowerCase()) return true;
+    if (!selectedDistrictId) return true;
+    return false;
+  });
   const availableStateOptions = useMemo(
     () => (isAdmin ? states : visibleStates),
     [isAdmin, states, visibleStates]
@@ -725,8 +727,8 @@ export const HierarchyManager: React.FC<HierarchyManagerProps> = ({
               </p>
             ) : (
               visibleAreas.map((ar) => {
-                const areaUser = users.find((u) => u.role === 'Area Manager' && u.areaName === ar.name);
-                const fieldStaff = users.filter((u) => (u.role === 'CF' || u.role === 'JCF') && u.areaName === ar.name);
+                const areaUser = users.find((u) => u.role === 'Area Manager' && u.areaName && ar.name && u.areaName.trim().toLowerCase() === ar.name.trim().toLowerCase());
+                const fieldStaff = users.filter((u) => (u.role === 'CF' || u.role === 'JCF') && u.areaName && ar.name && u.areaName.trim().toLowerCase() === ar.name.trim().toLowerCase());
 
                 return (
                   <div key={ar.id} className="bg-slate-50 border border-slate-200 rounded-2xl p-4 space-y-3 shadow-sm">
