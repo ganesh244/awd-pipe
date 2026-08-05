@@ -314,7 +314,13 @@ app.get('/api/init', authenticateToken, async (req, res) => {
 
     if (isMongoConnected) {
       const users = await User.find({}).lean();
-      const pipes = await Pipe.find(scope.mongo).sort({ createdAt: -1 }).lean();
+      const pipeQuery = req.user.role === 'Admin' ? {} : {
+        $or: [
+          { Status: 'Available' },
+          scope.mongo
+        ]
+      };
+      const pipes = await Pipe.find(pipeQuery).sort({ createdAt: -1 }).lean();
       const installations = await Installation.find(scope.mongo).sort({ createdAt: -1 }).lean();
       const monitoringList = await MonitoringRecord.find(scope.mongo).sort({ createdAt: -1 }).lean();
       const states = await StateNode.find({}).lean();
@@ -343,11 +349,12 @@ app.get('/api/init', authenticateToken, async (req, res) => {
     } else {
       // In-memory fallback
       const cleanUsers = inMemoryData.users.map(({ password, passwordHash, ...rest }) => rest);
+      const filteredPipes = req.user.role === 'Admin' ? inMemoryData.pipes : inMemoryData.pipes.filter(p => p.Status === 'Available' || scope.memory(p));
       
       return res.json({
         dbStatus: 'local',
         users: cleanUsers,
-        pipes: inMemoryData.pipes.filter(scope.memory),
+        pipes: filteredPipes,
         installations: inMemoryData.installations.filter(scope.memory),
         monitoringList: inMemoryData.monitoringList.filter(scope.memory),
         states: inMemoryData.states,
