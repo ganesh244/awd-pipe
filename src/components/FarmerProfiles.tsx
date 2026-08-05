@@ -4,7 +4,7 @@ import {
   Search, User, Phone, MapPin, Sprout, Droplet, ClipboardList,
   CheckCircle2, AlertTriangle, ChevronDown, ChevronUp, Eye,
   BarChart3, Layers, Calendar, Ruler, Camera, X, Printer, ArrowRight,
-  ArrowDownToLine, FileText, ZoomIn, Edit2, Trash2
+  ArrowDownToLine, FileText, ZoomIn, Edit2, Trash2, UserCheck
 } from 'lucide-react';
 import { PhotoLightbox } from './PhotoLightbox';
 import { Installation, MonitoringRecord, User as UserType, AWDPipe } from '../types';
@@ -782,10 +782,14 @@ const FarmerFullProfile: React.FC<{
           </div>
           <div className="flex-1">
             <h2 className="text-2xl font-extrabold tracking-tight">{farmerName}</h2>
-            <div className="flex flex-wrap gap-3 mt-2 text-sm text-emerald-100">
+            <div className="flex flex-wrap gap-2 sm:gap-3 mt-2 text-sm text-emerald-100 items-center">
               <span className="flex items-center gap-1"><Phone className="w-3.5 h-3.5" />{rep.Mobile}</span>
               <span className="flex items-center gap-1"><MapPin className="w-3.5 h-3.5" />{rep.Village}, {rep.Mandal}, {rep.District}</span>
               {rep.Farmer_ID && <span className="flex items-center gap-1">ID: {rep.Farmer_ID}</span>}
+              <span className="flex items-center gap-1 bg-emerald-800/80 px-2.5 py-0.5 rounded-lg text-xs font-bold text-white border border-emerald-400/40">
+                <UserCheck className="w-3.5 h-3.5 text-emerald-300" />
+                Installed By: {rep.Installed_By || 'CF Officer'}
+              </span>
             </div>
           </div>
         </div>
@@ -1045,10 +1049,16 @@ export const FarmerProfiles: React.FC<FarmerProfilesProps> = ({
                     </span>
                   </div>
 
-                  <div className="mt-4 pt-3 border-t border-slate-100 space-y-1 text-xs text-slate-600">
+                  <div className="mt-4 pt-3 border-t border-slate-100 space-y-1.5 text-xs text-slate-600">
                     <div className="flex items-center justify-between">
                       <span className="text-slate-400 font-medium">Location:</span>
                       <span className="font-bold text-slate-800">{f.rep.Village}, {f.rep.Mandal}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-slate-400 font-medium">Installed By (CF):</span>
+                      <span className="font-extrabold text-blue-800 bg-blue-50 px-2 py-0.5 rounded-md border border-blue-200 text-[11px]">
+                        {f.rep.Installed_By || 'CF Officer'}
+                      </span>
                     </div>
                     <div className="flex items-center justify-between">
                       <span className="text-slate-400 font-medium">Total Plot Area:</span>
