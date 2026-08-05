@@ -109,16 +109,24 @@ const buildScopedUser = (
     return scopedUser;
   }
 
+  const norm = (s?: string) => (s || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+  const matchLoc = (a?: string, b?: string) => {
+    if (!a || !b) return true;
+    const na = norm(a);
+    const nb = norm(b);
+    return !na || !nb || na.includes(nb) || nb.includes(na);
+  };
+
   if (scopedUser.role === 'District Manager') {
-    const district = districts.find((item) => item.name === scopedUser.district) || districts.find((item) => item.stateName === scopedUser.state);
+    const district = districts.find((item) => matchLoc(item.name, scopedUser.district)) || districts.find((item) => matchLoc(item.stateName, scopedUser.state));
     scopedUser.district = district?.name || scopedUser.district;
     scopedUser.state = district?.stateName || scopedUser.state;
     scopedUser.areaName = undefined;
-    scopedUser.reportsToId = allUsers.find((user) => user.role === 'State Manager' && user.state === scopedUser.state)?.id;
+    scopedUser.reportsToId = scopedUser.reportsToId || allUsers.find((user) => user.role === 'State Manager' && matchLoc(user.state, scopedUser.state))?.id;
     return scopedUser;
   }
 
-  const area = areas.find((item) => item.name === scopedUser.areaName) || areas.find((item) => item.districtName === scopedUser.district);
+  const area = areas.find((item) => matchLoc(item.name, scopedUser.areaName)) || areas.find((item) => matchLoc(item.districtName, scopedUser.district));
   if (area) {
     scopedUser.areaName = area.name;
     scopedUser.district = area.districtName;
@@ -126,11 +134,12 @@ const buildScopedUser = (
   }
 
   if (scopedUser.role === 'Area Manager') {
-    scopedUser.reportsToId = allUsers.find((user) => user.role === 'District Manager' && user.district === scopedUser.district)?.id;
+    scopedUser.reportsToId = scopedUser.reportsToId || allUsers.find((user) => user.role === 'District Manager' && (matchLoc(user.district, scopedUser.district) || matchLoc(user.state, scopedUser.state)))?.id || allUsers.find((user) => user.role === 'State Manager' && matchLoc(user.state, scopedUser.state))?.id;
     return scopedUser;
   }
 
-  scopedUser.reportsToId = allUsers.find((user) => user.role === 'Area Manager' && user.areaName === scopedUser.areaName)?.id;
+  // CF / JCF
+  scopedUser.reportsToId = scopedUser.reportsToId || allUsers.find((user) => user.role === 'Area Manager' && (matchLoc(user.areaName, scopedUser.areaName) || matchLoc(user.district, scopedUser.district)))?.id || allUsers.find((user) => user.role === 'District Manager' && matchLoc(user.district, scopedUser.district))?.id;
   return scopedUser;
 };
 
@@ -811,6 +820,13 @@ export default function App() {
     const result = new Set<string>([managerId]);
     const norm = (s?: string) => (s || '').toLowerCase().replace(/[^a-z0-9]/g, '');
 
+    const matchLoc = (a?: string, b?: string) => {
+      if (!a || !b) return false;
+      const na = norm(a);
+      const nb = norm(b);
+      return na.length >= 2 && nb.length >= 2 && (na.includes(nb) || nb.includes(na));
+    };
+
     let added = true;
     while (added) {
       added = false;
@@ -819,11 +835,20 @@ export default function App() {
 
         const directReport = u.reportsToId && result.has(u.reportsToId);
         const createdReport = u.createdById && result.has(u.createdById);
-        const areaMatch = manager?.areaName && u.areaName && norm(u.areaName) === norm(manager.areaName);
-        const distMatch = manager?.district && u.district && norm(u.district) === norm(manager.district);
-        const stateMatch = manager?.state && u.state && norm(u.state) === norm(manager.state);
 
-        if (directReport || createdReport || areaMatch || distMatch || stateMatch) {
+        // Role-level hierarchy rules
+        let territoryReport = false;
+        if (manager) {
+          if (manager.role === 'State Manager') {
+            territoryReport = matchLoc(u.state, manager.state);
+          } else if (manager.role === 'District Manager') {
+            territoryReport = matchLoc(u.district, manager.district) || matchLoc(u.state, manager.state);
+          } else if (manager.role === 'Area Manager') {
+            territoryReport = matchLoc(u.areaName, manager.areaName) || matchLoc(u.district, manager.district);
+          }
+        }
+
+        if (directReport || createdReport || territoryReport) {
           result.add(u.id);
           added = true;
         }
