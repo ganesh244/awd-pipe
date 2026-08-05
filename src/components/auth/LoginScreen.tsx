@@ -18,14 +18,27 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ users, onLogin }) => {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    await new Promise(r => setTimeout(r, 400));
-    const found = users.find(u => u.username === username.trim() && u.password === password && u.isActive);
-    if (found) {
-      onLogin(found);
-    } else {
-      setError('Invalid credentials or account inactive.');
+    try {
+      const res = await fetch('/api/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: username.trim(), password })
+      });
+      const data = await res.json();
+      
+      if (res.ok && data.token && data.user) {
+        localStorage.setItem('awd_auth_token', data.token);
+        onLogin(data.user);
+      } else {
+        setError(data.error || 'Invalid credentials or account inactive.');
+        setShake(true);
+        setTimeout(() => setShake(false), 500);
+      }
+    } catch (err) {
+      setError('Network error. Please check your connection.');
       setShake(true);
       setTimeout(() => setShake(false), 500);
+    } finally {
       setLoading(false);
     }
   };

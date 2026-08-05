@@ -40,11 +40,36 @@ export const PrintQRLabels: React.FC<PrintQRLabelsProps> = ({ pipes, onOpenGener
       for (const pipe of filteredPipes) {
         const targetUrl = `${origin}/?id=${pipe.Pipe_ID}`;
         try {
-          const dataUrl = await QRCode.toDataURL(targetUrl, {
+          const canvas = document.createElement('canvas');
+          await QRCode.toCanvas(canvas, targetUrl, {
             width: 200,
             margin: 1,
             color: { dark: '#042f2e', light: '#ffffff' },
+            errorCorrectionLevel: 'H'
           });
+
+          const ctx = canvas.getContext('2d');
+          if (ctx) {
+            const img = new Image();
+            img.crossOrigin = "Anonymous";
+            img.src = '/logo.png';
+            await new Promise<void>((resolve) => {
+              img.onload = () => {
+                const logoSize = canvas.width * 0.25;
+                const x = (canvas.width - logoSize) / 2;
+                const y = (canvas.height - logoSize) / 2;
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(x - 4, y - 4, logoSize + 8, logoSize + 8);
+                ctx.drawImage(img, x, y, logoSize, logoSize);
+                resolve();
+              };
+              img.onerror = () => {
+                resolve();
+              };
+            });
+          }
+
+          const dataUrl = canvas.toDataURL('image/png');
           generated.push({
             pipeId: pipe.Pipe_ID,
             batchNo: pipe.Batch_No || '',

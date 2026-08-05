@@ -8,7 +8,7 @@ interface SyncQueueManagerProps {
   isOnline: boolean;
   onToggleOnline: () => void;
   queue: OfflineQueueItem[];
-  onSyncAll: () => Promise<void>;
+  onSyncAll: () => Promise<{ synced: number; failed: number }>;
   onDeleteItem: (id: string) => void;
 }
 
@@ -22,20 +22,27 @@ export const SyncQueueManager: React.FC<SyncQueueManagerProps> = ({
   onDeleteItem
 }) => {
   const [syncing, setSyncing] = useState(false);
-  const [syncSuccessMessage, setSyncSuccessMessage] = useState<string | null>(null);
+  const [syncMessage, setSyncMessage] = useState<{ type: 'success' | 'error' | 'partial'; text: string } | null>(null);
 
   if (!isOpen) return null;
 
   const handleSync = async () => {
     if (!isOnline || queue.length === 0) return;
     setSyncing(true);
-    setSyncSuccessMessage(null);
+    setSyncMessage(null);
     try {
-      await onSyncAll();
-      setSyncSuccessMessage('All items synchronized successfully with the database!');
-      setTimeout(() => setSyncSuccessMessage(null), 4000);
+      const { synced, failed } = await onSyncAll();
+      if (failed === 0 && synced > 0) {
+        setSyncMessage({ type: 'success', text: `All ${synced} item${synced === 1 ? '' : 's'} synchronized successfully!` });
+      } else if (synced > 0 && failed > 0) {
+        setSyncMessage({ type: 'partial', text: `${synced} synced, ${failed} failed — review errors below and retry.` });
+      } else if (failed > 0) {
+        setSyncMessage({ type: 'error', text: `Sync failed for ${failed} item${failed === 1 ? '' : 's'}. Check network and retry.` });
+      }
+      setTimeout(() => setSyncMessage(null), 5000);
     } catch (err) {
       console.error(err);
+      setSyncMessage({ type: 'error', text: 'Unexpected sync error. Please try again.' });
     } finally {
       setSyncing(false);
     }
@@ -58,6 +65,7 @@ export const SyncQueueManager: React.FC<SyncQueueManagerProps> = ({
           </div>
           <button 
             onClick={onClose}
+            aria-label="Close sync manager"
             className="p-1.5 rounded-full hover:bg-slate-200 text-slate-400 hover:text-slate-600 transition"
           >
             <X className="w-5 h-5" />
@@ -97,10 +105,20 @@ export const SyncQueueManager: React.FC<SyncQueueManagerProps> = ({
 
         {/* Content body */}
         <div className="flex-1 overflow-y-auto p-6 space-y-4 thin-scroll">
-          {syncSuccessMessage && (
-            <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3 text-xs text-emerald-800 flex items-center gap-2 animate-scaleIn">
-              <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-600" />
-              {syncSuccessMessage}
+          {syncMessage && (
+            <div className={`rounded-xl p-3 text-xs flex items-center gap-2 animate-scaleIn ${
+              syncMessage.type === 'success'
+                ? 'bg-emerald-50 border border-emerald-200 text-emerald-800'
+                : syncMessage.type === 'partial'
+                ? 'bg-amber-50 border border-amber-200 text-amber-900'
+                : 'bg-rose-50 border border-rose-200 text-rose-800'
+            }`}>
+              {syncMessage.type === 'error' ? (
+                <AlertCircle className="w-4 h-4 shrink-0" />
+              ) : (
+                <CheckCircle2 className="w-4 h-4 shrink-0" />
+              )}
+              {syncMessage.text}
             </div>
           )}
 
