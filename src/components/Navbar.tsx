@@ -107,10 +107,12 @@ export const Navbar: React.FC<NavbarProps> = ({
               <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-emerald-400 rounded-full border-2 border-[#0a0f0d] animate-pulse" />
             </div>
             <div className="hidden sm:block leading-tight">
-              <div className="font-black text-[13px] tracking-tight text-white">
-                AWD Pipe <span className="text-emerald-400">Registry</span>
+              <div className="font-black text-[13px] tracking-tight text-white flex items-center gap-1.5">
+                <span>AWD Pipe</span> <span className="text-emerald-400">Registry</span>
               </div>
-              <div className="text-[10px] text-slate-500 font-medium">Field Operations Platform</div>
+              <div className="text-[9.5px] text-emerald-400/90 font-extrabold uppercase tracking-wider">
+                Dr. Reddy's Foundation
+              </div>
             </div>
           </button>
 

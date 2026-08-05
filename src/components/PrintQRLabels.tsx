@@ -79,8 +79,9 @@ export const PrintQRLabels: React.FC<PrintQRLabelsProps> = ({ pipes, onOpenGener
       .map(
         (item) => `
         <div class="label">
+          <div class="brand-org">DR. REDDY'S FOUNDATION</div>
           <div class="label-header">
-            <span>AWD PIPE</span>
+            <span>AWD PADDY WATER MANAGEMENT</span>
             <span class="batch">${item.batchNo}</span>
           </div>
           <div class="qr-wrap">
@@ -88,7 +89,7 @@ export const PrintQRLabels: React.FC<PrintQRLabelsProps> = ({ pipes, onOpenGener
           </div>
           <div class="pipe-id">
             <span class="pipe-id-text">${item.pipeId}</span>
-            <span class="scan-hint">SCAN TO REGISTER / INSPECT</span>
+            <span class="scan-hint">DR. REDDY'S FOUNDATION • SCAN TO INSPECT</span>
           </div>
         </div>
       `
@@ -131,16 +132,25 @@ export const PrintQRLabels: React.FC<PrintQRLabelsProps> = ({ pipes, onOpenGener
             break-inside: avoid;
           }
           .label-header {
-            font-size: 8px;
+            font-size: 7px;
             font-weight: bold;
-            letter-spacing: 0.08em;
+            letter-spacing: 0.06em;
             text-transform: uppercase;
             display: flex;
             justify-content: space-between;
-            padding-bottom: 6px;
+            padding-bottom: 4px;
             border-bottom: 1px solid #e2e8f0;
             color: #475569;
-            margin-bottom: 6px;
+            margin-bottom: 5px;
+          }
+          .brand-org {
+            font-size: 9px;
+            font-weight: 900;
+            color: #14532d;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            text-align: center;
+            padding-bottom: 2px;
           }
           .label-header .batch { color: #15803d; }
           .qr-wrap img {
@@ -259,16 +269,23 @@ export const PrintQRLabels: React.FC<PrintQRLabelsProps> = ({ pipes, onOpenGener
                 key={item.pipeId}
                 className="bg-white border-2 border-slate-900 rounded-xl p-3 text-center space-y-2 shadow-sm"
               >
-                <div className="text-[10px] font-bold tracking-wider text-slate-500 uppercase flex items-center justify-between border-b pb-1">
-                  <span>AWD PIPE</span>
-                  <span className="text-emerald-700 font-mono text-[9px]">{item.batchNo}</span>
+                <div className="border-b pb-1">
+                  <div className="text-[10px] font-black text-emerald-800 uppercase tracking-widest">
+                    DR. REDDY'S FOUNDATION
+                  </div>
+                  <div className="text-[9px] font-bold text-slate-500 flex items-center justify-between mt-0.5">
+                    <span>AWD WATER MGMT</span>
+                    <span className="text-emerald-700 font-mono text-[9px]">{item.batchNo}</span>
+                  </div>
                 </div>
                 <div className="p-1 bg-white inline-block">
                   <img src={item.dataUrl} alt={`QR Code ${item.pipeId}`} className="w-28 h-28 mx-auto" />
                 </div>
                 <div className="bg-slate-900 text-white rounded-lg py-1.5 px-2">
                   <span className="font-mono font-black text-sm tracking-wider block">{item.pipeId}</span>
-                  <span className="text-[8px] text-emerald-300 tracking-tight block">SCAN TO REGISTER / INSPECT</span>
+                  <span className="text-[7.5px] font-extrabold text-emerald-300 tracking-tight block uppercase">
+                    DR. REDDY'S FOUNDATION • SCAN TO INSPECT
+                  </span>
                 </div>
               </div>
             ))}
