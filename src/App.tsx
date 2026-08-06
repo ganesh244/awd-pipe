@@ -1187,8 +1187,10 @@ export default function App() {
         onOpenSyncModal={() => setIsSyncModalOpen(true)}
       />
 
-      {/* Main Tab Views — add bottom padding on mobile for the fixed bottom nav */}
-      <main className="flex-1 pb-12 lg:pb-4">
+      {/* Main Tab Views — bottom padding on mobile clears the fixed bottom nav
+          (56px min-height) PLUS the iOS safe-area home-indicator inset, so
+          content never sits behind it. */}
+      <main className="flex-1 pb-[calc(5rem+env(safe-area-inset-bottom,0px))] lg:pb-4">
         {activeTab === 'home' && (
           <Home
             currentUser={currentUser}
@@ -1237,7 +1239,7 @@ export default function App() {
           return (
             <div className="page-enter">
               {/* Sub-tab bar */}
-              <div className="bg-white/80 backdrop-blur-sm border-b border-slate-200/80 sticky top-[60px] z-30 shadow-sm">
+              <div className="bg-white/80 backdrop-blur-sm border-b border-slate-200/80 sticky top-[56px] sm:top-[60px] z-30 shadow-sm">
                 <div className="max-w-7xl mx-auto px-4 py-2.5">
                   <div className="sub-tab-bar w-fit">
                     {hasDashboard && (
@@ -1283,7 +1285,7 @@ export default function App() {
         {activeTab === 'inventory' && (
           <div className="page-enter">
             {/* Sub-tab bar */}
-            <div className="bg-white/80 backdrop-blur-sm border-b border-slate-200/80 sticky top-[60px] z-30 shadow-sm">
+            <div className="bg-white/80 backdrop-blur-sm border-b border-slate-200/80 sticky top-[56px] sm:top-[60px] z-30 shadow-sm">
               <div className="max-w-7xl mx-auto px-4 py-2.5 flex items-center justify-between gap-4">
                 <div className="sub-tab-bar w-fit">
                   <button
@@ -1391,17 +1393,16 @@ export default function App() {
       {/* Toast notification for silent save failures */}
       {toast && (
         <div
-          className={`fixed bottom-20 left-1/2 -translate-x-1/2 z-[9999] flex items-center gap-2.5 px-4 py-3 rounded-2xl shadow-2xl text-xs font-bold max-w-sm w-full animate-fadeIn border ${
-            toast.type === 'error'
+          className={`fixed left-1/2 -translate-x-1/2 z-[9999] flex items-center gap-2.5 px-4 py-3 rounded-2xl shadow-2xl text-xs font-bold max-w-sm w-full animate-fadeIn border ${toast.type === 'error'
               ? 'bg-rose-950 text-rose-200 border-rose-800'
               : toast.type === 'warning'
-              ? 'bg-amber-950 text-amber-200 border-amber-800'
-              : 'bg-emerald-950 text-emerald-200 border-emerald-800'
-          }`}
+                ? 'bg-amber-950 text-amber-200 border-amber-800'
+                : 'bg-emerald-950 text-emerald-200 border-emerald-800'
+            }`}
+          style={{ bottom: 'calc(5.5rem + env(safe-area-inset-bottom, 0px))' }}
         >
-          <span className={`w-2 h-2 rounded-full shrink-0 ${
-            toast.type === 'error' ? 'bg-rose-400' : toast.type === 'warning' ? 'bg-amber-400' : 'bg-emerald-400'
-          }`} />
+          <span className={`w-2 h-2 rounded-full shrink-0 ${toast.type === 'error' ? 'bg-rose-400' : toast.type === 'warning' ? 'bg-amber-400' : 'bg-emerald-400'
+            }`} />
           <span className="flex-1">{toast.message}</span>
           <button onClick={() => setToast(null)} className="opacity-60 hover:opacity-100 transition text-base leading-none">&times;</button>
         </div>
