@@ -358,6 +358,18 @@ app.post('/api/login', loginLimiter, async (req, res) => {
 });
 
 
+// Silently renew a still-valid token so an active session doesn't hard-expire
+// mid-use. The frontend calls this periodically; it does NOT bypass expiry —
+// authenticateToken already rejects genuinely expired/invalid tokens before this runs.
+app.post('/api/refresh-token', authenticateToken, async (req, res) => {
+  const newToken = jwt.sign(
+    { id: req.user.id, role: req.user.role, state: req.user.state, district: req.user.district, areaName: req.user.areaName, name: req.user.name },
+    ACTIVE_JWT_SECRET,
+    { expiresIn: '4h' }
+  );
+  res.json({ token: newToken });
+});
+
 // 1. GET /api/init -> Load all initial data for frontend
 app.get('/api/init', authenticateToken, async (req, res) => {
   try {

@@ -308,6 +308,23 @@ export default function App() {
   };
 
 
+  // Silently renew the auth token every 30 min so a long-open tab never
+  // hits a hard 4h expiry. This does not extend an already-expired/invalid
+  // token — the server rejects those the same as before.
+  useEffect(() => {
+    if (!currentUser) return;
+    const renew = () => {
+      apiFetch('/api/refresh-token', { method: 'POST' })
+        .then((res) => res.ok ? res.json() : null)
+        .then((data) => {
+          if (data?.token) localStorage.setItem('awd_auth_token', data.token);
+        })
+        .catch(() => { }); // best-effort; a failed renewal just means it'll expire normally
+    };
+    const interval = setInterval(renew, 30 * 60 * 1000);
+    return () => clearInterval(interval);
+  }, [currentUser]);
+
   // Fetch initial data from Backend API / MongoDB on mount
   useEffect(() => {
     refreshHierarchyFromServer()
@@ -1347,8 +1364,8 @@ export default function App() {
               Alternate Wetting & Drying
             </span>
             <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full font-semibold text-[10px] border ${dbStatus === 'cloud'
-                ? 'bg-emerald-950/60 text-emerald-400 border-emerald-900'
-                : 'bg-amber-950/60 text-amber-400 border-amber-900'
+              ? 'bg-emerald-950/60 text-emerald-400 border-emerald-900'
+              : 'bg-amber-950/60 text-amber-400 border-amber-900'
               }`}>
               <span className={`w-1.5 h-1.5 rounded-full ${dbStatus === 'cloud' ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'}`} />
               {dbStatus === 'cloud' ? 'MongoDB Atlas · Connected' : 'Local Demo Mode'}
