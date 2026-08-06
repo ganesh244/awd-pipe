@@ -152,8 +152,10 @@ const connectDB = async () => {
   }
 
   try {
-    await mongoose.connect(mongoUri);
-    isMongoConnected = true;
+    await mongoose.connect(mongoUri, {
+      serverSelectionTimeoutMS: 10000,
+      socketTimeoutMS: 45000,
+    });
     console.log('🟢 [MongoDB Atlas] Successfully connected to Cloud Database (Free 512MB Tier)!');
 
     // Auto-seed if database is empty
@@ -176,11 +178,39 @@ const connectDB = async () => {
   } catch (error) {
     console.error('🔴 [MongoDB Atlas] Connection Error:', error?.message || error);
     console.log('🟡 [MongoDB Atlas] Falling back to Local Demo Mode.');
-    isMongoConnected = false;
   }
 };
 
+// Keep isMongoConnected in sync with mongoose's ACTUAL connection state, instead of a
+// manually-set flag that can go stale if the connection drops mid-session.
+mongoose.connection.on('connected', () => {
+  isMongoConnected = true;
+  console.log('🟢 [MongoDB Atlas] Connection established.');
+});
+mongoose.connection.on('disconnected', () => {
+  isMongoConnected = false;
+  console.warn('🟡 [MongoDB Atlas] Connection lost. Falling back to Local Demo Mode until reconnected.');
+});
+mongoose.connection.on('reconnected', () => {
+  isMongoConnected = true;
+  console.log('🟢 [MongoDB Atlas] Reconnected.');
+});
+mongoose.connection.on('error', (err) => {
+  console.error('🔴 [MongoDB Atlas] Connection error:', err?.message || err);
+});
+
 connectDB();
+
+// Safety net: if the connection ever drops and mongoose's built-in reconnection
+// (bufferCommands/auto-reconnect) doesn't recover it on its own within a bit,
+// actively retry rather than staying stuck in Local Demo Mode indefinitely.
+setInterval(() => {
+  if (!isMongoConnected && process.env.MONGODB_URI && mongoose.connection.readyState === 0) {
+    console.log('🔁 [MongoDB Atlas] Attempting to reconnect...');
+    connectDB();
+  }
+}, 30000);
+
 
 
 const JWT_SECRET = process.env.JWT_SECRET;
