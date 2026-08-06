@@ -665,6 +665,33 @@ app.post('/api/users', authenticateToken, async (req, res) => {
       ? await User.findOne({ id: newUser.id }).lean()
       : inMemoryData.users.find(u => u.id === newUser.id);
     if (existing) return res.status(403).json({ error: 'Cannot modify existing users via this endpoint' });
+
+    // Enforce that a manager can only create subordinates within their own region
+    const norm = (s) => (s || '').toLowerCase().trim();
+    if (req.user.role === 'State Manager') {
+      if (newUser.role !== 'District Manager' && newUser.role !== 'Area Manager' && newUser.role !== 'CF' && newUser.role !== 'JCF') {
+        return res.status(403).json({ error: 'State Manager cannot create this role' });
+      }
+      if (norm(newUser.state) !== norm(req.user.state)) {
+        return res.status(403).json({ error: 'Cannot create users outside your state' });
+      }
+    } else if (req.user.role === 'District Manager') {
+      if (newUser.role !== 'Area Manager' && newUser.role !== 'CF' && newUser.role !== 'JCF') {
+        return res.status(403).json({ error: 'District Manager cannot create this role' });
+      }
+      if (norm(newUser.district) !== norm(req.user.district) || norm(newUser.state) !== norm(req.user.state)) {
+        return res.status(403).json({ error: 'Cannot create users outside your district' });
+      }
+    } else if (req.user.role === 'Area Manager') {
+      if (newUser.role !== 'CF' && newUser.role !== 'JCF') {
+        return res.status(403).json({ error: 'Area Manager cannot create this role' });
+      }
+      if (norm(newUser.areaName) !== norm(req.user.areaName) || norm(newUser.district) !== norm(req.user.district)) {
+        return res.status(403).json({ error: 'Cannot create users outside your area' });
+      }
+    } else {
+      return res.status(403).json({ error: 'Not authorized to create users' });
+    }
   }
   if (!newUser.name) {
     newUser.name = newUser.username || 'Unknown';
