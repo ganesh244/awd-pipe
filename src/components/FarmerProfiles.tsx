@@ -4,7 +4,7 @@ import {
   Search, User, Phone, MapPin, Sprout, Droplet, ClipboardList,
   CheckCircle2, AlertTriangle, ChevronDown, ChevronUp, Eye,
   BarChart3, Layers, Calendar, Ruler, Camera, X, Printer, ArrowRight,
-  ArrowDownToLine, FileText, ZoomIn, Edit2, Trash2, UserCheck
+  ArrowDownToLine, FileText, ZoomIn, Edit2, Trash2, UserCheck, Filter, RotateCcw
 } from 'lucide-react';
 import { PhotoLightbox } from './PhotoLightbox';
 import { Installation, MonitoringRecord, User as UserType, AWDPipe } from '../types';
@@ -857,6 +857,74 @@ export const FarmerProfiles: React.FC<FarmerProfilesProps> = ({
   const [editingInst, setEditingInst] = useState<Installation | null>(null);
   const [deleteConfirmTarget, setDeleteConfirmTarget] = useState<{ pipeId: string; farmerName: string } | null>(null);
 
+  // Advanced Filtering States (State, District, Mandal/Area, CF/JCF Officer)
+  const [filterState, setFilterState] = useState<string>('All');
+  const [filterDistrict, setFilterDistrict] = useState<string>('All');
+  const [filterMandal, setFilterMandal] = useState<string>('All');
+  const [filterOfficer, setFilterOfficer] = useState<string>('All');
+
+  // Dynamically extract distinct dropdown options from installations
+  const availableStates = useMemo(() => {
+    return Array.from(new Set(installations.map((i) => i.State).filter(Boolean))) as string[];
+  }, [installations]);
+
+  const availableDistricts = useMemo(() => {
+    return Array.from(
+      new Set(
+        installations
+          .filter((i) => filterState === 'All' || i.State === filterState)
+          .map((i) => i.District)
+          .filter(Boolean)
+      )
+    ) as string[];
+  }, [installations, filterState]);
+
+  const availableMandals = useMemo(() => {
+    return Array.from(
+      new Set(
+        installations
+          .filter(
+            (i) =>
+              (filterState === 'All' || i.State === filterState) &&
+              (filterDistrict === 'All' || i.District === filterDistrict)
+          )
+          .map((i) => i.Mandal)
+          .filter(Boolean)
+      )
+    ) as string[];
+  }, [installations, filterState, filterDistrict]);
+
+  const availableOfficers = useMemo(() => {
+    return Array.from(
+      new Set(
+        installations
+          .filter(
+            (i) =>
+              (filterState === 'All' || i.State === filterState) &&
+              (filterDistrict === 'All' || i.District === filterDistrict) &&
+              (filterMandal === 'All' || i.Mandal === filterMandal)
+          )
+          .map((i) => i.Installed_By)
+          .filter(Boolean)
+      )
+    ) as string[];
+  }, [installations, filterState, filterDistrict, filterMandal]);
+
+  const hasActiveFilters =
+    filterState !== 'All' ||
+    filterDistrict !== 'All' ||
+    filterMandal !== 'All' ||
+    filterOfficer !== 'All' ||
+    Boolean(searchQuery.trim());
+
+  const resetFilters = () => {
+    setSearchQuery('');
+    setFilterState('All');
+    setFilterDistrict('All');
+    setFilterMandal('All');
+    setFilterOfficer('All');
+  };
+
   // Build unique farmer list
   const farmerMap = useMemo(() => {
     const map = new Map<string, Installation[]>();
@@ -889,19 +957,31 @@ export const FarmerProfiles: React.FC<FarmerProfilesProps> = ({
     });
   }, [farmerMap]);
 
-  // Filtered farmers based on search
+  // Filtered farmers based on Search + State + District + Mandal + CF/JCF Officer
   const filteredFarmers = useMemo(() => {
-    if (!searchQuery.trim()) return farmerList;
-    const q = searchQuery.toLowerCase();
-    return farmerList.filter(
-      (f) =>
+    return farmerList.filter((f) => {
+      // Check if any installation for this farmer matches selected dropdown filters
+      const matchDropdowns = f.insts.some((i) => {
+        const matchSt = filterState === 'All' || i.State === filterState;
+        const matchDist = filterDistrict === 'All' || i.District === filterDistrict;
+        const matchMan = filterMandal === 'All' || i.Mandal === filterMandal;
+        const matchOff = filterOfficer === 'All' || i.Installed_By === filterOfficer;
+        return matchSt && matchDist && matchMan && matchOff;
+      });
+
+      if (!matchDropdowns) return false;
+
+      if (!searchQuery.trim()) return true;
+      const q = searchQuery.toLowerCase();
+      return (
         f.name.toLowerCase().includes(q) ||
         f.rep.Mobile.includes(q) ||
         f.rep.Village.toLowerCase().includes(q) ||
         f.rep.Mandal.toLowerCase().includes(q) ||
         (f.rep.Farmer_ID && f.rep.Farmer_ID.toLowerCase().includes(q))
-    );
-  }, [farmerList, searchQuery]);
+      );
+    });
+  }, [farmerList, searchQuery, filterState, filterDistrict, filterMandal, filterOfficer]);
 
   const selectedFarmerInsts = selectedFarmer ? farmerMap.get(selectedFarmer) : null;
 
@@ -1025,7 +1105,124 @@ export const FarmerProfiles: React.FC<FarmerProfilesProps> = ({
             </div>
           </div>
 
-          {/* Farmer Cards Grid */}
+          {/* ── FILTER CONTROL BAR (State, District, Mandal/Area, CF/JCF Officer) ── */}
+          <div className="bg-white rounded-2xl p-4 border border-slate-200 shadow-xs mb-4 space-y-3">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-2.5 flex-wrap gap-2">
+              <div className="flex items-center gap-2">
+                <Filter className="w-4 h-4 text-emerald-600" />
+                <h2 className="text-xs font-black text-slate-800 uppercase tracking-wider">
+                  Filter Farmers by Location & Field Officer
+                </h2>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-bold text-slate-500">
+                  Showing <strong className="text-emerald-700 font-extrabold">{filteredFarmers.length}</strong> of {farmerList.length} Farmers
+                </span>
+
+                {hasActiveFilters && (
+                  <button
+                    type="button"
+                    onClick={resetFilters}
+                    className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-extrabold rounded-lg transition flex items-center gap-1 cursor-pointer"
+                  >
+                    <RotateCcw className="w-3 h-3 text-slate-500" />
+                    Reset Filters
+                  </button>
+                )}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
+              {/* 1. State Filter */}
+              <div>
+                <label className="block text-[10px] font-extrabold text-slate-500 uppercase tracking-wider mb-1">
+                  State
+                </label>
+                <select
+                  value={filterState}
+                  onChange={(e) => {
+                    setFilterState(e.target.value);
+                    setFilterDistrict('All');
+                    setFilterMandal('All');
+                    setFilterOfficer('All');
+                  }}
+                  className="w-full border border-slate-300 bg-slate-50 rounded-xl p-2 text-xs font-bold text-slate-800 outline-none focus:ring-2 focus:ring-emerald-500"
+                >
+                  <option value="All">All States ({availableStates.length})</option>
+                  {availableStates.map((st) => (
+                    <option key={st} value={st}>
+                      {st}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* 2. District Filter */}
+              <div>
+                <label className="block text-[10px] font-extrabold text-slate-500 uppercase tracking-wider mb-1">
+                  District
+                </label>
+                <select
+                  value={filterDistrict}
+                  onChange={(e) => {
+                    setFilterDistrict(e.target.value);
+                    setFilterMandal('All');
+                    setFilterOfficer('All');
+                  }}
+                  className="w-full border border-slate-300 bg-slate-50 rounded-xl p-2 text-xs font-bold text-slate-800 outline-none focus:ring-2 focus:ring-emerald-500"
+                >
+                  <option value="All">All Districts ({availableDistricts.length})</option>
+                  {availableDistricts.map((d) => (
+                    <option key={d} value={d}>
+                      {d}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* 3. Mandal / Area Filter */}
+              <div>
+                <label className="block text-[10px] font-extrabold text-slate-500 uppercase tracking-wider mb-1">
+                  Mandal / Area
+                </label>
+                <select
+                  value={filterMandal}
+                  onChange={(e) => {
+                    setFilterMandal(e.target.value);
+                    setFilterOfficer('All');
+                  }}
+                  className="w-full border border-slate-300 bg-slate-50 rounded-xl p-2 text-xs font-bold text-slate-800 outline-none focus:ring-2 focus:ring-emerald-500"
+                >
+                  <option value="All">All Mandals ({availableMandals.length})</option>
+                  {availableMandals.map((m) => (
+                    <option key={m} value={m}>
+                      {m}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* 4. CF / JCF / Registered By Filter */}
+              <div>
+                <label className="block text-[10px] font-extrabold text-slate-500 uppercase tracking-wider mb-1">
+                  CF / JCF Field Officer
+                </label>
+                <select
+                  value={filterOfficer}
+                  onChange={(e) => setFilterOfficer(e.target.value)}
+                  className="w-full border border-slate-300 bg-slate-50 rounded-xl p-2 text-xs font-bold text-slate-800 outline-none focus:ring-2 focus:ring-emerald-500"
+                >
+                  <option value="All">All Officers ({availableOfficers.length})</option>
+                  {availableOfficers.map((off) => (
+                    <option key={off} value={off}>
+                      {off}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {filteredFarmers.map((f) => (
               <div
