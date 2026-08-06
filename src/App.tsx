@@ -190,9 +190,13 @@ export default function App() {
   const [isGenerateModalOpen, setIsGenerateModalOpen] = useState<boolean>(false);
 
   // Offline Data Sync States
+  // IMPORTANT: isOnline is sourced from navigator.onLine (real browser network state)
+  // NOT from localStorage — stale localStorage values caused browsers to get permanently
+  // stuck in offline mode even after logout/login/refresh.
   const [isOnline, setIsOnline] = useState<boolean>(() => {
-    const saved = localStorage.getItem('awd_online_status');
-    return saved !== null ? saved === 'true' : true;
+    // Clear any stale persisted offline toggle from old sessions
+    localStorage.removeItem('awd_online_status');
+    return navigator.onLine;
   });
   const [offlineQueue, setOfflineQueue] = useState<OfflineQueueItem[]>(() => {
     const saved = localStorage.getItem('awd_offline_queue');
@@ -201,10 +205,17 @@ export default function App() {
   const [isSyncModalOpen, setIsSyncModalOpen] = useState<boolean>(false);
   const [isAdminDevToolsOpen, setIsAdminDevToolsOpen] = useState<boolean>(false);
 
-  // Sync state changes back to localStorage
+  // Listen to real browser network events to keep isOnline accurate
   useEffect(() => {
-    localStorage.setItem('awd_online_status', String(isOnline));
-  }, [isOnline]);
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
 
   useEffect(() => {
     localStorage.setItem('awd_offline_queue', JSON.stringify(offlineQueue));
