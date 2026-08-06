@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { AWDPipe } from '../types';
 import jsQR from 'jsqr';
-import { QrCode, Camera, CheckCircle2, X, Search, Sparkles, Smartphone, ShieldCheck, Zap, AlertCircle, RefreshCw, Upload, Image as ImageIcon, Volume2 } from 'lucide-react';
+import { QrCode, Camera, CheckCircle2, X, Search, Sparkles, Smartphone, ShieldCheck, AlertCircle, RefreshCw, Upload, Image as ImageIcon, Volume2 } from 'lucide-react';
 
 interface QrCodeScannerModalProps {
   isOpen: boolean;
@@ -426,59 +426,6 @@ export const QrCodeScannerModal: React.FC<QrCodeScannerModalProps> = ({
                 Submit
               </button>
             </form>
-          </div>
-
-          {/* SIMULATED SCAN QUICK BUTTONS FOR TESTING */}
-          <div className="space-y-2 border-t border-slate-800 pt-3">
-            <div className="flex items-center justify-between">
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
-                <Zap className="w-3.5 h-3.5 text-amber-400" />
-                <span>Quick Test Scan (Available Tags):</span>
-              </span>
-              <span className="text-[10px] text-emerald-400 font-semibold">Unregistered Pipes</span>
-            </div>
-
-            <div className="grid grid-cols-2 gap-2">
-              {availablePipes.map((p) => (
-                <button
-                  key={p.Pipe_ID}
-                  type="button"
-                  onClick={() => handleProcessScan(p.Pipe_ID)}
-                  className="bg-slate-800/90 hover:bg-emerald-950 text-left p-2.5 rounded-xl border border-emerald-500/30 transition group flex items-center justify-between shadow-xs"
-                >
-                  <div>
-                    <span className="font-mono text-xs font-bold text-emerald-400 block group-hover:text-white">
-                      {p.Pipe_ID}
-                    </span>
-                    <span className="text-[9px] text-amber-300 block font-semibold">
-                      🟡 Available Tag
-                    </span>
-                  </div>
-                  <Zap className="w-4 h-4 text-[#88b04b] group-hover:scale-125 transition-transform shrink-0" />
-                </button>
-              ))}
-            </div>
-
-            {registeredPipes.length > 0 && (
-              <div className="pt-1.5">
-                <span className="text-[10px] text-slate-400 font-semibold block mb-1">
-                  Or test scan an existing registered pipe QR:
-                </span>
-                <div className="flex flex-wrap gap-1.5">
-                  {registeredPipes.map((p) => (
-                    <button
-                      key={p.Pipe_ID}
-                      type="button"
-                      onClick={() => handleProcessScan(p.Pipe_ID)}
-                      className="bg-slate-800/80 hover:bg-slate-700 text-slate-300 text-[10px] font-mono px-2.5 py-1 rounded-lg border border-slate-700 transition flex items-center gap-1"
-                    >
-                      <span>🟢 {p.Pipe_ID}</span>
-                      <span className="text-slate-400">({p.Farmer_Name})</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
           </div>
 
         </div>
