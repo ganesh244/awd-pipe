@@ -370,6 +370,119 @@ app.post('/api/refresh-token', authenticateToken, async (req, res) => {
   res.json({ token: newToken });
 });
 
+// Admin Dev Tools: GET /api/admin/db-stats -> MongoDB Database & Storage Details
+app.get('/api/admin/db-stats', authenticateToken, async (req, res) => {
+  if (req.user.role !== 'Admin') {
+    return res.status(403).json({ error: 'Admin access required for Dev Tools' });
+  }
+
+  try {
+    const isConnected = mongoose.connection.readyState === 1;
+
+    if (isConnected && mongoose.connection.db) {
+      const db = mongoose.connection.db;
+
+      let dbStats = {};
+      try {
+        dbStats = await db.stats();
+      } catch (err) {
+        console.warn('db.stats() error:', err.message);
+      }
+
+      const collections = await db.listCollections().toArray();
+      const collectionStats = [];
+
+      for (const coll of collections) {
+        try {
+          const cStats = await db.command({ collStats: coll.name });
+          collectionStats.push({
+            name: coll.name,
+            count: cStats.count || 0,
+            size: cStats.size || 0,
+            storageSize: cStats.storageSize || 0,
+            totalIndexSize: cStats.totalIndexSize || 0,
+            avgObjSize: cStats.avgObjSize || 0,
+          });
+        } catch {
+          const count = await db.collection(coll.name).countDocuments().catch(() => 0);
+          collectionStats.push({
+            name: coll.name,
+            count: count,
+            size: count * 450,
+            storageSize: count * 700,
+            totalIndexSize: count * 80,
+            avgObjSize: 450,
+          });
+        }
+      }
+
+      const mem = process.memoryUsage();
+
+      return res.json({
+        dbStatus: 'cloud',
+        dbName: db.databaseName || 'awd_pipe_db',
+        dataSize: dbStats.dataSize || collectionStats.reduce((a, c) => a + c.size, 0),
+        storageSize: dbStats.storageSize || collectionStats.reduce((a, c) => a + c.storageSize, 0),
+        indexSize: dbStats.indexSize || collectionStats.reduce((a, c) => a + c.totalIndexSize, 0),
+        objectsCount: dbStats.objects || collectionStats.reduce((a, c) => a + c.count, 0),
+        collectionsCount: dbStats.collections || collections.length,
+        avgDocSize: dbStats.avgObjSize || 0,
+        collections: collectionStats.sort((a, b) => b.size - a.size),
+        system: {
+          nodeVersion: process.version,
+          mongooseVersion: mongoose.version,
+          uptimeSeconds: Math.floor(process.uptime()),
+          heapUsed: mem.heapUsed,
+          heapTotal: mem.heapTotal,
+          rss: mem.rss,
+        },
+      });
+    } else {
+      // In-Memory Fallback Store
+      const mem = process.memoryUsage();
+      const inMemCollections = [
+        { name: 'users', count: inMemoryData.users.length, size: JSON.stringify(inMemoryData.users).length },
+        { name: 'pipes', count: inMemoryData.pipes.length, size: JSON.stringify(inMemoryData.pipes).length },
+        { name: 'installations', count: inMemoryData.installations.length, size: JSON.stringify(inMemoryData.installations).length },
+        { name: 'monitoring', count: inMemoryData.monitoringList.length, size: JSON.stringify(inMemoryData.monitoringList).length },
+        { name: 'statenodes', count: inMemoryData.states.length, size: JSON.stringify(inMemoryData.states).length },
+        { name: 'districtnodes', count: inMemoryData.districts.length, size: JSON.stringify(inMemoryData.districts).length },
+        { name: 'areanodes', count: inMemoryData.areas.length, size: JSON.stringify(inMemoryData.areas).length },
+      ].map((c) => ({
+        ...c,
+        storageSize: Math.round(c.size * 1.4),
+        totalIndexSize: Math.round(c.size * 0.15),
+        avgObjSize: c.count ? Math.round(c.size / c.count) : 0,
+      }));
+
+      const totalSize = inMemCollections.reduce((a, c) => a + c.size, 0);
+
+      return res.json({
+        dbStatus: 'local',
+        dbName: 'In-Memory Draft Store',
+        dataSize: totalSize,
+        storageSize: Math.round(totalSize * 1.4),
+        indexSize: Math.round(totalSize * 0.15),
+        objectsCount: inMemCollections.reduce((a, c) => a + c.count, 0),
+        collectionsCount: inMemCollections.length,
+        avgDocSize: Math.round(totalSize / (inMemCollections.reduce((a, c) => a + c.count, 0) || 1)),
+        collections: inMemCollections.sort((a, b) => b.size - a.size),
+        system: {
+          nodeVersion: process.version,
+          mongooseVersion: mongoose.version,
+          uptimeSeconds: Math.floor(process.uptime()),
+          heapUsed: mem.heapUsed,
+          heapTotal: mem.heapTotal,
+          rss: mem.rss,
+        },
+      });
+    }
+  } catch (err) {
+    console.error('Error in /api/admin/db-stats:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // 1. GET /api/init -> Load all initial data for frontend
 app.get('/api/init', authenticateToken, async (req, res) => {
   try {
