@@ -209,7 +209,7 @@ const authenticateToken = (req, res, next) => {
 
 const getScopeFilter = async (user) => {
   if (!user) return { mongo: { _id: null }, memory: () => false };
-  
+
   if (user.role === 'Admin') {
     return { mongo: {}, memory: () => true };
   }
@@ -220,7 +220,7 @@ const getScopeFilter = async (user) => {
   } else {
     allUsers = inMemoryData.users;
   }
-  
+
   const subUserIds = new Set([user.id]);
   let added = true;
   while (added) {
@@ -235,7 +235,7 @@ const getScopeFilter = async (user) => {
       }
     }
   }
-  
+
   const subIdsArray = Array.from(subUserIds);
   const subNames = allUsers.filter(u => subUserIds.has(u.id)).map(u => (u.name || '').toLowerCase().replace(/[^a-z0-9]/g, '')).filter(Boolean);
   const nameRegexes = subNames.map(n => new RegExp(n.split('').join('.*'), 'i'));
@@ -250,7 +250,7 @@ const getScopeFilter = async (user) => {
           { Visited_By_User_ID: { $in: subIdsArray } }
         ]
       },
-      memory: (item) => 
+      memory: (item) =>
         (item.State || '').toLowerCase() === s.toLowerCase() ||
         (item.Registered_By_User_ID && subUserIds.has(item.Registered_By_User_ID)) ||
         (item.Visited_By_User_ID && subUserIds.has(item.Visited_By_User_ID))
@@ -268,7 +268,7 @@ const getScopeFilter = async (user) => {
           { Visited_By_User_ID: { $in: subIdsArray } }
         ]
       },
-      memory: (item) => 
+      memory: (item) =>
         ((item.District || '').toLowerCase() === d.toLowerCase() && (item.State || '').toLowerCase() === s.toLowerCase()) ||
         (item.Registered_By_User_ID && subUserIds.has(item.Registered_By_User_ID)) ||
         (item.Visited_By_User_ID && subUserIds.has(item.Visited_By_User_ID))
@@ -306,21 +306,22 @@ app.post('/api/login', loginLimiter, async (req, res) => {
     let user = null;
     if (isMongoConnected) user = await User.findOne({ username: username.trim() }).lean();
     else user = inMemoryData.users.find((u) => u.username === username.trim());
-    
+
     if (!user) return res.status(401).json({ error: 'Invalid credentials' });
-    
+
     let isValid = false;
     if (user.passwordHash) isValid = await bcrypt.compare(password, user.passwordHash);
     // Removed insecure plaintext fallback
-    
+
     if (!isValid) return res.status(401).json({ error: 'Invalid credentials' });
-    
+
     const token = jwt.sign(
       { id: user.id, role: user.role, state: user.state, district: user.district, areaName: user.areaName, name: user.name },
       ACTIVE_JWT_SECRET,
       { expiresIn: '4h' }
     );
-    res.json({ token, user });
+    const { password: _p, passwordHash: _ph, ...safeUser } = user;
+    res.json({ token, user: safeUser });
   } catch (err) {
     res.status(500).json({ error: 'Login failed' });
   }
@@ -373,7 +374,7 @@ app.get('/api/init', authenticateToken, async (req, res) => {
       // In-memory fallback
       const cleanUsers = inMemoryData.users.map(({ password, passwordHash, ...rest }) => rest);
       const filteredPipes = req.user.role === 'Admin' ? inMemoryData.pipes : inMemoryData.pipes.filter(p => p.Status === 'Available' || scope.memory(p));
-      
+
       return res.json({
         dbStatus: 'local',
         users: cleanUsers,
@@ -444,13 +445,13 @@ app.put('/api/installations/:pipeId', authenticateToken, async (req, res) => {
       inMemoryData.pipes = inMemoryData.pipes.map((p) =>
         p.Pipe_ID.toLowerCase() === targetId.toLowerCase()
           ? {
-              ...p,
-              Farmer_Name: updated.Farmer_Name,
-              Village: updated.Village,
-              District: updated.District,
-              State: updated.State,
-              Installation_Date: updated.Installation_Date,
-            }
+            ...p,
+            Farmer_Name: updated.Farmer_Name,
+            Village: updated.Village,
+            District: updated.District,
+            State: updated.State,
+            Installation_Date: updated.Installation_Date,
+          }
           : p
       );
     }
@@ -503,14 +504,14 @@ app.delete('/api/installations/:pipeId', authenticateToken, async (req, res) => 
       inMemoryData.pipes = inMemoryData.pipes.map((p) =>
         p.Pipe_ID.toLowerCase() === targetId.toLowerCase()
           ? {
-              ...p,
-              Status: 'Unregistered',
-              Farmer_Name: '',
-              Village: '',
-              District: '',
-              State: '',
-              Installation_Date: '',
-            }
+            ...p,
+            Status: 'Unregistered',
+            Farmer_Name: '',
+            Village: '',
+            District: '',
+            State: '',
+            Installation_Date: '',
+          }
           : p
       );
     }
@@ -522,7 +523,7 @@ app.delete('/api/installations/:pipeId', authenticateToken, async (req, res) => 
 });
 
 // 2d. DELETE /api/installations/clear/all -> Clear all test installations & monitoring records
-app.delete('/api/installations/clear/all', authenticateToken, async (req, res, next) => { if (req.user.role !== 'Admin') return res.status(403).json({error: 'Admin only'}); return next(); }, async (req, res) => {
+app.delete('/api/installations/clear/all', authenticateToken, async (req, res, next) => { if (req.user.role !== 'Admin') return res.status(403).json({ error: 'Admin only' }); return next(); }, async (req, res) => {
   try {
     if (isMongoConnected) {
       await Installation.deleteMany({});
@@ -658,6 +659,13 @@ app.delete('/api/pipes/batch/:batchNo', authenticateToken, async (req, res) => {
 app.post('/api/users', authenticateToken, async (req, res) => {
   const { newUser, newArea } = req.body;
   if (!newUser) return res.status(400).json({ error: 'newUser required' });
+  if (req.user.role !== 'Admin') {
+    if (newUser.role === 'Admin') return res.status(403).json({ error: 'Cannot create Admin users' });
+    const existing = isMongoConnected
+      ? await User.findOne({ id: newUser.id }).lean()
+      : inMemoryData.users.find(u => u.id === newUser.id);
+    if (existing) return res.status(403).json({ error: 'Cannot modify existing users via this endpoint' });
+  }
   if (!newUser.name) {
     newUser.name = newUser.username || 'Unknown';
   }
@@ -702,6 +710,12 @@ app.post('/api/users', authenticateToken, async (req, res) => {
 app.put('/api/users/:id', authenticateToken, async (req, res) => {
   const { id } = req.params;
   const { updatedUser } = req.body;
+  if (req.user.role !== 'Admin' && req.user.id !== id) {
+    return res.status(403).json({ error: 'Admin only' });
+  }
+  if (req.user.role !== 'Admin' && updatedUser.role && updatedUser.role !== req.user.role) {
+    return res.status(403).json({ error: 'Cannot change role' });
+  }
   try {
     if (updatedUser.password) {
       updatedUser.passwordHash = bcrypt.hashSync(updatedUser.password, 10);
@@ -962,7 +976,7 @@ app.delete('/api/hierarchy/districts/:id', authenticateToken, async (req, res) =
 
       await DistrictNode.deleteMany({ $or: [{ id: targetId }, { id }] });
       await AreaNode.deleteMany({ districtId: { $in: [targetId, id] } });
-      
+
       if (districtName) {
         await User.deleteMany({
           role: { $ne: 'Admin' },
@@ -1007,7 +1021,7 @@ app.delete('/api/hierarchy/areas/:id', authenticateToken, async (req, res) => {
       const targetId = areaToDel?.id || id;
 
       await AreaNode.deleteMany({ $or: [{ id: targetId }, { id }] });
-      
+
       if (areaName) {
         await User.deleteMany({
           role: { $ne: 'Admin' },
