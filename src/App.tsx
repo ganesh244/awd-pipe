@@ -163,10 +163,10 @@ export default function App() {
   const [districts, setDistricts] = useState<DistrictNode[]>(persistedHierarchy?.districts || INITIAL_DISTRICTS);
   const [areas, setAreas] = useState<AreaNode[]>(persistedHierarchy?.areas || INITIAL_AREAS);
   const [users, setUsers] = useState<User[]>(persistedHierarchy?.users || INITIAL_USERS);
-  
+
   // Auth State
   const [currentUser, setCurrentUser] = useState<User | null>(loadPersistedCurrentUser()); // null = show login screen
-  
+
   // Database Connection Status State
   const [dbStatus, setDbStatus] = useState<'cloud' | 'local' | 'loading'>('loading');
   const [isAppReady, setIsAppReady] = useState(false);
@@ -231,6 +231,12 @@ export default function App() {
 
   const refreshHierarchyFromServer = async () => {
     const res = await apiFetch('/api/init');
+    if (res.status === 401) {
+      // Session expired — this is NOT a database issue, don't show the Mongo-offline banner for it.
+      localStorage.removeItem('awd_auth_token');
+      localStorage.removeItem(SESSION_STORAGE_KEY);
+      throw new Error('SESSION_EXPIRED');
+    }
     const data = await res.json();
     if (!res.ok) {
       throw new Error(data?.error || `HTTP ${res.status}`);
@@ -306,6 +312,11 @@ export default function App() {
   useEffect(() => {
     refreshHierarchyFromServer()
       .catch((err) => {
+        if (err?.message === 'SESSION_EXPIRED') {
+          console.warn('Session expired, redirecting to login.');
+          setCurrentUser(null);
+          return;
+        }
         console.warn('Backend API not reachable, using local draft if present:', err);
         if (persistedHierarchy) {
           applyHierarchySnapshot(persistedHierarchy);
@@ -397,7 +408,7 @@ export default function App() {
     if (scopedNewUser.areaName && scopedNewUser.district) {
       const existingArea = updatedAreas.find(
         (a) => a.name.trim().toLowerCase() === scopedNewUser.areaName!.trim().toLowerCase() &&
-               a.districtName.trim().toLowerCase() === scopedNewUser.district!.trim().toLowerCase()
+          a.districtName.trim().toLowerCase() === scopedNewUser.district!.trim().toLowerCase()
       );
       if (!existingArea) {
         const distObj = districts.find(
@@ -520,13 +531,13 @@ export default function App() {
       prev.map((p) =>
         p.Pipe_ID === updated.Pipe_ID
           ? {
-              ...p,
-              Farmer_Name: updated.Farmer_Name,
-              Village: updated.Village,
-              District: updated.District,
-              State: updated.State,
-              Installation_Date: updated.Installation_Date,
-            }
+            ...p,
+            Farmer_Name: updated.Farmer_Name,
+            Village: updated.Village,
+            District: updated.District,
+            State: updated.State,
+            Installation_Date: updated.Installation_Date,
+          }
           : p
       )
     );
@@ -548,14 +559,14 @@ export default function App() {
       prev.map((p) =>
         p.Pipe_ID === pipeId
           ? {
-              ...p,
-              Status: 'Unregistered',
-              Farmer_Name: '',
-              Village: '',
-              District: '',
-              State: '',
-              Installation_Date: '',
-            }
+            ...p,
+            Status: 'Unregistered',
+            Farmer_Name: '',
+            Village: '',
+            District: '',
+            State: '',
+            Installation_Date: '',
+          }
           : p
       )
     );
@@ -660,7 +671,7 @@ export default function App() {
     setPipes((prev) =>
       prev.map((p) => (p.Pipe_ID === pipeId ? { ...p, ...updates } : p))
     );
-    
+
     if (isOnline) {
       apiFetch(`/api/pipes/${pipeId}`, {
         method: 'PUT',
@@ -1104,7 +1115,7 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-slate-100/70 text-slate-800 flex flex-col font-sans">
-      
+
       {/* Navigation Bar */}
       <Navbar
         activeTab={activeTab}
@@ -1335,11 +1346,10 @@ export default function App() {
               <span className="text-slate-700">·</span>
               Alternate Wetting & Drying
             </span>
-            <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full font-semibold text-[10px] border ${
-              dbStatus === 'cloud'
+            <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full font-semibold text-[10px] border ${dbStatus === 'cloud'
                 ? 'bg-emerald-950/60 text-emerald-400 border-emerald-900'
                 : 'bg-amber-950/60 text-amber-400 border-amber-900'
-            }`}>
+              }`}>
               <span className={`w-1.5 h-1.5 rounded-full ${dbStatus === 'cloud' ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'}`} />
               {dbStatus === 'cloud' ? 'MongoDB Atlas · Connected' : 'Local Demo Mode'}
             </span>
