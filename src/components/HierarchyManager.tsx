@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import ReactDOM from 'react-dom';
 import { User, StateNode, DistrictNode, AreaNode, UserRole } from '../types';
-import { Building2, MapPin, Map, Users, Plus, Trash2, Edit2, Shield, UserPlus, Key, CheckCircle2, XCircle, Eye, EyeOff, AlertTriangle } from 'lucide-react';
+import { Building2, MapPin, Map, Users, Plus, Trash2, Edit2, Shield, UserPlus, Key, CheckCircle2, XCircle, Eye, EyeOff, AlertTriangle, Database } from 'lucide-react';
 
 interface HierarchyManagerProps {
   states: StateNode[];
@@ -23,6 +23,7 @@ interface HierarchyManagerProps {
   onDeleteArea?: (areaId: string) => void;
 
   dbStatus?: 'cloud' | 'local' | 'loading';
+  onOpenDevTools?: () => void;
 }
 
 export const HierarchyManager: React.FC<HierarchyManagerProps> = ({
@@ -45,6 +46,7 @@ export const HierarchyManager: React.FC<HierarchyManagerProps> = ({
   onDeleteArea,
 
   dbStatus = 'loading',
+  onOpenDevTools,
 }) => {
   // Scoping based on logged in user
   const isDM = currentUser.role === 'District Manager';
@@ -469,13 +471,25 @@ export const HierarchyManager: React.FC<HierarchyManagerProps> = ({
           </p>
         </div>
 
-        <button
-          onClick={() => openAddModal()}
-          className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white text-xs font-extrabold px-4 py-3 rounded-xl transition shadow-lg shadow-purple-950/40 flex items-center gap-2 cursor-pointer border border-purple-400/30 shrink-0"
-        >
-          <UserPlus className="w-4 h-4 text-purple-200" />
-          <span>Add Team Member / Assign Credentials</span>
-        </button>
+        <div className="flex items-center gap-3 flex-wrap shrink-0">
+          {isAdmin && onOpenDevTools && (
+            <button
+              onClick={onOpenDevTools}
+              className="bg-slate-800 hover:bg-slate-700 text-purple-200 text-xs font-extrabold px-4 py-3 rounded-xl transition shadow-lg flex items-center gap-2 cursor-pointer border border-purple-500/40"
+            >
+              <Database className="w-4 h-4 text-purple-400" />
+              <span>Admin Dev Tools & DB Storage</span>
+            </button>
+          )}
+
+          <button
+            onClick={() => openAddModal()}
+            className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white text-xs font-extrabold px-4 py-3 rounded-xl transition shadow-lg shadow-purple-950/40 flex items-center gap-2 cursor-pointer border border-purple-400/30 shrink-0"
+          >
+            <UserPlus className="w-4 h-4 text-purple-200" />
+            <span>Add Team Member / Assign Credentials</span>
+          </button>
+        </div>
       </div>
 
 

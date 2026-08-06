@@ -18,6 +18,7 @@ import { FarmerProfiles } from './components/FarmerProfiles';
 import { Home } from './components/Home';
 import { SyncQueueManager } from './components/SyncQueueManager';
 import { AppLoadingScreen } from './components/AppLoadingScreen';
+import { AdminDevToolsModal } from './components/AdminDevToolsModal';
 
 const apiFetch = (url: RequestInfo | URL, options?: RequestInit) => {
   const token = localStorage.getItem("awd_auth_token");
@@ -198,6 +199,7 @@ export default function App() {
     return saved ? JSON.parse(saved) : [];
   });
   const [isSyncModalOpen, setIsSyncModalOpen] = useState<boolean>(false);
+  const [isAdminDevToolsOpen, setIsAdminDevToolsOpen] = useState<boolean>(false);
 
   // Sync state changes back to localStorage
   useEffect(() => {
@@ -1374,6 +1376,7 @@ export default function App() {
 
             dbStatus={dbStatus}
             currentUser={currentUser}
+            onOpenDevTools={() => setIsAdminDevToolsOpen(true)}
           />
         )}
 
@@ -1413,6 +1416,12 @@ export default function App() {
         onDeleteItem={handleDeleteQueueItem}
       />
 
+      {/* Admin Dev Tools & DB Storage Modal */}
+      <AdminDevToolsModal
+        isOpen={isAdminDevToolsOpen}
+        onClose={() => setIsAdminDevToolsOpen(false)}
+      />
+
 
       {/* Toast notification for silent save failures */}
       {toast && (
@@ -1442,13 +1451,24 @@ export default function App() {
               <span className="text-slate-700">·</span>
               Alternate Wetting &amp; Drying
             </span>
-            <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full font-semibold text-[10px] border ${dbStatus === 'cloud'
-              ? 'bg-emerald-950/60 text-emerald-400 border-emerald-900'
-              : 'bg-amber-950/60 text-amber-400 border-amber-900'
-              }`}>
+
+            {/* Database status badge — clickable for Admin to view Dev Tools */}
+            <button
+              type="button"
+              onClick={() => currentUser?.role === 'Admin' && setIsAdminDevToolsOpen(true)}
+              className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full font-semibold text-[10px] border transition ${
+                currentUser?.role === 'Admin' ? 'cursor-pointer hover:border-purple-400/80' : 'cursor-default'
+              } ${dbStatus === 'cloud'
+                ? 'bg-emerald-950/60 text-emerald-400 border-emerald-900'
+                : 'bg-amber-950/60 text-amber-400 border-amber-900'
+                }`}
+              title={currentUser?.role === 'Admin' ? 'Click to open Admin Dev Tools & DB Storage Metrics' : undefined}
+            >
               <span className={`w-1.5 h-1.5 rounded-full ${dbStatus === 'cloud' ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'}`} />
               {dbStatus === 'cloud' ? 'MongoDB Atlas · Connected' : 'Local Demo Mode'}
-            </span>
+              {currentUser?.role === 'Admin' && <span className="text-[9px] text-purple-400 font-mono font-bold">🛠️</span>}
+            </button>
+
             {/* Last-synced / pending badge */}
             {offlineQueue.length > 0 ? (
               <button
