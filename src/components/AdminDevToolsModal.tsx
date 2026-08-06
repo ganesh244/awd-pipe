@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Database, HardDrive, Cpu, RefreshCw, X, Server, Layers, Zap, CheckCircle2, AlertTriangle, ShieldCheck, Activity, MemoryStick, Clock } from 'lucide-react';
+import { Database, HardDrive, Cpu, RefreshCw, X, Server, Layers, AlertTriangle, ShieldCheck, Clock } from 'lucide-react';
 
 const apiFetch = (url: RequestInfo | URL, options?: RequestInit) => {
   const token = localStorage.getItem("awd_auth_token");

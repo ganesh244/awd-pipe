@@ -215,7 +215,13 @@ setInterval(() => {
 
 const JWT_SECRET = process.env.JWT_SECRET;
 if (!JWT_SECRET) {
-  console.warn('WARNING: JWT_SECRET not set in environment. Using securely generated ephemeral secret.');
+  // Fix #3: In production a missing JWT_SECRET means every server restart generates
+  // a new random secret, silently invalidating all existing sessions. Log loudly.
+  console.error('╔══════════════════════════════════════════════════════════════════╗');
+  console.error('║  SECURITY WARNING: JWT_SECRET is not set in your .env file.     ║');
+  console.error('║  A random ephemeral secret will be used — ALL users will be      ║');
+  console.error('║  logged out on every server restart. Set JWT_SECRET in .env!    ║');
+  console.error('╚══════════════════════════════════════════════════════════════════╝');
 }
 import crypto from 'crypto';
 const ACTIVE_JWT_SECRET = JWT_SECRET || crypto.randomBytes(32).toString('hex');
@@ -231,7 +237,11 @@ const authenticateToken = (req, res, next) => {
   const token = authHeader && authHeader.split(' ')[1];
   if (!token) return res.status(401).json({ error: 'Authentication required' });
   jwt.verify(token, ACTIVE_JWT_SECRET, (err, user) => {
-    if (err) return res.status(403).json({ error: 'Invalid or expired token' });
+    // Fix #7: return 401 (not 403) for invalid/expired tokens.
+    // The frontend checks res.status === 401 to trigger the session-expiry toast
+    // and redirect to login. 403 means "forbidden" (authenticated but not allowed),
+    // which is the wrong semantic and breaks the client-side expiry detection.
+    if (err) return res.status(401).json({ error: 'Invalid or expired token' });
     req.user = user;
     next();
   });
