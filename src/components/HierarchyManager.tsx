@@ -106,6 +106,8 @@ export const HierarchyManager: React.FC<HierarchyManagerProps> = ({
   const [newUserName, setNewUserName] = useState('');
   const [newUserUsername, setNewUserUsername] = useState('');
   const [newUserPassword, setNewUserPassword] = useState('');
+  const [newUserPasswordConfirm, setNewUserPasswordConfirm] = useState('');
+  const [showNewPassword, setShowNewPassword] = useState(false);
   const [newUserRole, setNewUserRole] = useState<UserRole>(isDM ? 'Area Manager' : isAM ? 'CF' : 'Area Manager');
   const [newUserEmail, setNewUserEmail] = useState('');
   const [newUserPhone, setNewUserPhone] = useState('');
@@ -200,6 +202,8 @@ export const HierarchyManager: React.FC<HierarchyManagerProps> = ({
     setNewUserName('');
     setNewUserUsername('');
     setNewUserPassword(`Pwd@${Math.floor(1000 + Math.random() * 9000)}`);
+    setNewUserPasswordConfirm('');
+    setShowNewPassword(false);
     setNewUserEmail('');
     setNewUserPhone('');
     setIsAddUserOpen(true);
@@ -208,6 +212,10 @@ export const HierarchyManager: React.FC<HierarchyManagerProps> = ({
   const handleCreateUserSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newUserName.trim() || !newUserUsername.trim() || !newUserPassword.trim()) return;
+    if (newUserPassword !== newUserPasswordConfirm) {
+      alert('Passwords do not match. Please re-enter the password in both fields.');
+      return;
+    }
 
     let intelligentReportsToId = currentUser.id;
     const assignedState = newUserRole === 'Admin' ? undefined : (targetStateName || selectedState?.name || currentUser.state);
@@ -274,6 +282,8 @@ export const HierarchyManager: React.FC<HierarchyManagerProps> = ({
     };
 
     onAddUser(newUser);
+    setNewUserPasswordConfirm('');
+    setShowNewPassword(false);
     setIsAddUserOpen(false);
   };
 
@@ -1208,14 +1218,44 @@ export const HierarchyManager: React.FC<HierarchyManagerProps> = ({
                   </div>
                   <div>
                     <label className="block text-[10px] font-extrabold text-purple-800 mb-1">Assigned Password *</label>
-                    <input
-                      type="text"
-                      required
-                      value={newUserPassword}
-                      onChange={(e) => setNewUserPassword(e.target.value)}
-                      placeholder="e.g. Pwd@2026"
-                      className="w-full bg-white border border-purple-300 rounded-xl p-2.5 text-xs font-mono font-bold text-purple-950 outline-none focus:ring-2 focus:ring-purple-600"
-                    />
+                    <div className="relative">
+                      <input
+                        type={showNewPassword ? 'text' : 'password'}
+                        required
+                        value={newUserPassword}
+                        onChange={(e) => setNewUserPassword(e.target.value)}
+                        placeholder="e.g. Pwd@2026"
+                        className="w-full bg-white border border-purple-300 rounded-xl p-2.5 pr-9 text-xs font-mono font-bold text-purple-950 outline-none focus:ring-2 focus:ring-purple-600"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowNewPassword((s) => !s)}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 text-purple-400 hover:text-purple-700 transition"
+                        tabIndex={-1}
+                      >
+                        {showNewPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                      </button>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-extrabold text-purple-800 mb-1">Confirm Password *</label>
+                    <div className="relative">
+                      <input
+                        type={showNewPassword ? 'text' : 'password'}
+                        required
+                        value={newUserPasswordConfirm}
+                        onChange={(e) => setNewUserPasswordConfirm(e.target.value)}
+                        placeholder="Re-enter password"
+                        className={`w-full bg-white border rounded-xl p-2.5 text-xs font-mono font-bold outline-none focus:ring-2 ${
+                          newUserPasswordConfirm && newUserPassword !== newUserPasswordConfirm
+                            ? 'border-rose-400 text-rose-700 focus:ring-rose-400'
+                            : 'border-purple-300 text-purple-950 focus:ring-purple-600'
+                        }`}
+                      />
+                    </div>
+                    {newUserPasswordConfirm && newUserPassword !== newUserPasswordConfirm && (
+                      <p className="text-[9px] text-rose-600 font-bold mt-0.5">Passwords do not match</p>
+                    )}
                   </div>
                 </div>
                 <p className="text-[10px] text-purple-700 leading-normal">
@@ -1445,13 +1485,25 @@ export const HierarchyManager: React.FC<HierarchyManagerProps> = ({
                   </div>
                   <div>
                     <label className="block text-[10px] font-extrabold text-blue-800 mb-1">Set New Password</label>
-                    <input
-                      type="text"
-                      placeholder="Leave blank to keep current password"
-                      value={editingUser.password || ''}
-                      onChange={(e) => setEditingUser({ ...editingUser, password: e.target.value })}
-                      className="w-full bg-white border border-blue-300 rounded-xl p-2.5 text-xs font-mono font-bold text-blue-950 outline-none focus:ring-2 focus:ring-blue-600"
-                    />
+                    <div className="relative">
+                      <input
+                        id="edit-password"
+                        type={showNewPassword ? 'text' : 'password'}
+                        placeholder="Leave blank to keep current password"
+                        value={editingUser.password || ''}
+                        onChange={(e) => setEditingUser({ ...editingUser, password: e.target.value })}
+                        className="w-full bg-white border border-blue-300 rounded-xl p-2.5 pr-9 text-xs font-mono font-bold text-blue-950 outline-none focus:ring-2 focus:ring-blue-600"
+                        autoComplete="new-password"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowNewPassword((s) => !s)}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 text-blue-400 hover:text-blue-700 transition"
+                        tabIndex={-1}
+                      >
+                        {showNewPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>

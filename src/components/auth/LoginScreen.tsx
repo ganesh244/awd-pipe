@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { User, UserRole } from '../../types';
-import { Sprout, Eye, EyeOff, AlertCircle, ShieldCheck, MapPin, Building2, Map, Users, ArrowRight, Lock, AtSign, Droplets, BarChart3, Smartphone } from 'lucide-react';
+import { Sprout, Eye, EyeOff, AlertCircle, ShieldCheck, MapPin, Building2, Map, Users, ArrowRight, Lock, AtSign, Droplets, BarChart3, Smartphone, Wifi, WifiOff } from 'lucide-react';
 
 interface LoginScreenProps {
   users: User[];
@@ -14,6 +14,26 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ users, onLogin }) => {
   const [error, setError] = useState<string | null>(null);
   const [shake, setShake] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [backendStatus, setBackendStatus] = useState<'checking' | 'online' | 'offline'>('checking');
+
+  useEffect(() => {
+    const check = async () => {
+      try {
+        // POST with empty body — will get a 400 (bad request) but NOT a network error,
+        // which means the backend is reachable. Any non-network response = online.
+        const res = await fetch('/api/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({}),
+          signal: AbortSignal.timeout(4000),
+        });
+        setBackendStatus(res.status < 500 ? 'online' : 'offline');
+      } catch {
+        setBackendStatus('offline');
+      }
+    };
+    check();
+  }, []);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -180,8 +200,24 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ users, onLogin }) => {
       <div className="relative z-10 border-t border-white/[0.05] py-4 px-8 flex items-center justify-between text-[10px] text-slate-700">
         <span>© 2025 AWD Pipe Registry</span>
         <span className="flex items-center gap-1.5">
-          <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
-          System Online
+          {backendStatus === 'checking' && (
+            <>
+              <span className="w-1.5 h-1.5 bg-slate-500 rounded-full animate-pulse" />
+              <span className="text-slate-500">Connecting…</span>
+            </>
+          )}
+          {backendStatus === 'online' && (
+            <>
+              <Wifi className="w-3 h-3 text-emerald-500" />
+              <span className="text-emerald-500 font-semibold">System Online</span>
+            </>
+          )}
+          {backendStatus === 'offline' && (
+            <>
+              <WifiOff className="w-3 h-3 text-amber-500" />
+              <span className="text-amber-500 font-semibold">Backend Offline — Local Mode</span>
+            </>
+          )}
         </span>
       </div>
     </div>
