@@ -171,6 +171,17 @@ export default function App() {
   const [dbStatus, setDbStatus] = useState<'cloud' | 'local' | 'loading'>('loading');
   const [isAppReady, setIsAppReady] = useState(false);
 
+  // Toast notifications for save failures
+  const [toast, setToast] = useState<{ id: number; message: string; type: 'error' | 'warning' | 'success' } | null>(null);
+  const showToast = React.useCallback((message: string, type: 'error' | 'warning' | 'success' = 'error') => {
+    const id = Date.now();
+    setToast({ id, message, type });
+    setTimeout(() => setToast((t) => t?.id === id ? null : t), 5000);
+  }, []);
+
+  // Last-synced timestamp
+  const [lastSynced, setLastSynced] = useState<Date | null>(null);
+
   const [activeTab, setActiveTab] = useState<string>('home');
   const [analyticsSubTab, setAnalyticsSubTab] = useState<'overview' | 'reports'>('overview');
   const [inventorySubTab, setInventorySubTab] = useState<'inventory' | 'labels'>('inventory');
@@ -294,12 +305,20 @@ export default function App() {
       const res = await request();
       const data = await res.json().catch(() => null);
       if (!res.ok) {
+        if (res.status === 403) {
+          showToast('Permission denied — you cannot make this change.', 'warning');
+        } else if (res.status === 401) {
+          showToast('Session expired — please log in again.', 'error');
+        } else {
+          showToast(`Couldn't save — ${data?.error || `server error (${res.status})`}`, 'error');
+        }
         throw new Error(data?.error || `HTTP ${res.status}`);
       }
       if (data?.dbStatus) {
         setDbStatus(data.dbStatus);
       }
       await refreshHierarchyFromServer();
+      setLastSynced(new Date());
       return true;
     } catch (err) {
       console.error('Hierarchy sync failed:', err);
@@ -530,8 +549,16 @@ export default function App() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ installation: newInstallation, updatedPipe }),
+      }).then((res) => {
+        if (res.ok) {
+          setLastSynced(new Date());
+        } else {
+          showToast("Couldn't save registration — queued for retry when back online.", 'warning');
+          queueOfflineItem('registration', { installation: newInstallation, updatedPipe });
+        }
       }).catch((err) => {
         console.error('Failed to save registration to MongoDB, queuing offline:', err);
+        showToast("Couldn't save registration — queued for retry when back online.", 'warning');
         queueOfflineItem('registration', { installation: newInstallation, updatedPipe });
       });
     } else {
@@ -611,8 +638,16 @@ export default function App() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ record }),
+      }).then((res) => {
+        if (res.ok) {
+          setLastSynced(new Date());
+        } else {
+          showToast("Couldn't save monitoring visit — queued for retry.", 'warning');
+          queueOfflineItem('monitoring', record);
+        }
       }).catch((err) => {
         console.error('Failed to save monitoring log to MongoDB, queuing offline:', err);
+        showToast("Couldn't save monitoring visit — queued for retry.", 'warning');
         queueOfflineItem('monitoring', record);
       });
     } else {
@@ -1353,6 +1388,25 @@ export default function App() {
       />
 
 
+      {/* Toast notification for silent save failures */}
+      {toast && (
+        <div
+          className={`fixed bottom-20 left-1/2 -translate-x-1/2 z-[9999] flex items-center gap-2.5 px-4 py-3 rounded-2xl shadow-2xl text-xs font-bold max-w-sm w-full animate-fadeIn border ${
+            toast.type === 'error'
+              ? 'bg-rose-950 text-rose-200 border-rose-800'
+              : toast.type === 'warning'
+              ? 'bg-amber-950 text-amber-200 border-amber-800'
+              : 'bg-emerald-950 text-emerald-200 border-emerald-800'
+          }`}
+        >
+          <span className={`w-2 h-2 rounded-full shrink-0 ${
+            toast.type === 'error' ? 'bg-rose-400' : toast.type === 'warning' ? 'bg-amber-400' : 'bg-emerald-400'
+          }`} />
+          <span className="flex-1">{toast.message}</span>
+          <button onClick={() => setToast(null)} className="opacity-60 hover:opacity-100 transition text-base leading-none">&times;</button>
+        </div>
+      )}
+
       {/* Footer */}
       <footer className="bg-[#0a0f0d] text-slate-600 text-[11px] py-3.5 border-t border-white/[0.05]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-2">
@@ -1361,7 +1415,7 @@ export default function App() {
               <span className="text-emerald-600">🌱</span>
               <strong className="text-slate-400">AWD Pipe Registry</strong>
               <span className="text-slate-700">·</span>
-              Alternate Wetting & Drying
+              Alternate Wetting &amp; Drying
             </span>
             <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full font-semibold text-[10px] border ${dbStatus === 'cloud'
               ? 'bg-emerald-950/60 text-emerald-400 border-emerald-900'
@@ -1370,6 +1424,20 @@ export default function App() {
               <span className={`w-1.5 h-1.5 rounded-full ${dbStatus === 'cloud' ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'}`} />
               {dbStatus === 'cloud' ? 'MongoDB Atlas · Connected' : 'Local Demo Mode'}
             </span>
+            {/* Last-synced / pending badge */}
+            {offlineQueue.length > 0 ? (
+              <button
+                onClick={() => setIsSyncModalOpen(true)}
+                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full font-semibold text-[10px] border bg-amber-950/60 text-amber-400 border-amber-800 hover:border-amber-500 transition cursor-pointer"
+              >
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+                {offlineQueue.length} pending sync
+              </button>
+            ) : lastSynced ? (
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full font-semibold text-[10px] border bg-slate-900 text-slate-500 border-slate-800">
+                ✓ Synced {lastSynced.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+              </span>
+            ) : null}
           </div>
           <span className="text-slate-600 font-medium tabular-nums">
             {currentUser.name} · <span className="text-slate-500">{currentUser.role}</span>
