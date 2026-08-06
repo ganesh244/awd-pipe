@@ -344,22 +344,46 @@ export default function App() {
     return () => clearInterval(interval);
   }, [currentUser]);
 
-  // Fetch initial data from Backend API / MongoDB on mount
+  // Fetch initial data from Backend API / MongoDB on mount.
+  // If the server reports 'local' (a cold-starting backend can genuinely be
+  // mid-reconnect to MongoDB, not actually down), retry quietly a few times
+  // in the background instead of accepting the first answer as final —
+  // this is what used to require a manual logout/login to recover from.
   useEffect(() => {
-    refreshHierarchyFromServer()
-      .catch((err) => {
-        if (err?.message === 'SESSION_EXPIRED') {
-          console.warn('Session expired, redirecting to login.');
-          setCurrentUser(null);
-          return;
-        }
-        console.warn('Backend API not reachable, using local draft if present:', err);
-        if (persistedHierarchy) {
-          applyHierarchySnapshot(persistedHierarchy);
-        }
-        setDbStatus('local');
-      })
-      .finally(() => setIsAppReady(true));
+    let cancelled = false;
+    let attempt = 0;
+
+    const attemptRefresh = () => {
+      refreshHierarchyFromServer()
+        .then((data) => {
+          if (cancelled) return;
+          if (data?.dbStatus === 'local' && attempt < 5) {
+            attempt += 1;
+            setTimeout(attemptRefresh, attempt * 3000); // 3s, 6s, 9s, 12s, 15s
+          }
+        })
+        .catch((err) => {
+          if (cancelled) return;
+          if (err?.message === 'SESSION_EXPIRED') {
+            console.warn('Session expired, redirecting to login.');
+            setCurrentUser(null);
+            return;
+          }
+          console.warn('Backend API not reachable, using local draft if present:', err);
+          if (persistedHierarchy) {
+            applyHierarchySnapshot(persistedHierarchy);
+          }
+          setDbStatus('local');
+          if (attempt < 5) {
+            attempt += 1;
+            setTimeout(attemptRefresh, attempt * 3000);
+          }
+        })
+        .finally(() => setIsAppReady(true));
+    };
+
+    attemptRefresh();
+    return () => { cancelled = true; };
   }, []);
 
   // Reflect real browser network state alongside manual offline toggle
@@ -1394,10 +1418,10 @@ export default function App() {
       {toast && (
         <div
           className={`fixed left-1/2 -translate-x-1/2 z-[9999] flex items-center gap-2.5 px-4 py-3 rounded-2xl shadow-2xl text-xs font-bold max-w-sm w-full animate-fadeIn border ${toast.type === 'error'
-              ? 'bg-rose-950 text-rose-200 border-rose-800'
-              : toast.type === 'warning'
-                ? 'bg-amber-950 text-amber-200 border-amber-800'
-                : 'bg-emerald-950 text-emerald-200 border-emerald-800'
+            ? 'bg-rose-950 text-rose-200 border-rose-800'
+            : toast.type === 'warning'
+              ? 'bg-amber-950 text-amber-200 border-amber-800'
+              : 'bg-emerald-950 text-emerald-200 border-emerald-800'
             }`}
           style={{ bottom: 'calc(5.5rem + env(safe-area-inset-bottom, 0px))' }}
         >
