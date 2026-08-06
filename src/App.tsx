@@ -400,18 +400,9 @@ export default function App() {
   }, []);
 
   // Reflect real browser network state alongside manual offline toggle
-  useEffect(() => {
-    const syncNetwork = () => {
-      if (!navigator.onLine) setIsOnline(false);
-    };
-    window.addEventListener('online', syncNetwork);
-    window.addEventListener('offline', () => setIsOnline(false));
-    syncNetwork();
-    return () => {
-      window.removeEventListener('online', syncNetwork);
-      window.removeEventListener('offline', () => setIsOnline(false));
-    };
-  }, []);
+  // NOTE: superseded by the isOnline effect above (which correctly restores
+  // isOnline=true on 'online' and cleans up listeners by matching function
+  // reference). This duplicate effect is removed as of this commit.
 
   // URL Parameter Detection: Check if ?id=AWD-XXXX exists in current URL
   useEffect(() => {
@@ -1467,11 +1458,10 @@ export default function App() {
             <button
               type="button"
               onClick={() => currentUser?.role === 'Admin' && setIsAdminDevToolsOpen(true)}
-              className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full font-semibold text-[10px] border transition ${
-                currentUser?.role === 'Admin' ? 'cursor-pointer hover:border-purple-400/80' : 'cursor-default'
-              } ${dbStatus === 'cloud'
-                ? 'bg-emerald-950/60 text-emerald-400 border-emerald-900'
-                : 'bg-amber-950/60 text-amber-400 border-amber-900'
+              className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full font-semibold text-[10px] border transition ${currentUser?.role === 'Admin' ? 'cursor-pointer hover:border-purple-400/80' : 'cursor-default'
+                } ${dbStatus === 'cloud'
+                  ? 'bg-emerald-950/60 text-emerald-400 border-emerald-900'
+                  : 'bg-amber-950/60 text-amber-400 border-amber-900'
                 }`}
               title={currentUser?.role === 'Admin' ? 'Click to open Admin Dev Tools & DB Storage Metrics' : undefined}
             >
