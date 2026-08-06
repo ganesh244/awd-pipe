@@ -199,8 +199,15 @@ export default function App() {
     return navigator.onLine;
   });
   const [offlineQueue, setOfflineQueue] = useState<OfflineQueueItem[]>(() => {
-    const saved = localStorage.getItem('awd_offline_queue');
-    return saved ? JSON.parse(saved) : [];
+    // Fix #4: JSON.parse can throw if localStorage has corrupted data (browser crash,
+    // partial write). Wrap in try/catch to prevent a blank white-screen crash on startup.
+    try {
+      const saved = localStorage.getItem('awd_offline_queue');
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      localStorage.removeItem('awd_offline_queue'); // discard corrupt entry
+      return [];
+    }
   });
   const [isSyncModalOpen, setIsSyncModalOpen] = useState<boolean>(false);
   const [isAdminDevToolsOpen, setIsAdminDevToolsOpen] = useState<boolean>(false);
@@ -390,6 +397,12 @@ export default function App() {
           if (attempt < 5) {
             attempt += 1;
             setTimeout(attemptRefresh, attempt * 3000);
+          } else {
+            // Fix #5: all retries exhausted — warn the user that they're seeing
+            // cached data which may be out of date (e.g. newly added users won't appear)
+            if (persistedHierarchy) {
+              showToast('Showing offline snapshot — some data may not be up to date.', 'warning');
+            }
           }
         })
         .finally(() => setIsAppReady(true));
@@ -399,10 +412,6 @@ export default function App() {
     return () => { cancelled = true; };
   }, []);
 
-  // Reflect real browser network state alongside manual offline toggle
-  // NOTE: superseded by the isOnline effect above (which correctly restores
-  // isOnline=true on 'online' and cleans up listeners by matching function
-  // reference). This duplicate effect is removed as of this commit.
 
   // URL Parameter Detection: Check if ?id=AWD-XXXX exists in current URL
   useEffect(() => {
@@ -615,11 +624,16 @@ export default function App() {
     );
 
     if (isOnline) {
+      // Fix #2: show toast on failure so the user knows the edit wasn't saved
       apiFetch(`/api/installations/${encodeURIComponent(updated.Pipe_ID)}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(updated),
-      }).catch((err) => console.error('Failed to update installation on server:', err));
+      }).then((res) => {
+        if (!res.ok) showToast("Couldn't save edit — please try again.", 'warning');
+      }).catch(() => showToast("Couldn't save edit — check your connection.", 'warning'));
+    } else {
+      showToast("You're offline — edit saved locally but not yet synced.", 'warning');
     }
   };
 
@@ -644,9 +658,14 @@ export default function App() {
     );
 
     if (isOnline) {
+      // Fix #2: show toast on failure so the user knows the delete wasn't persisted
       apiFetch(`/api/installations/${encodeURIComponent(pipeId)}`, {
         method: 'DELETE',
-      }).catch((err) => console.error('Failed to delete installation on server:', err));
+      }).then((res) => {
+        if (!res.ok) showToast("Couldn't delete record — please try again.", 'warning');
+      }).catch(() => showToast("Couldn't delete record — check your connection.", 'warning'));
+    } else {
+      showToast("You're offline — deletion will sync when reconnected.", 'warning');
     }
   };
 
@@ -726,7 +745,16 @@ export default function App() {
 
   // Handler: Add New Batch of AWD Pipes
   const handleAddPipeBatch = (batchNo: string, count: number) => {
-    const startNum = pipes.length + 1;
+    // Fix #6: derive next pipe number from the highest existing Pipe_ID numeric suffix,
+    // NOT from pipes.length. pipes is scope-filtered for non-Admin users so length
+    // would collide with IDs already in MongoDB that the current user can't see.
+    const maxExistingNum = pipes.reduce((max, p) => {
+      const match = p.Pipe_ID.match(/AWD-0*(\d+)$/i);
+      if (!match) return max;
+      const n = parseInt(match[1], 10);
+      return n > max ? n : max;
+    }, 0);
+    const startNum = maxExistingNum + 1;
     const newPipes: AWDPipe[] = [];
     for (let i = startNum; i < startNum + count; i++) {
       const numStr = ('0000' + i).slice(-4);
@@ -743,7 +771,7 @@ export default function App() {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ newPipes }),
-    }).catch((err) => console.error('Failed to sync pipe batch to MongoDB:', err));
+    }).catch(() => showToast("Couldn't save new pipe batch — check your connection.", 'warning'));
   };
 
   // Handler: Update an existing Pipe
