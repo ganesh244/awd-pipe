@@ -809,7 +809,7 @@ export const HierarchyManager: React.FC<HierarchyManagerProps> = ({
                                 <button
                                   onClick={(e) => { e.stopPropagation(); setEditingUser(areaUser); }}
                                   title="Edit Area Manager"
-                                  className="p-0.5 text-teal-600 hover:text-blue-600 transition cursor-pointer"
+                                  className="p-1.5 text-teal-600 hover:text-blue-600 transition cursor-pointer"
                                 >
                                   <Edit2 className="w-3.5 h-3.5" />
                                 </button>
@@ -817,7 +817,7 @@ export const HierarchyManager: React.FC<HierarchyManagerProps> = ({
                                   <button
                                     onClick={(e) => { e.stopPropagation(); confirmAndDeleteUser(areaUser.id, areaUser.name); }}
                                     title="Remove Area Manager"
-                                    className="p-0.5 text-teal-600 hover:text-red-600 transition cursor-pointer"
+                                    className="p-1.5 text-teal-600 hover:text-red-600 transition cursor-pointer"
                                   >
                                     <Trash2 className="w-3.5 h-3.5" />
                                   </button>
@@ -831,7 +831,7 @@ export const HierarchyManager: React.FC<HierarchyManagerProps> = ({
                                   clearNodeManager('area', ar);
                                 }}
                                 title="Clear Area Manager Label"
-                                className="p-0.5 text-teal-600 hover:text-red-600 transition cursor-pointer"
+                                className="p-1.5 text-teal-600 hover:text-red-600 transition cursor-pointer"
                               >
                                 <Trash2 className="w-3.5 h-3.5" />
                               </button>
