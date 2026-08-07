@@ -235,8 +235,9 @@ export const QrCodeScannerModal: React.FC<QrCodeScannerModalProps> = ({
   const registeredPipes = pipes.filter((p) => p.Status === 'Installed').slice(0, 3);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-md animate-fadeIn">
-      <div className="bg-slate-900 border-2 border-[#88b04b] text-white rounded-3xl max-w-lg w-full overflow-hidden shadow-2xl space-y-0 relative">
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-950/85 backdrop-blur-md animate-fadeIn">
+      <div className="flex min-h-full items-start justify-center p-4 pt-4 sm:items-center sm:pt-4">
+      <div className="bg-slate-900 border-2 border-[#88b04b] text-white rounded-3xl max-w-lg w-full shadow-2xl space-y-0 relative">
         
         {/* Hidden canvas for video QR frame processing */}
         <canvas ref={canvasRef} className="hidden" />
@@ -430,6 +431,7 @@ export const QrCodeScannerModal: React.FC<QrCodeScannerModalProps> = ({
 
         </div>
 
+      </div>
       </div>
     </div>
   );
