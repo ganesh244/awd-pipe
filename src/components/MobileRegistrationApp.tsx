@@ -806,7 +806,7 @@ export const MobileRegistrationApp: React.FC<MobileRegistrationAppProps> = ({
                 Installation & GPS Verification
               </h3>
 
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               <div className="min-w-0">
                 <label className="block text-xs font-semibold text-slate-700 mb-1">Installation Date *</label>
                 <input
