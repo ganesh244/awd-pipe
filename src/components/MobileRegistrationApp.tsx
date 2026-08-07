@@ -945,7 +945,7 @@ export const MobileRegistrationApp: React.FC<MobileRegistrationAppProps> = ({
             <button
               type="submit"
               disabled={isSubmitting}
-              className={`w-full sm:w-auto min-w-[280px] font-extrabold rounded-xl text-base py-4 px-6 transition shadow-lg flex items-center justify-center gap-2.5 cursor-pointer ${
+              className={`w-full sm:w-auto font-extrabold rounded-xl text-base py-4 px-6 transition shadow-lg flex items-center justify-center gap-2.5 cursor-pointer ${
                 isSubmitting
                   ? 'bg-slate-400 text-white cursor-not-allowed'
                   : 'bg-emerald-600 hover:bg-emerald-700 text-white active:scale-[0.98]'

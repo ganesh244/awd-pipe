@@ -249,12 +249,12 @@ export const Home: React.FC<HomeProps> = ({
             </p>
           </div>
 
-          <div className="flex gap-3 shrink-0">
-            <div className="bg-white/10 backdrop-blur-md rounded-2xl p-4 border border-white/10 text-center min-w-[100px]">
+          <div className="flex gap-3">
+            <div className="bg-white/10 backdrop-blur-md rounded-2xl p-4 border border-white/10 text-center min-w-0 flex-1">
               <div className="text-2xl font-black text-emerald-400">{userInstallations.length}</div>
               <div className="text-[10px] text-slate-300 font-semibold uppercase tracking-wider mt-0.5">My Pipes</div>
             </div>
-            <div className="bg-white/10 backdrop-blur-md rounded-2xl p-4 border border-white/10 text-center min-w-[100px]">
+            <div className="bg-white/10 backdrop-blur-md rounded-2xl p-4 border border-white/10 text-center min-w-0 flex-1">
               <div className="text-2xl font-black text-emerald-400">{personalComplianceRate}%</div>
               <div className="text-[10px] text-slate-300 font-semibold uppercase tracking-wider mt-0.5">AWD Rate</div>
             </div>
