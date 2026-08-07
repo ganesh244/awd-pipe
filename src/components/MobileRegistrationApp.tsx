@@ -610,7 +610,7 @@ export const MobileRegistrationApp: React.FC<MobileRegistrationAppProps> = ({
             </div>
 
             <div className="grid grid-cols-2 gap-2">
-              <div>
+              <div className="min-w-0">
                 <label className="block text-xs font-semibold text-slate-700 mb-1">Village *</label>
                 <input
                   type="text"
@@ -621,7 +621,7 @@ export const MobileRegistrationApp: React.FC<MobileRegistrationAppProps> = ({
                   className="w-full border rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-emerald-500 outline-none"
                 />
               </div>
-              <div>
+              <div className="min-w-0">
                 <label className="block text-xs font-semibold text-slate-700 mb-1">Mandal *</label>
                 <input
                   type="text"
@@ -635,7 +635,7 @@ export const MobileRegistrationApp: React.FC<MobileRegistrationAppProps> = ({
             </div>
 
             <div className="grid grid-cols-2 gap-2">
-              <div>
+              <div className="min-w-0">
                 <label className="block text-xs font-semibold text-slate-700 mb-1">District *</label>
                 <input
                   type="text"
@@ -646,7 +646,7 @@ export const MobileRegistrationApp: React.FC<MobileRegistrationAppProps> = ({
                   className="w-full border rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-emerald-500 outline-none"
                 />
               </div>
-              <div>
+              <div className="min-w-0">
                 <label className="block text-xs font-semibold text-slate-700 mb-1">Farmer ID (Optional)</label>
                 <input
                   type="text"
@@ -670,7 +670,7 @@ export const MobileRegistrationApp: React.FC<MobileRegistrationAppProps> = ({
               </h3>
 
             <div className="grid grid-cols-3 gap-2">
-              <div>
+              <div className="min-w-0">
                 <label className="block text-xs font-semibold text-slate-700 mb-1">Survey No.</label>
                 <input
                   type="text"
@@ -680,7 +680,7 @@ export const MobileRegistrationApp: React.FC<MobileRegistrationAppProps> = ({
                   className="w-full border rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-emerald-500 outline-none"
                 />
               </div>
-              <div>
+              <div className="min-w-0">
                 <label className="block text-xs font-semibold text-slate-700 mb-1">Plot Size *</label>
                 <input
                   type="number"
@@ -692,7 +692,7 @@ export const MobileRegistrationApp: React.FC<MobileRegistrationAppProps> = ({
                   className="w-full border rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-emerald-500 outline-none font-bold"
                 />
               </div>
-              <div>
+              <div className="min-w-0">
                 <label className="block text-xs font-semibold text-slate-700 mb-1">Unit *</label>
                 <select
                   value={plotSizeUnit}
@@ -706,7 +706,7 @@ export const MobileRegistrationApp: React.FC<MobileRegistrationAppProps> = ({
             </div>
 
             <div className="grid grid-cols-2 gap-2">
-              <div>
+              <div className="min-w-0">
                 <label className="block text-xs font-semibold text-slate-700 mb-1">Crop</label>
                 <input
                   type="text"
@@ -715,7 +715,7 @@ export const MobileRegistrationApp: React.FC<MobileRegistrationAppProps> = ({
                   className="w-full border rounded-xl p-2.5 text-sm bg-slate-100 text-slate-600 outline-none font-semibold"
                 />
               </div>
-              <div>
+              <div className="min-w-0">
                 <label className="block text-xs font-semibold text-slate-700 mb-1">Paddy Variety</label>
                 <input
                   type="text"
@@ -807,7 +807,7 @@ export const MobileRegistrationApp: React.FC<MobileRegistrationAppProps> = ({
               </h3>
 
             <div className="grid grid-cols-2 gap-2">
-              <div>
+              <div className="min-w-0">
                 <label className="block text-xs font-semibold text-slate-700 mb-1">Installation Date *</label>
                 <input
                   type="date"
@@ -817,7 +817,7 @@ export const MobileRegistrationApp: React.FC<MobileRegistrationAppProps> = ({
                   className="w-full border rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-emerald-500 outline-none font-semibold"
                 />
               </div>
-              <div>
+              <div className="min-w-0">
                 <label className="block text-xs font-semibold text-slate-700 mb-1">Installed By *</label>
                 <input
                   type="text"
