@@ -5,6 +5,7 @@ import mongoose from 'mongoose';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import rateLimit from 'express-rate-limit';
+import crypto from 'crypto';
 
 import { INITIAL_PIPES, INITIAL_INSTALLATIONS, INITIAL_MONITORING } from './src/data/initialData.ts';
 import { INITIAL_STATES, INITIAL_DISTRICTS, INITIAL_AREAS, INITIAL_USERS } from './src/data/hierarchyData.ts';
@@ -223,7 +224,6 @@ if (!JWT_SECRET) {
   console.error('║  logged out on every server restart. Set JWT_SECRET in .env!    ║');
   console.error('╚══════════════════════════════════════════════════════════════════╝');
 }
-import crypto from 'crypto';
 const ACTIVE_JWT_SECRET = JWT_SECRET || crypto.randomBytes(32).toString('hex');
 
 const loginLimiter = rateLimit({
