@@ -494,7 +494,7 @@ export const HierarchyManager: React.FC<HierarchyManagerProps> = ({
 
 
       {/* CASCADING HIERARCHY COLUMNS */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6 items-start">
         
         {/* COLUMN 1: STATES */}
         <div className="bg-white rounded-2xl border border-slate-200 p-5 space-y-4 shadow-sm">
@@ -518,7 +518,7 @@ export const HierarchyManager: React.FC<HierarchyManagerProps> = ({
             </div>
           </div>
 
-          <div className="space-y-2">
+          <div className="space-y-2 max-h-[600px] overflow-y-auto pr-1">
             {visibleStates.map((st) => {
               const isSelected = st.id === selectedStateId;
               const stateUser = users.find((u) => u.role === 'State Manager' && matchLoc(u.state, st.name));
@@ -637,7 +637,7 @@ export const HierarchyManager: React.FC<HierarchyManagerProps> = ({
             </div>
           </div>
 
-          <div className="space-y-2">
+          <div className="space-y-2 max-h-[600px] overflow-y-auto pr-1">
             {visibleDistricts.length === 0 ? (
               <p className="text-xs text-slate-400 text-center py-6 bg-slate-50 rounded-xl border border-dashed">
                 No districts available in your scope.
@@ -850,7 +850,7 @@ export const HierarchyManager: React.FC<HierarchyManagerProps> = ({
                     </div>
 
                     {/* CF / JCF Field Staff List */}
-                    <div className="space-y-2 pl-2 border-l-2 border-teal-500/60">
+                    <div className="space-y-2 pl-2 border-l-2 border-teal-500/60 max-h-[400px] overflow-y-auto pr-1">
                       <div className="flex items-center justify-between">
                         <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">
                           Assigned Facilitators ({fieldStaff.length})
@@ -939,7 +939,7 @@ export const HierarchyManager: React.FC<HierarchyManagerProps> = ({
           </span>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 max-h-[600px] overflow-y-auto pr-1">
           {users
             .filter((u) => {
               if (isAdmin) return true;
