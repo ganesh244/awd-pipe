@@ -494,10 +494,10 @@ export const HierarchyManager: React.FC<HierarchyManagerProps> = ({
 
 
       {/* CASCADING HIERARCHY COLUMNS */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6 items-start">
+      <div className="flex flex-col md:flex-row items-start gap-4 sm:gap-6">
         
         {/* COLUMN 1: STATES */}
-        <div className="bg-white rounded-2xl border border-slate-200 p-5 space-y-4 shadow-sm">
+        <div className="bg-white rounded-2xl border border-slate-200 p-5 space-y-4 shadow-sm w-full md:w-1/3">
           <div className="flex items-center justify-between border-b pb-3">
             <h3 className="font-extrabold text-slate-800 text-sm flex items-center gap-2">
               <MapPin className="w-4 h-4 text-amber-600" /> 1. States ({visibleStates.length})
@@ -616,7 +616,7 @@ export const HierarchyManager: React.FC<HierarchyManagerProps> = ({
         </div>
 
         {/* COLUMN 2: DISTRICTS */}
-        <div className="bg-white rounded-2xl border border-slate-200 p-5 space-y-4 shadow-sm">
+        <div className="bg-white rounded-2xl border border-slate-200 p-5 space-y-4 shadow-sm w-full md:w-1/3">
           <div className="flex items-center justify-between border-b pb-3">
             <h3 className="font-extrabold text-slate-800 text-sm flex items-center gap-2">
               <Building2 className="w-4 h-4 text-blue-600" /> 2. Districts ({visibleDistricts.length})
@@ -735,7 +735,7 @@ export const HierarchyManager: React.FC<HierarchyManagerProps> = ({
         </div>
 
         {/* COLUMN 3: AREA MANAGERS & CF / JCF TEAM */}
-        <div className="bg-white rounded-2xl border border-slate-200 p-5 space-y-4 shadow-sm">
+        <div className="bg-white rounded-2xl border border-slate-200 p-5 space-y-4 shadow-sm w-full md:w-1/3">
           <div className="flex items-center justify-between border-b pb-3">
             <h3 className="font-extrabold text-slate-800 text-sm flex items-center gap-2">
               <Map className="w-4 h-4 text-teal-600" /> 3. Areas & Field Teams
