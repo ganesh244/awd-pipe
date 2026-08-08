@@ -36,9 +36,9 @@ export const PrintQRLabels: React.FC<PrintQRLabelsProps> = ({ pipes, onOpenGener
     return Array.from(new Set(pipes.map((p) => p.Batch_No).filter(Boolean))) as string[];
   }, [pipes]);
 
-  // Base list of pipes filtered by Batch & Status
+  // Base list of pipes filtered by Batch & Status, sorted numerically by Pipe_ID
   const baseFilteredPipes = useMemo(() => {
-    return pipes.filter((p) => {
+    const filtered = pipes.filter((p) => {
       const matchBatch = selectedBatch === 'All' || p.Batch_No === selectedBatch;
       const isRegistered = p.Status === 'Registered';
       const matchStatus =
@@ -49,6 +49,10 @@ export const PrintQRLabels: React.FC<PrintQRLabelsProps> = ({ pipes, onOpenGener
           : isRegistered;
       return matchBatch && matchStatus;
     });
+
+    return [...filtered].sort((a, b) =>
+      a.Pipe_ID.localeCompare(b.Pipe_ID, undefined, { numeric: true, sensitivity: 'base' })
+    );
   }, [pipes, selectedBatch, statusFilter]);
 
   // Reset range defaults when base pipes change
