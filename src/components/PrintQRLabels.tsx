@@ -102,47 +102,56 @@ export const PrintQRLabels: React.FC<PrintQRLabelsProps> = ({ pipes, onOpenGener
         ? 'https://awd-pipe-system.onrender.com'
         : rawOrigin;
 
-      for (const pipe of rangeFilteredPipes) {
-        const targetUrl = `${origin}/?id=${pipe.Pipe_ID}`;
-        try {
-          const canvas = document.createElement('canvas');
-          await QRCode.toCanvas(canvas, targetUrl, {
-            width: 200,
-            margin: 1,
-            color: { dark: '#042f2e', light: '#ffffff' },
-            errorCorrectionLevel: 'H',
-          });
+      // Pre-load the logo image once
+      const logoImg = new Image();
+      logoImg.crossOrigin = 'Anonymous';
+      logoImg.src = '/logo.png';
+      await new Promise<void>((resolve) => {
+        logoImg.onload = () => resolve();
+        logoImg.onerror = () => resolve();
+      });
+      const isLogoLoaded = logoImg.complete && logoImg.naturalHeight !== 0;
 
-          const ctx = canvas.getContext('2d');
-          if (ctx) {
-            const img = new Image();
-            img.crossOrigin = 'Anonymous';
-            img.src = '/logo.png';
-            await new Promise<void>((resolve) => {
-              img.onload = () => {
-                const logoSize = canvas.width * 0.25;
-                const x = (canvas.width - logoSize) / 2;
-                const y = (canvas.height - logoSize) / 2;
-                ctx.fillStyle = '#ffffff';
-                ctx.fillRect(x - 4, y - 4, logoSize + 8, logoSize + 8);
-                ctx.drawImage(img, x, y, logoSize, logoSize);
-                resolve();
-              };
-              img.onerror = () => {
-                resolve();
-              };
+      // Process in chunks to maintain UI responsiveness while parallelizing
+      const CHUNK_SIZE = 25;
+      for (let i = 0; i < rangeFilteredPipes.length; i += CHUNK_SIZE) {
+        const chunk = rangeFilteredPipes.slice(i, i + CHUNK_SIZE);
+        const chunkPromises = chunk.map(async (pipe) => {
+          const targetUrl = `${origin}/?id=${pipe.Pipe_ID}`;
+          try {
+            const canvas = document.createElement('canvas');
+            await QRCode.toCanvas(canvas, targetUrl, {
+              width: 200,
+              margin: 1,
+              color: { dark: '#042f2e', light: '#ffffff' },
+              errorCorrectionLevel: 'H',
             });
-          }
 
-          const dataUrl = canvas.toDataURL('image/png');
-          generated.push({
-            pipeId: pipe.Pipe_ID,
-            batchNo: pipe.Batch_No || '',
-            dataUrl,
-            targetUrl,
-          });
-        } catch (err) {
-          console.error('Error rendering label QR', err);
+            const ctx = canvas.getContext('2d');
+            if (ctx && isLogoLoaded) {
+              const logoSize = canvas.width * 0.25;
+              const x = (canvas.width - logoSize) / 2;
+              const y = (canvas.height - logoSize) / 2;
+              ctx.fillStyle = '#ffffff';
+              ctx.fillRect(x - 4, y - 4, logoSize + 8, logoSize + 8);
+              ctx.drawImage(logoImg, x, y, logoSize, logoSize);
+            }
+
+            return {
+              pipeId: pipe.Pipe_ID,
+              batchNo: pipe.Batch_No || '',
+              dataUrl: canvas.toDataURL('image/png'),
+              targetUrl,
+            };
+          } catch (err) {
+            console.error('Error rendering label QR', err);
+            return null;
+          }
+        });
+        
+        const results = await Promise.all(chunkPromises);
+        for (const res of results) {
+          if (res) generated.push(res);
         }
       }
 
