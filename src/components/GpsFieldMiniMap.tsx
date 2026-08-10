@@ -97,7 +97,7 @@ export const GpsFieldMiniMap: React.FC<GpsFieldMiniMapProps> = ({
         <button
           type="button"
           onClick={() => setTileType(tileType === 'streets' ? 'satellite' : 'streets')}
-          className="text-[10px] font-bold text-white px-2 py-0.5 rounded flex items-center gap-1 hover:bg-white/20 transition"
+          className="text-[10px] font-bold text-white px-2 py-0.5 rounded flex items-center gap-1 hover:bg-white/20 transition active:scale-[0.97] transition-transform"
         >
           <Layers className="w-3 h-3 text-[#88b04b]" />
           {tileType === 'streets' ? 'Switch Satellite' : 'Switch Map'}

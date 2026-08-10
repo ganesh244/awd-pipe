@@ -443,13 +443,13 @@ export const MobileRegistrationApp: React.FC<MobileRegistrationAppProps> = ({
               const nextPipe = pipes.find((p) => p.Status === 'Available' && p.Pipe_ID !== selectedPipe?.Pipe_ID);
               if (nextPipe) setActivePipeId(nextPipe.Pipe_ID);
             }}
-            className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3.5 rounded-xl text-sm transition shadow-md flex items-center justify-center gap-2"
+            className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3.5 rounded-xl text-sm transition shadow-md flex items-center justify-center gap-2 active:scale-[0.97] transition-transform"
           >
             <Plus className="w-4 h-4" /> Register Another Farmer
           </button>
           <button
             onClick={() => setSuccessRecord(null)}
-            className="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2.5 rounded-xl text-sm transition flex items-center justify-center gap-2"
+            className="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2.5 rounded-xl text-sm transition flex items-center justify-center gap-2 active:scale-[0.97] transition-transform"
           >
             <ShieldCheck className="w-4 h-4" /> View This Pipe Record
           </button>
@@ -511,7 +511,7 @@ export const MobileRegistrationApp: React.FC<MobileRegistrationAppProps> = ({
                   setDistrict('');
                   setFarmerId('');
                 }}
-                className={`py-2 px-2 rounded-lg transition flex items-center justify-center gap-1 ${
+                className={`py-2 px-2 rounded-lg transition flex items-center justify-center gap-1 active:scale-[0.97] transition-transform ${
                   farmerSelectionMode === 'new'
                     ? 'bg-emerald-700 text-white shadow-xs'
                     : 'text-slate-600 hover:text-slate-900'
@@ -524,7 +524,7 @@ export const MobileRegistrationApp: React.FC<MobileRegistrationAppProps> = ({
               <button
                 type="button"
                 onClick={() => setFarmerSelectionMode('existing')}
-                className={`py-2 px-2 rounded-lg transition flex items-center justify-center gap-1 ${
+                className={`py-2 px-2 rounded-lg transition flex items-center justify-center gap-1 active:scale-[0.97] transition-transform ${
                   farmerSelectionMode === 'existing'
                     ? 'bg-emerald-700 text-white shadow-xs'
                     : 'text-slate-600 hover:text-slate-900'
@@ -576,7 +576,7 @@ export const MobileRegistrationApp: React.FC<MobileRegistrationAppProps> = ({
                               handleSelectExistingFarmer(f.Farmer_Name);
                               setFarmerSearch(f.Farmer_Name);
                             }}
-                            className="w-full text-left px-3 py-2.5 hover:bg-emerald-50 transition text-xs"
+                            className="w-full text-left px-3 py-2.5 hover:bg-emerald-50 transition text-xs active:bg-emerald-100 active:opacity-70"
                           >
                             <div className="font-bold text-slate-800">🧑‍🌾 {f.Farmer_Name}</div>
                             <div className="text-slate-500 flex items-center gap-3 mt-0.5">
@@ -857,7 +857,7 @@ export const MobileRegistrationApp: React.FC<MobileRegistrationAppProps> = ({
                 type="button"
                 onClick={handleCaptureGPS}
                 disabled={isLocating}
-                className={`w-full font-bold rounded-xl text-xs py-3 px-3 transition shadow-sm flex items-center justify-center gap-2 ${
+                className={`w-full font-bold rounded-xl text-xs py-3 px-3 transition shadow-sm flex items-center justify-center gap-2 active:scale-[0.97] transition-transform ${
                   gpsData
                     ? 'bg-emerald-700 text-white hover:bg-emerald-800'
                     : 'bg-emerald-600 text-white hover:bg-emerald-700'
@@ -886,7 +886,7 @@ export const MobileRegistrationApp: React.FC<MobileRegistrationAppProps> = ({
                         type="button"
                         onClick={handleShareLocation}
                         title="Share field location via messaging apps"
-                        className="text-[10px] bg-emerald-800 hover:bg-emerald-900 text-white font-sans font-bold px-2 py-0.5 rounded transition shadow-xs flex items-center gap-1"
+                        className="text-[10px] bg-emerald-800 hover:bg-emerald-900 text-white font-sans font-bold px-2 py-0.5 rounded transition shadow-xs flex items-center gap-1 active:scale-[0.97] transition-transform"
                       >
                         <Share2 className="w-3 h-3 text-emerald-300" /> Share
                       </button>

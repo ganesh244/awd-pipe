@@ -279,7 +279,7 @@ export const QrCodeScannerModal: React.FC<QrCodeScannerModalProps> = ({
                 type="button"
                 onClick={toggleCamera}
                 title="Switch Front/Rear Camera"
-                className="bg-emerald-800/80 hover:bg-emerald-700 text-emerald-200 p-2 rounded-xl text-xs font-bold transition flex items-center gap-1 border border-emerald-600/40"
+                className="bg-emerald-800/80 hover:bg-emerald-700 text-emerald-200 p-2 rounded-xl text-xs font-bold transition flex items-center gap-1 border border-emerald-600/40 active:scale-[0.97] transition-transform"
               >
                 <RefreshCw className="w-4 h-4" />
                 <span className="hidden sm:inline">Flip</span>
@@ -287,7 +287,7 @@ export const QrCodeScannerModal: React.FC<QrCodeScannerModalProps> = ({
             )}
             <button
               onClick={onClose}
-              className="text-slate-300 hover:text-white p-2 rounded-xl hover:bg-white/10 transition"
+              className="text-slate-300 hover:text-white p-2 rounded-xl hover:bg-white/10 transition active:opacity-70"
             >
               <X className="w-5 h-5" />
             </button>
@@ -352,7 +352,7 @@ export const QrCodeScannerModal: React.FC<QrCodeScannerModalProps> = ({
                 <button
                   type="button"
                   onClick={() => startCamera(facingMode)}
-                  className="bg-[#88b04b] hover:bg-[#779942] text-slate-950 font-extrabold text-xs px-4 py-2 rounded-xl transition uppercase shadow-md"
+                  className="bg-[#88b04b] hover:bg-[#779942] text-slate-950 font-extrabold text-xs px-4 py-2 rounded-xl transition uppercase shadow-md active:scale-[0.97] transition-transform"
                 >
                   Retry Camera
                 </button>
@@ -370,7 +370,7 @@ export const QrCodeScannerModal: React.FC<QrCodeScannerModalProps> = ({
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
-                className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold text-xs px-3.5 py-1.5 rounded-xl shrink-0 transition uppercase tracking-wider flex items-center gap-1 shadow-md"
+                className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold text-xs px-3.5 py-1.5 rounded-xl shrink-0 transition uppercase tracking-wider flex items-center gap-1 shadow-md active:scale-[0.97] transition-transform"
               >
                 <Upload className="w-3.5 h-3.5" /> Upload Photo
               </button>
@@ -387,7 +387,7 @@ export const QrCodeScannerModal: React.FC<QrCodeScannerModalProps> = ({
               <button
                 type="button"
                 onClick={() => setScannerError(null)}
-                className="text-red-300 hover:text-white font-bold text-xs px-2 py-0.5 rounded bg-red-900/50"
+                className="text-red-300 hover:text-white font-bold text-xs px-2 py-0.5 rounded bg-red-900/50 transition active:scale-[0.97] transition-transform"
               >
                 Dismiss
               </button>
@@ -403,7 +403,7 @@ export const QrCodeScannerModal: React.FC<QrCodeScannerModalProps> = ({
             <button
               type="button"
               onClick={() => fileInputRef.current?.click()}
-              className="bg-slate-800 hover:bg-slate-700 text-emerald-300 font-extrabold text-xs py-2.5 px-4 rounded-xl border border-emerald-500/30 transition flex items-center justify-center gap-2 uppercase tracking-wider shadow-sm shrink-0"
+              className="bg-slate-800 hover:bg-slate-700 text-emerald-300 font-extrabold text-xs py-2.5 px-4 rounded-xl border border-emerald-500/30 transition flex items-center justify-center gap-2 uppercase tracking-wider shadow-sm shrink-0 active:scale-[0.97] transition-transform"
             >
               <Upload className="w-4 h-4 text-[#88b04b]" />
               <span>Upload QR Photo / Screenshot</span>
@@ -422,7 +422,7 @@ export const QrCodeScannerModal: React.FC<QrCodeScannerModalProps> = ({
               </div>
               <button
                 type="submit"
-                className="bg-[#88b04b] hover:bg-[#779942] text-slate-950 font-extrabold text-xs px-4 py-2.5 rounded-xl transition uppercase tracking-wider shrink-0 shadow-md font-sans"
+                className="bg-[#88b04b] hover:bg-[#779942] text-slate-950 font-extrabold text-xs px-4 py-2.5 rounded-xl transition uppercase tracking-wider shrink-0 shadow-md font-sans active:scale-[0.97] transition-transform"
               >
                 Submit
               </button>
