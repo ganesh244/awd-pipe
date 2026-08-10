@@ -260,27 +260,19 @@ export const Dashboard: React.FC<DashboardProps> = ({ pipes, installations, moni
 
   // ── Field-Staff Performance ──────────────────────────────────────────────
   const staffPerformance = useMemo(() => {
-    const staff: Record<string, { regs: number, visits: number, awdYes: number }> = {};
+    const staff: Record<string, { regs: number }> = {};
     filteredInstallations.forEach(i => {
       const s = i.Installed_By || 'Unknown';
-      if (!staff[s]) staff[s] = { regs: 0, visits: 0, awdYes: 0 };
+      if (!staff[s]) staff[s] = { regs: 0 };
       staff[s].regs++;
-    });
-    filteredMonitoring.forEach(m => {
-      const s = m.Visited_By || 'Unknown';
-      if (!staff[s]) staff[s] = { regs: 0, visits: 0, awdYes: 0 };
-      staff[s].visits++;
-      if (m.AWD_Followed === 'Yes') staff[s].awdYes++;
     });
     return Object.entries(staff)
       .map(([name, data]) => ({
          name,
-         regs: data.regs,
-         visits: data.visits,
-         awdRate: data.visits > 0 ? Math.round((data.awdYes / data.visits) * 100) : 0
+         regs: data.regs
       }))
       .sort((a, b) => b.regs - a.regs);
-  }, [filteredInstallations, filteredMonitoring]);
+  }, [filteredInstallations]);
 
 
   const fmtDate = (d?: string) => {
@@ -758,14 +750,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ pipes, installations, moni
                       <div className="font-bold text-slate-800 text-sm">{staff.name}</div>
                       <div className="text-[10px] font-semibold text-slate-500 mt-0.5">
                         <span className="text-emerald-600">{staff.regs} Regs</span>
-                        <span className="mx-1.5 text-slate-300">|</span>
-                        <span className="text-blue-600">{staff.visits} Visits</span>
                       </div>
                     </div>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-lg font-black text-slate-700">{staff.awdRate}%</div>
-                    <div className="text-[9px] font-bold text-slate-400 uppercase tracking-wide">AWD Rate</div>
                   </div>
                 </div>
               ))}
