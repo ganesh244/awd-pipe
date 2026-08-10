@@ -254,12 +254,12 @@ export const PrintQRLabels: React.FC<PrintQRLabelsProps> = ({ pipes, onOpenGener
           .grid {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
-            gap: 12px;
+            gap: 24px;
           }
           .label {
             border: 2px solid #1e293b;
-            border-radius: 10px;
-            padding: 10px;
+            border-radius: 8px;
+            padding: 6px;
             text-align: center;
             page-break-inside: avoid;
             break-inside: avoid;
@@ -274,7 +274,7 @@ export const PrintQRLabels: React.FC<PrintQRLabelsProps> = ({ pipes, onOpenGener
             padding-bottom: 4px;
             border-bottom: 1px solid #e2e8f0;
             color: #475569;
-            margin-bottom: 5px;
+            margin-bottom: 4px;
           }
           .brand-org {
             font-size: 9px;
@@ -290,13 +290,13 @@ export const PrintQRLabels: React.FC<PrintQRLabelsProps> = ({ pipes, onOpenGener
             width: 110px;
             height: 110px;
             display: block;
-            margin: 0 auto 6px;
+            margin: 0 auto 4px;
           }
           .pipe-id {
             background: #1e293b;
             color: #fff;
-            border-radius: 6px;
-            padding: 4px 8px;
+            border-radius: 4px;
+            padding: 3px 6px;
           }
           .pipe-id-text {
             font-size: 11px;
@@ -311,8 +311,8 @@ export const PrintQRLabels: React.FC<PrintQRLabelsProps> = ({ pipes, onOpenGener
             letter-spacing: 0.03em;
           }
           @media print {
-            body { padding: 8px; }
-            .grid { grid-template-columns: repeat(3, 1fr); gap: 8px; }
+            body { padding: 12px; }
+            .grid { grid-template-columns: repeat(3, 1fr); gap: 32px; }
           }
         </style>
       </head>
