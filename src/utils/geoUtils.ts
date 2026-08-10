@@ -14,7 +14,7 @@ export async function reverseGeocodeLocation(lat: number, lng: number): Promise<
     const timeoutId = setTimeout(() => controller.abort(), 3500);
 
     const response = await fetch(
-      `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=14`,
+      `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=14&accept-language=en`,
       { signal: controller.signal }
     );
     clearTimeout(timeoutId);
