@@ -282,30 +282,6 @@ export const Dashboard: React.FC<DashboardProps> = ({ pipes, installations, moni
       .sort((a, b) => b.regs - a.regs);
   }, [filteredInstallations, filteredMonitoring]);
 
-  // ── Overdue Monitoring ───────────────────────────────────────────────────
-  const overduePipes = useMemo(() => {
-    const now = new Date().getTime();
-    const ONE_DAY = 1000 * 60 * 60 * 24;
-    
-    const lastVisits: Record<string, string> = {};
-    filteredMonitoring.forEach(m => {
-      if (!lastVisits[m.Pipe_ID] || new Date(m.Visit_Date).getTime() > new Date(lastVisits[m.Pipe_ID]).getTime()) {
-        lastVisits[m.Pipe_ID] = m.Visit_Date;
-      }
-    });
-
-    const overdue: Array<{ pipe: Installation; days: number; lastDate: string }> = [];
-    filteredInstallations.forEach(i => {
-      const lastDate = lastVisits[i.Pipe_ID] || i.Installation_Date;
-      if (!lastDate) return;
-      const diffDays = Math.floor((now - new Date(lastDate).getTime()) / ONE_DAY);
-      if (diffDays > 14) {
-        overdue.push({ pipe: i, days: diffDays, lastDate });
-      }
-    });
-    
-    return overdue.sort((a, b) => b.days - a.days);
-  }, [filteredInstallations, filteredMonitoring]);
 
   const fmtDate = (d?: string) => {
     if (!d) return '—';
@@ -796,46 +772,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ pipes, installations, moni
             </div>
           </div>
 
-          {/* Overdue Monitoring Widget */}
-          <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3 mb-4">
-              <div className="flex items-center gap-2">
-                <div className="w-7 h-7 bg-red-50 rounded-lg flex items-center justify-center">
-                  <Clock className="w-4 h-4 text-red-500" />
-                </div>
-                <div>
-                  <div className="font-extrabold text-slate-800 text-sm">Needs Attention</div>
-                  <div className="text-[10px] text-slate-400">Pipes overdue for monitoring ({'>'}14 days)</div>
-                </div>
-              </div>
-              <span className="bg-red-100 text-red-700 font-bold px-2.5 py-1 rounded-full text-xs shrink-0">
-                {overduePipes.length} Overdue
-              </span>
-            </div>
-            <div className="space-y-2 max-h-80 overflow-y-auto pr-2">
-              {overduePipes.length === 0 ? (
-                <div className="text-center py-6 text-slate-400 text-xs">All pipes are up to date! 🎉</div>
-              ) : overduePipes.map(({ pipe, days, lastDate }, idx) => (
-                <div key={pipe.Pipe_ID} className="flex items-start justify-between p-3 rounded-xl border border-red-100 bg-red-50/30 hover:bg-red-50/80 transition">
-                  <div>
-                    <div className="font-bold text-slate-800 text-sm flex items-center gap-1.5">
-                      <AlertTriangle className="w-3.5 h-3.5 text-red-500 shrink-0" />
-                      {pipe.Farmer_Name}
-                    </div>
-                    <div className="text-[10px] font-medium text-slate-500 mt-1 flex flex-wrap gap-1.5">
-                      <span className="bg-white px-1.5 py-0.5 rounded shadow-xs">ID: {pipe.Pipe_ID}</span>
-                      <span className="bg-white px-1.5 py-0.5 rounded shadow-xs">{pipe.District}</span>
-                    </div>
-                  </div>
-                  <div className="text-right shrink-0">
-                    <div className="text-sm font-black text-red-600">{days} days</div>
-                    <div className="text-[9px] font-bold text-slate-400 uppercase tracking-wide">Overdue</div>
-                    <div className="text-[9px] text-slate-400 mt-0.5">Last: {fmtDate(lastDate)}</div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
+
         </div>
 
       </div>
