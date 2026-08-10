@@ -243,14 +243,14 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
-                className="bg-white/20 hover:bg-white/30 text-white font-bold text-[10px] px-2.5 py-1 rounded transition backdrop-blur-sm"
+                className="bg-white/20 hover:bg-white/30 text-white font-bold text-[10px] px-2.5 py-1 rounded transition backdrop-blur-sm active:scale-[0.97] transition-transform"
               >
                 Retake
               </button>
               <button
                 type="button"
                 onClick={onPhotoRemoved}
-                className="bg-red-600/80 hover:bg-red-600 text-white font-bold text-[10px] px-2 py-1 rounded transition"
+                className="bg-red-600/80 hover:bg-red-600 text-white font-bold text-[10px] px-2 py-1 rounded transition active:scale-[0.97] transition-transform"
               >
                 Remove
               </button>
@@ -265,14 +265,14 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({
             <button
               type="button"
               onClick={captureSnapshot}
-              className="bg-[#88b04b] hover:bg-[#779942] text-white font-bold px-5 py-2.5 rounded-lg shadow-lg text-xs flex items-center gap-2 uppercase tracking-wider"
+              className="bg-[#88b04b] hover:bg-[#779942] text-white font-bold px-5 py-2.5 rounded-lg shadow-lg text-xs flex items-center gap-2 uppercase tracking-wider active:scale-[0.97] transition-transform"
             >
               <Camera className="w-4 h-4" /> Snap Photo
             </button>
             <button
               type="button"
               onClick={stopCameraStream}
-              className="bg-slate-800/80 text-white font-bold px-3 py-2.5 rounded-lg text-xs border border-slate-600"
+              className="bg-slate-800/80 text-white font-bold px-3 py-2.5 rounded-lg text-xs border border-slate-600 active:scale-[0.97] transition-transform"
             >
               Cancel
             </button>
@@ -285,7 +285,7 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({
             <button
               type="button"
               onClick={startCamera}
-              className="bg-[#2d4a2d] hover:bg-[#1a2d1a] text-white font-bold text-xs py-2.5 px-3 rounded-lg transition shadow flex items-center justify-center gap-2 uppercase tracking-wider"
+              className="bg-[#2d4a2d] hover:bg-[#1a2d1a] text-white font-bold text-xs py-2.5 px-3 rounded-lg transition shadow flex items-center justify-center gap-2 uppercase tracking-wider active:scale-[0.97] transition-transform"
             >
               <Camera className="w-4 h-4 text-[#88b04b]" /> Open Camera
             </button>
@@ -293,7 +293,7 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({
             <button
               type="button"
               onClick={() => fileInputRef.current?.click()}
-              className="bg-white hover:bg-slate-50 text-[#2d3a2d] border-2 border-[#d1dbd1] font-bold text-xs py-2.5 px-3 rounded-lg transition flex items-center justify-center gap-2 uppercase tracking-wider"
+              className="bg-white hover:bg-slate-50 text-[#2d3a2d] border-2 border-[#d1dbd1] font-bold text-xs py-2.5 px-3 rounded-lg transition flex items-center justify-center gap-2 uppercase tracking-wider active:scale-[0.97] transition-transform"
             >
               <ImageIcon className="w-4 h-4 text-[#88b04b]" /> Upload File
             </button>
@@ -302,7 +302,7 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({
           <button
             type="button"
             onClick={handleSamplePhoto}
-            className="w-full bg-[#e2e8f0] hover:bg-slate-300 text-slate-700 text-[11px] font-bold py-1.5 rounded transition flex items-center justify-center gap-1.5"
+            className="w-full bg-[#e2e8f0] hover:bg-slate-300 text-slate-700 text-[11px] font-bold py-1.5 rounded transition flex items-center justify-center gap-1.5 active:scale-[0.98] transition-transform"
           >
             <span>📷 Attach Field Pipe Sample Photo</span>
           </button>
