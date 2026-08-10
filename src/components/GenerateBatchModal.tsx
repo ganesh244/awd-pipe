@@ -23,11 +23,39 @@ const INDIAN_STATES = [
 
 const POPULAR_DISTRICTS: Record<string, { code: string; name: string }[]> = {
   TS: [
+    { code: 'ADB', name: 'Adilabad (ADB)' },
+    { code: 'BDK', name: 'Bhadradri Kothagudem (BDK)' },
+    { code: 'HNK', name: 'Hanamkonda (HNK)' },
+    { code: 'HYD', name: 'Hyderabad (HYD)' },
+    { code: 'JGT', name: 'Jagtial (JGT)' },
+    { code: 'JGN', name: 'Jangaon (JGN)' },
+    { code: 'JSB', name: 'Jayashankar Bhupalpally (JSB)' },
+    { code: 'JGD', name: 'Jogulamba Gadwal (JGD)' },
+    { code: 'KMR', name: 'Kamareddy (KMR)' },
     { code: 'KRM', name: 'Karimnagar (KRM)' },
-    { code: 'NGD', name: 'Nalgonda (NGD)' },
-    { code: 'KMN', name: 'Khammam (KMN)' },
+    { code: 'KMM', name: 'Khammam (KMM)' },
+    { code: 'KBA', name: 'Komaram Bheem Asifabad (KBA)' },
+    { code: 'MBD', name: 'Mahabubabad (MBD)' },
+    { code: 'MBN', name: 'Mahabubnagar (MBN)' },
+    { code: 'MNC', name: 'Mancherial (MNC)' },
     { code: 'MDK', name: 'Medak (MDK)' },
-    { code: 'PED', name: 'Peddapalli (PED)' },
+    { code: 'MED', name: 'Medchal-Malkajgiri (MED)' },
+    { code: 'MLG', name: 'Mulugu (MLG)' },
+    { code: 'NGK', name: 'Nagarkurnool (NGK)' },
+    { code: 'NLG', name: 'Nalgonda (NLG)' },
+    { code: 'NRP', name: 'Narayanpet (NRP)' },
+    { code: 'NRM', name: 'Nirmal (NRM)' },
+    { code: 'NZB', name: 'Nizamabad (NZB)' },
+    { code: 'PDP', name: 'Peddapalli (PDP)' },
+    { code: 'RJS', name: 'Rajanna Sircilla (RJS)' },
+    { code: 'RRD', name: 'Ranga Reddy (RRD)' },
+    { code: 'SRD', name: 'Sangareddy (SRD)' },
+    { code: 'SDP', name: 'Siddipet (SDP)' },
+    { code: 'SRP', name: 'Suryapet (SRP)' },
+    { code: 'VKB', name: 'Vikarabad (VKB)' },
+    { code: 'WNP', name: 'Wanaparthy (WNP)' },
+    { code: 'WGL', name: 'Warangal (WGL)' },
+    { code: 'YDB', name: 'Yadadri Bhuvanagiri (YDB)' },
   ],
   AP: [
     { code: 'GNT', name: 'Guntur (GNT)' },
@@ -89,7 +117,7 @@ export const GenerateBatchModal: React.FC<GenerateBatchModalProps> = ({
       const seqNum = startSequence + i;
       const seqStr = ('0000' + seqNum).slice(-4);
       const pipeId = `AWD-${stateCode}-${year}-${effectiveDistrict}-${seqStr}`;
-      
+
       // Anti-counterfeiting authenticity hash (simulated SHA256 snippet)
       const secHash = Math.random().toString(36).substring(2, 8).toUpperCase();
 
@@ -118,7 +146,7 @@ export const GenerateBatchModal: React.FC<GenerateBatchModalProps> = ({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 overflow-y-auto">
       <div className="bg-white rounded-2xl max-w-xl w-full shadow-2xl border border-[#d1dbd1] overflow-hidden my-8 animate-scaleIn">
-        
+
         {/* Modal Header */}
         <div className="bg-[#2d4a2d] text-white p-5 flex items-center justify-between border-b border-[#3d5d3d]">
           <div className="flex items-center gap-2.5">
@@ -202,7 +230,7 @@ export const GenerateBatchModal: React.FC<GenerateBatchModalProps> = ({
         ) : (
           /* FORM QUESTIONS STATE */
           <form onSubmit={handleGenerate} className="p-6 space-y-4">
-            
+
             <div className="bg-[#f4f7f2] border border-[#d1dbd1] p-3 rounded-lg text-xs text-[#2d3a2d] flex items-start gap-2">
               <ShieldCheck className="w-5 h-5 text-[#88b04b] shrink-0 mt-0.5" />
               <div>
@@ -305,9 +333,8 @@ export const GenerateBatchModal: React.FC<GenerateBatchModalProps> = ({
                         key={num}
                         type="button"
                         onClick={() => setCount(num)}
-                        className={`text-[10px] font-bold px-2 py-1.5 rounded border ${
-                          count === num ? 'bg-[#2d4a2d] text-white border-[#2d4a2d]' : 'bg-slate-100 text-slate-700 border-slate-200'
-                        }`}
+                        className={`text-[10px] font-bold px-2 py-1.5 rounded border ${count === num ? 'bg-[#2d4a2d] text-white border-[#2d4a2d]' : 'bg-slate-100 text-slate-700 border-slate-200'
+                          }`}
                       >
                         +{num}
                       </button>
