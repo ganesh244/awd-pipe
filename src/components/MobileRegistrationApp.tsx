@@ -554,12 +554,13 @@ export const MobileRegistrationApp: React.FC<MobileRegistrationAppProps> = ({
                   />
                 </div>
                 {/* Filtered results */}
-                {farmerSearch.trim() && (() => {
-                  const term = farmerSearch.toLowerCase();
+                {(() => {
+                  const term = farmerSearch.trim().toLowerCase();
+                  const numSearch = farmerSearch.replace(/\D/g, '');
                   const results = registeredFarmersList.filter(
                     (f) =>
                       f.Farmer_Name.toLowerCase().includes(term) ||
-                      (f.Mobile && f.Mobile.includes(farmerSearch.replace(/\D/g, '')))
+                      (numSearch.length > 0 && f.Mobile && f.Mobile.includes(numSearch))
                   );
                   return results.length === 0 ? (
                     <div className="text-xs text-slate-500 text-center py-2">No farmers found matching "{farmerSearch}"</div>
