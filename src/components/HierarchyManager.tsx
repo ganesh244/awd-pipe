@@ -118,6 +118,7 @@ export const HierarchyManager: React.FC<HierarchyManagerProps> = ({
   const [targetAreaName, setTargetAreaName] = useState<string>('');
   const [targetNewDistrictName, setTargetNewDistrictName] = useState<string>('');
   const [targetNewAreaName, setTargetNewAreaName] = useState<string>('');
+  const [manualReportsToId, setManualReportsToId] = useState<string>('');
 
   const [editingHierarchyItem, setEditingHierarchyItem] = useState<any>(null);
   const [editingHierarchyType, setEditingHierarchyType] = useState<'state' | 'district' | 'area' | null>(null);
@@ -189,6 +190,22 @@ export const HierarchyManager: React.FC<HierarchyManagerProps> = ({
     return 'System Admin';
   }, [newUserRole, users, targetStateName, effectiveDistrictName, effectiveAreaName]);
 
+  // Candidates for manual reporting override (used when auto-detection yields nothing)
+  const reportingOverrideCandidates = useMemo(() => {
+    if (newUserRole === 'Area Manager' && managerPreview === 'Unassigned') {
+      const stateMgrs = users.filter((u) => u.role === 'State Manager' && u.state === targetStateName);
+      const distMgrs = users.filter((u) => u.role === 'District Manager' && u.state === targetStateName);
+      return [...distMgrs, ...stateMgrs];
+    }
+    if ((newUserRole === 'CF' || newUserRole === 'JCF') && managerPreview === 'Unassigned') {
+      const areaMgrs = users.filter((u) => u.role === 'Area Manager' && u.state === targetStateName);
+      const distMgrs = users.filter((u) => u.role === 'District Manager' && u.state === targetStateName);
+      const stateMgrs = users.filter((u) => u.role === 'State Manager' && u.state === targetStateName);
+      return [...areaMgrs, ...distMgrs, ...stateMgrs];
+    }
+    return [];
+  }, [newUserRole, managerPreview, users, targetStateName]);
+
   // When opening add modal, pre-fill defaults
   const openAddModal = (defaultRole?: UserRole, defaultArea?: string) => {
     const role = defaultRole || (isDM ? 'Area Manager' : isAM ? 'CF' : 'Area Manager');
@@ -201,6 +218,7 @@ export const HierarchyManager: React.FC<HierarchyManagerProps> = ({
     setTargetAreaName(initialAreaName);
     setTargetNewDistrictName('');
     setTargetNewAreaName('');
+    setManualReportsToId('');
     setNewUserName('');
     setNewUserUsername('');
     setNewUserPassword(`Pwd@${Math.floor(1000 + Math.random() * 9000)}`);
@@ -260,10 +278,28 @@ export const HierarchyManager: React.FC<HierarchyManagerProps> = ({
       if (stateManager) intelligentReportsToId = stateManager.id;
     } else if (newUserRole === 'Area Manager') {
       const districtManager = users.find(u => u.role === 'District Manager' && u.district === assignedDistrict);
-      if (districtManager) intelligentReportsToId = districtManager.id;
+      if (districtManager) {
+        intelligentReportsToId = districtManager.id;
+      } else if (manualReportsToId) {
+        // User explicitly selected a manager override
+        intelligentReportsToId = manualReportsToId;
+      } else {
+        // No District Manager exists — fall back to State Manager
+        const stateManager = users.find(u => u.role === 'State Manager' && u.state === assignedState);
+        if (stateManager) intelligentReportsToId = stateManager.id;
+      }
     } else if (newUserRole === 'CF' || newUserRole === 'JCF') {
       const areaManager = users.find(u => u.role === 'Area Manager' && u.areaName === assignedArea);
-      if (areaManager) intelligentReportsToId = areaManager.id;
+      if (areaManager) {
+        intelligentReportsToId = areaManager.id;
+      } else if (manualReportsToId) {
+        intelligentReportsToId = manualReportsToId;
+      } else {
+        const districtManager = users.find(u => u.role === 'District Manager' && u.district === assignedDistrict);
+        const stateManager = users.find(u => u.role === 'State Manager' && u.state === assignedState);
+        if (districtManager) intelligentReportsToId = districtManager.id;
+        else if (stateManager) intelligentReportsToId = stateManager.id;
+      }
     }
 
     const newUser: User = {
@@ -1207,10 +1243,39 @@ export const HierarchyManager: React.FC<HierarchyManagerProps> = ({
                       />
                     )}
                   </div>
-                  <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-xs">
-                    <span className="font-bold text-emerald-900">Reports to:</span>{' '}
-                    <span className="text-emerald-800">{managerPreview}</span>
-                  </div>
+                  {managerPreview !== 'Unassigned' ? (
+                    <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-xs">
+                      <span className="font-bold text-emerald-900">Reports to:</span>{' '}
+                      <span className="text-emerald-800">{managerPreview}</span>
+                    </div>
+                  ) : (
+                    <div className="rounded-2xl border border-amber-300 bg-amber-50 px-4 py-3 text-xs space-y-2">
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-amber-700 font-bold">
+                          ⚠{' '}
+                          {(newUserRole === 'CF' || newUserRole === 'JCF')
+                            ? 'No Area Manager for this location.'
+                            : 'No District Manager for this location.'}
+                        </span>
+                      </div>
+                      <label className="block text-[10px] font-extrabold text-amber-900 mb-1">Reporting Manager Override</label>
+                      <select
+                        value={manualReportsToId}
+                        onChange={(e) => setManualReportsToId(e.target.value)}
+                        className="w-full bg-white border border-amber-300 rounded-xl p-2.5 text-xs font-semibold text-slate-800 outline-none focus:ring-2 focus:ring-amber-500"
+                      >
+                        <option value="">— Auto: report to State Manager —</option>
+                        {reportingOverrideCandidates.map((u) => (
+                          <option key={u.id} value={u.id}>
+                            {u.name} ({u.role}{u.district ? ` · ${u.district}` : u.state ? ` · ${u.state}` : ''})
+                          </option>
+                        ))}
+                      </select>
+                      <p className="text-[9px] text-amber-700 font-medium">
+                        If left as auto, this user will report directly to the State Manager.
+                      </p>
+                    </div>
+                  )}
                 </div>
               )}
 
