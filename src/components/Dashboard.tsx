@@ -258,21 +258,6 @@ export const Dashboard: React.FC<DashboardProps> = ({ pipes, installations, moni
       });
   }, [filteredInstallations, filteredMonitoring]);
 
-  // ── Field-Staff Performance ──────────────────────────────────────────────
-  const staffPerformance = useMemo(() => {
-    const staff: Record<string, { regs: number }> = {};
-    filteredInstallations.forEach(i => {
-      const s = i.Installed_By || 'Unknown';
-      if (!staff[s]) staff[s] = { regs: 0 };
-      staff[s].regs++;
-    });
-    return Object.entries(staff)
-      .map(([name, data]) => ({
-         name,
-         regs: data.regs
-      }))
-      .sort((a, b) => b.regs - a.regs);
-  }, [filteredInstallations]);
 
 
   const fmtDate = (d?: string) => {
@@ -731,35 +716,6 @@ export const Dashboard: React.FC<DashboardProps> = ({ pipes, installations, moni
           </div>
         </div>
 
-        {/* ── Row 4: Field Staff & Overdue Monitoring ── */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          
-          {/* Field Staff Performance */}
-          <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm">
-            <SectionTitle icon={Trophy} title="Field Staff Performance" sub="Ranked by total registrations" />
-            <div className="space-y-2 mt-4 max-h-80 overflow-y-auto pr-2">
-              {staffPerformance.length === 0 ? (
-                <div className="text-center py-6 text-slate-400 text-xs">No staff data</div>
-              ) : staffPerformance.map((staff, idx) => (
-                <div key={staff.name} className="flex items-center justify-between p-3 rounded-xl border border-slate-100 hover:border-emerald-200 bg-slate-50/50 transition">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-emerald-100 text-emerald-700 font-bold flex items-center justify-center text-xs shrink-0">
-                      #{idx + 1}
-                    </div>
-                    <div>
-                      <div className="font-bold text-slate-800 text-sm">{staff.name}</div>
-                      <div className="text-[10px] font-semibold text-slate-500 mt-0.5">
-                        <span className="text-emerald-600">{staff.regs} Regs</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-
-        </div>
 
       </div>
     </div>
