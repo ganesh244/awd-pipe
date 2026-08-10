@@ -311,8 +311,8 @@ export const PrintQRLabels: React.FC<PrintQRLabelsProps> = ({ pipes, onOpenGener
             letter-spacing: 0.03em;
           }
           @media print {
-            body { padding: 12px; }
-            .grid { grid-template-columns: repeat(3, 1fr); gap: 32px; }
+            body { padding: 8px; }
+            .grid { grid-template-columns: repeat(4, 1fr); gap: 16px; }
           }
         </style>
       </head>
