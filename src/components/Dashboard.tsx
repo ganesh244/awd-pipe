@@ -1,17 +1,21 @@
 import React, { useMemo, useState } from 'react';
-import { AWDPipe, Installation, MonitoringRecord } from '../types';
+import { AWDPipe, Installation, MonitoringRecord, User } from '../types';
+import { ComposedChart, Bar, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend } from 'recharts';
 import {
   Sprout, Users, Map, Activity, ShieldAlert, CheckCircle2,
   PieChart, Layers, Droplets, TrendingUp, AlertTriangle,
   BarChart3, Calendar, Wheat, Pipette, Target, Flame,
   ArrowUpRight, ArrowDownRight, Minus, ClipboardList, MapPin,
-  Zap, Filter
+  Zap, Filter, Clock, X, Trophy
 } from 'lucide-react';
+
+const REGISTRATION_TARGET = 1000; // TODO: Make configurable
 
 interface DashboardProps {
   pipes: AWDPipe[];
   installations: Installation[];
   monitoringList: MonitoringRecord[];
+  currentUser?: User;
 }
 
 // ── Tiny bar helpers ────────────────────────────────────────────────────────
@@ -71,45 +75,65 @@ const SectionTitle: React.FC<{ icon: React.FC<any>; title: string; sub?: string 
   </div>
 );
 
-export const Dashboard: React.FC<DashboardProps> = ({ pipes, installations, monitoringList }) => {
+export const Dashboard: React.FC<DashboardProps> = ({ pipes, installations, monitoringList, currentUser }) => {
   const [districtFilter, setDistrictFilter] = useState<string>('All');
+
+  const scopeLabel = useMemo(() => {
+    if (!currentUser) return 'All Regions';
+    if (currentUser.role === 'Admin') return 'All Regions';
+    if (currentUser.role === 'State Manager') return `State: ${currentUser.state || 'Unknown'}`;
+    if (currentUser.role === 'District Manager') return `District: ${currentUser.district || 'Unknown'}`;
+    if (currentUser.role === 'Area Manager') return `Area: ${currentUser.areaName || 'Unknown'}`;
+    return 'Your Assigned Area';
+  }, [currentUser]);
+
+  const filteredInstallations = useMemo(() => 
+    districtFilter === 'All' ? installations : installations.filter(i => i.District === districtFilter)
+  , [installations, districtFilter]);
+
+  const filteredMonitoring = useMemo(() => {
+    if (districtFilter === 'All') return monitoringList;
+    const validPipeIds = new Set(filteredInstallations.map(i => i.Pipe_ID));
+    return monitoringList.filter(m => validPipeIds.has(m.Pipe_ID));
+  }, [monitoringList, filteredInstallations, districtFilter]);
 
   // ── Core metrics ────────────────────────────────────────────────────────
   const totalPipes       = pipes.length;
-  const totalInstalled   = installations.length;
+  const totalInstalled   = filteredInstallations.length;
   const totalAvailable   = pipes.filter(p => p.Status === 'Available').length;
   const totalDamaged     = pipes.filter(p => p.Status === 'Damaged').length;
-  const totalFarmers     = new Set(installations.map(i => i.Farmer_Name)).size;
-  const totalAcres       = installations.reduce((s, i) => s + (Number(i.Plot_Size) || 0), 0);
-  const totalVisits      = monitoringList.length;
-  const awdYes           = monitoringList.filter(m => m.AWD_Followed === 'Yes').length;
-  const awdPartial       = monitoringList.filter(m => m.AWD_Followed === 'Partially').length;
-  const awdNo            = monitoringList.filter(m => m.AWD_Followed === 'No').length;
+  const totalFarmers     = new Set(filteredInstallations.map(i => i.Farmer_Name)).size;
+  const totalAcres       = filteredInstallations.reduce((s, i) => s + (Number(i.Plot_Size) || 0), 0);
+  const totalVisits      = filteredMonitoring.length;
+  const awdYes           = filteredMonitoring.filter(m => m.AWD_Followed === 'Yes').length;
+  const awdPartial       = filteredMonitoring.filter(m => m.AWD_Followed === 'Partially').length;
+  const awdNo            = filteredMonitoring.filter(m => m.AWD_Followed === 'No').length;
   const adoptionRate     = totalVisits > 0 ? Math.round((awdYes / totalVisits) * 100) : 0;
-  const goodPipes        = monitoringList.filter(m => m.Pipe_Condition === 'Good').length;
-  const damagedPipes     = monitoringList.filter(m => m.Pipe_Condition === 'Damaged').length;
-  const avgWaterLevel    = monitoringList.length > 0
-    ? (monitoringList.reduce((s, m) => {
+  const goodPipes        = filteredMonitoring.filter(m => m.Pipe_Condition === 'Good').length;
+  const damagedPipes     = filteredMonitoring.filter(m => m.Pipe_Condition === 'Damaged').length;
+  const avgWaterLevel    = filteredMonitoring.length > 0
+    ? (filteredMonitoring.reduce((s, m) => {
         // Support both numeric ("5", "-5") and descriptive ("+5 cm above...", "-10 cm below...")
         const parsed = parseFloat(String(m.Water_Level ?? ''));
         return s + (isNaN(parsed) ? 0 : parsed);
-      }, 0) / monitoringList.length).toFixed(1)
+      }, 0) / filteredMonitoring.length).toFixed(1)
     : '—';
 
   // ── Method breakdown ─────────────────────────────────────────────────────
   const methodStats = useMemo(() =>
-    installations.reduce((acc, i) => {
+    filteredInstallations.reduce((acc, i) => {
       acc[i.Establishment_Method] = (acc[i.Establishment_Method] || 0) + 1;
       return acc;
-    }, {} as Record<string, number>), [installations]);
+    }, {} as Record<string, number>), [filteredInstallations]);
 
   const methodAcres = useMemo(() =>
-    installations.reduce((acc, i) => {
+    filteredInstallations.reduce((acc, i) => {
       acc[i.Establishment_Method] = (acc[i.Establishment_Method] || 0) + (Number(i.Plot_Size) || 0);
       return acc;
-    }, {} as Record<string, number>), [installations]);
+    }, {} as Record<string, number>), [filteredInstallations]);
 
   // ── District breakdown ───────────────────────────────────────────────────
+  // Note: We use the UNFILTERED arrays here so the district list stays populated!
   const districtStats = useMemo(() => {
     const m: Record<string, { pipes: number; acres: number; farmers: Set<string>; visits: number }> = {};
     installations.forEach(i => {
@@ -136,39 +160,37 @@ export const Dashboard: React.FC<DashboardProps> = ({ pipes, installations, moni
   // ── Village breakdown ────────────────────────────────────────────────────
   const villageStats = useMemo(() => {
     const m: Record<string, number> = {};
-    installations
-      .filter(i => districtFilter === 'All' || i.District === districtFilter)
-      .forEach(i => { m[i.Village] = (m[i.Village] || 0) + 1; });
+    filteredInstallations.forEach(i => { m[i.Village] = (m[i.Village] || 0) + 1; });
     return Object.entries(m).sort((a, b) => b[1] - a[1]).slice(0, 8);
-  }, [installations, districtFilter]);
+  }, [filteredInstallations]);
 
   // ── Irrigation source breakdown ──────────────────────────────────────────
   const irrigationStats = useMemo(() =>
-    installations.reduce((acc, i) => {
+    filteredInstallations.reduce((acc, i) => {
       const src = i.Irrigation_Source || 'Unknown';
       acc[src] = (acc[src] || 0) + 1;
       return acc;
-    }, {} as Record<string, number>), [installations]);
+    }, {} as Record<string, number>), [filteredInstallations]);
 
   // ── Crop stage distribution (from monitoring) ────────────────────────────
   const cropStageStats = useMemo(() =>
-    monitoringList.reduce((acc, m) => {
+    filteredMonitoring.reduce((acc, m) => {
       const stage = m.Crop_Stage || 'Unknown';
       acc[stage] = (acc[stage] || 0) + 1;
       return acc;
-    }, {} as Record<string, number>), [monitoringList]);
+    }, {} as Record<string, number>), [filteredMonitoring]);
 
   // ── Variety distribution ─────────────────────────────────────────────────
   const varietyStats = useMemo(() => {
     const m: Record<string, number> = {};
-    installations.forEach(i => { const v = i.Variety || 'Local'; m[v] = (m[v] || 0) + 1; });
+    filteredInstallations.forEach(i => { const v = i.Variety || 'Local'; m[v] = (m[v] || 0) + 1; });
     return Object.entries(m).sort((a, b) => b[1] - a[1]);
-  }, [installations]);
+  }, [filteredInstallations]);
 
   // ── Pipe installation timeline (by month) ───────────────────────────────
   const installTimeline = useMemo(() => {
     const m: Record<string, number> = {};
-    installations.forEach(i => {
+    filteredInstallations.forEach(i => {
       if (!i.Installation_Date) return;
       const d = new Date(i.Installation_Date);
       if (isNaN(d.getTime())) return;
@@ -176,18 +198,18 @@ export const Dashboard: React.FC<DashboardProps> = ({ pipes, installations, moni
       m[key] = (m[key] || 0) + 1;
     });
     return Object.entries(m).sort(([a], [b]) => a.localeCompare(b)).slice(-6);
-  }, [installations]);
+  }, [filteredInstallations]);
 
   // ── Recent monitoring visits ─────────────────────────────────────────────
   const recentVisits = useMemo(() =>
-    [...monitoringList]
+    [...filteredMonitoring]
       .sort((a, b) => new Date(b.Visit_Date || 0).getTime() - new Date(a.Visit_Date || 0).getTime())
-      .slice(0, 6), [monitoringList]);
+      .slice(0, 6), [filteredMonitoring]);
 
   // ── Water level buckets ──────────────────────────────────────────────────
   const waterBuckets = useMemo(() => {
     const buckets = { 'Below 5cm': 0, '5–15cm': 0, '15–25cm': 0, 'Above 25cm': 0 };
-    monitoringList.forEach(m => {
+    filteredMonitoring.forEach(m => {
       const wl = parseFloat(String(m.Water_Level ?? '')) || 0;
       if (wl < 5) buckets['Below 5cm']++;
       else if (wl < 15) buckets['5–15cm']++;
@@ -195,7 +217,95 @@ export const Dashboard: React.FC<DashboardProps> = ({ pipes, installations, moni
       else buckets['Above 25cm']++;
     });
     return buckets;
-  }, [monitoringList]);
+  }, [filteredMonitoring]);
+
+  // ── Trend Data ───────────────────────────────────────────────────────────
+  const getStartOfWeek = (dStr: string) => {
+    const d = new Date(dStr);
+    if (isNaN(d.getTime())) return null;
+    d.setDate(d.getDate() - d.getDay()); // Sunday start
+    return d.toISOString().split('T')[0];
+  };
+
+  const trendData = useMemo(() => {
+    const weeks: Record<string, { regs: number, visits: number, awdYes: number }> = {};
+    
+    filteredInstallations.forEach(i => {
+      const w = getStartOfWeek(i.Installation_Date);
+      if (!w) return;
+      if (!weeks[w]) weeks[w] = { regs: 0, visits: 0, awdYes: 0 };
+      weeks[w].regs++;
+    });
+    
+    filteredMonitoring.forEach(m => {
+      const w = getStartOfWeek(m.Visit_Date);
+      if (!w) return;
+      if (!weeks[w]) weeks[w] = { regs: 0, visits: 0, awdYes: 0 };
+      weeks[w].visits++;
+      if (m.AWD_Followed === 'Yes') weeks[w].awdYes++;
+    });
+    
+    return Object.entries(weeks)
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([w, data]) => {
+        const dt = new Date(w);
+        return {
+          week: dt.toLocaleDateString('en-IN', { day: '2-digit', month: 'short' }),
+          rawDate: w,
+          Registrations: data.regs,
+          AWD_Compliance: data.visits > 0 ? Math.round((data.awdYes / data.visits) * 100) : 0
+        };
+      });
+  }, [filteredInstallations, filteredMonitoring]);
+
+  // ── Field-Staff Performance ──────────────────────────────────────────────
+  const staffPerformance = useMemo(() => {
+    const staff: Record<string, { regs: number, visits: number, awdYes: number }> = {};
+    filteredInstallations.forEach(i => {
+      const s = i.Installed_By || 'Unknown';
+      if (!staff[s]) staff[s] = { regs: 0, visits: 0, awdYes: 0 };
+      staff[s].regs++;
+    });
+    filteredMonitoring.forEach(m => {
+      const s = m.Visited_By || 'Unknown';
+      if (!staff[s]) staff[s] = { regs: 0, visits: 0, awdYes: 0 };
+      staff[s].visits++;
+      if (m.AWD_Followed === 'Yes') staff[s].awdYes++;
+    });
+    return Object.entries(staff)
+      .map(([name, data]) => ({
+         name,
+         regs: data.regs,
+         visits: data.visits,
+         awdRate: data.visits > 0 ? Math.round((data.awdYes / data.visits) * 100) : 0
+      }))
+      .sort((a, b) => b.regs - a.regs);
+  }, [filteredInstallations, filteredMonitoring]);
+
+  // ── Overdue Monitoring ───────────────────────────────────────────────────
+  const overduePipes = useMemo(() => {
+    const now = new Date().getTime();
+    const ONE_DAY = 1000 * 60 * 60 * 24;
+    
+    const lastVisits: Record<string, string> = {};
+    filteredMonitoring.forEach(m => {
+      if (!lastVisits[m.Pipe_ID] || new Date(m.Visit_Date).getTime() > new Date(lastVisits[m.Pipe_ID]).getTime()) {
+        lastVisits[m.Pipe_ID] = m.Visit_Date;
+      }
+    });
+
+    const overdue: Array<{ pipe: Installation; days: number; lastDate: string }> = [];
+    filteredInstallations.forEach(i => {
+      const lastDate = lastVisits[i.Pipe_ID] || i.Installation_Date;
+      if (!lastDate) return;
+      const diffDays = Math.floor((now - new Date(lastDate).getTime()) / ONE_DAY);
+      if (diffDays > 14) {
+        overdue.push({ pipe: i, days: diffDays, lastDate });
+      }
+    });
+    
+    return overdue.sort((a, b) => b.days - a.days);
+  }, [filteredInstallations, filteredMonitoring]);
 
   const fmtDate = (d?: string) => {
     if (!d) return '—';
@@ -213,27 +323,65 @@ export const Dashboard: React.FC<DashboardProps> = ({ pipes, installations, moni
         {/* ── Header ── */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div>
-            <h1 className="text-xl font-black text-slate-800 flex items-center gap-2">
-              <BarChart3 className="w-5 h-5 text-violet-600" />
-              AWD Field Analytics Dashboard
-            </h1>
-            <p className="text-xs text-slate-500 mt-0.5">
-              Real-time aggregated paddy water management data across all fields
+            <div className="flex items-center gap-3">
+              <h1 className="text-xl font-black text-slate-800 flex items-center gap-2">
+                <BarChart3 className="w-5 h-5 text-violet-600" />
+                AWD Field Analytics
+              </h1>
+              {districtFilter !== 'All' && (
+                <button 
+                  onClick={() => setDistrictFilter('All')}
+                  className="flex items-center gap-1 text-[10px] font-bold bg-emerald-100 text-emerald-800 px-2 py-1 rounded-full hover:bg-emerald-200 transition"
+                >
+                  <Filter className="w-3 h-3" />
+                  {districtFilter}
+                  <X className="w-3 h-3 ml-0.5" />
+                </button>
+              )}
+            </div>
+            <p className="text-xs text-slate-500 mt-0.5 flex flex-wrap items-center gap-2">
+              <span>Real-time aggregated paddy water management data</span>
+              <span className="hidden sm:inline-block w-1 h-1 rounded-full bg-slate-300" />
+              <span className="font-semibold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-100 shadow-sm">
+                Showing data for: {scopeLabel}
+              </span>
             </p>
           </div>
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-bold border ${
-              adoptionRate >= 70 ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
-              adoptionRate >= 40 ? 'bg-amber-50 text-amber-700 border-amber-200' :
-              'bg-red-50 text-red-700 border-red-200'
-            }`}>
-              <Zap className="w-3 h-3" />
-              AWD Adoption: {adoptionRate}%
-            </span>
-            <span className="inline-flex items-center gap-1.5 bg-white border border-slate-200 px-3 py-1.5 rounded-full text-[11px] font-semibold text-slate-600">
-              <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse" />
-              Live Data
-            </span>
+          <div className="flex flex-col items-end gap-1.5">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-bold border ${
+                adoptionRate >= 70 ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
+                adoptionRate >= 40 ? 'bg-amber-50 text-amber-700 border-amber-200' :
+                'bg-red-50 text-red-700 border-red-200'
+              }`}>
+                <Zap className="w-3 h-3" />
+                AWD Adoption: {adoptionRate}%
+              </span>
+              <span className="inline-flex items-center gap-1.5 bg-white border border-slate-200 px-3 py-1.5 rounded-full text-[11px] font-semibold text-slate-600">
+                <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse" />
+                Live Data
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* ── Target Progress Bar ── */}
+        <div className="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm flex flex-col md:flex-row items-center gap-4">
+          <div className="flex items-center gap-3 shrink-0">
+            <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center">
+              <Target className="w-5 h-5 text-slate-500" />
+            </div>
+            <div>
+              <div className="text-xs font-bold text-slate-500 uppercase tracking-wider">Phase Registration Target</div>
+              <div className="text-lg font-black text-slate-800">{totalInstalled} <span className="text-sm font-bold text-slate-400">/ {REGISTRATION_TARGET} pipes</span></div>
+            </div>
+          </div>
+          <div className="flex-1 w-full">
+            <div className="flex justify-between text-[10px] font-bold mb-1.5">
+              <span className="text-slate-500">Progress</span>
+              <span className="text-emerald-600">{Math.round((totalInstalled / REGISTRATION_TARGET) * 100)}% Complete</span>
+            </div>
+            <ProgressBar pct={(totalInstalled / REGISTRATION_TARGET) * 100} color="bg-emerald-500" />
           </div>
         </div>
 
@@ -251,6 +399,32 @@ export const Dashboard: React.FC<DashboardProps> = ({ pipes, installations, moni
           ].map((k) => (
             <KPICard key={k.label} {...k} />
           ))}
+        </div>
+
+        {/* ── Trend Over Time ── */}
+        <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm">
+          <SectionTitle icon={TrendingUp} title="Registrations & Compliance Trends" sub="Weekly performance across selected region" />
+          {trendData.length === 0 ? (
+            <div className="text-center py-10 text-slate-400 text-sm">No trend data available</div>
+          ) : (
+            <div className="h-64 w-full mt-4">
+              <ResponsiveContainer width="100%" height="100%">
+                <ComposedChart data={trendData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                  <XAxis dataKey="week" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8' }} dy={10} />
+                  <YAxis yAxisId="left" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8' }} />
+                  <YAxis yAxisId="right" orientation="right" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8' }} />
+                  <Tooltip 
+                    contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                    labelStyle={{ fontWeight: 'bold', color: '#1e293b', marginBottom: '4px' }}
+                  />
+                  <Legend wrapperStyle={{ fontSize: '11px', fontWeight: '600' }} />
+                  <Bar yAxisId="left" dataKey="Registrations" fill="#10b981" radius={[4, 4, 0, 0]} maxBarSize={40} />
+                  <Line yAxisId="right" type="monotone" dataKey="AWD_Compliance" name="AWD Compliance %" stroke="#6366f1" strokeWidth={3} dot={{ r: 4, strokeWidth: 2 }} activeDot={{ r: 6 }} />
+                </ComposedChart>
+              </ResponsiveContainer>
+            </div>
+          )}
         </div>
 
         {/* ── Row 1: AWD Compliance + Method + Water Level ── */}
@@ -358,7 +532,15 @@ export const Dashboard: React.FC<DashboardProps> = ({ pipes, installations, moni
               {districtStats.length === 0 ? (
                 <div className="text-center py-6 text-slate-400">No district data</div>
               ) : districtStats.map(({ name, pipes, acres, farmers, visits }, idx) => (
-                <div key={name} className="rounded-xl border border-slate-100 p-3 hover:border-emerald-200 hover:bg-emerald-50/30 transition-all">
+                <button 
+                  key={name} 
+                  onClick={() => setDistrictFilter(name)}
+                  className={`w-full text-left rounded-xl border p-3 transition-all ${
+                    districtFilter === name 
+                      ? 'border-emerald-400 bg-emerald-50 shadow-sm ring-1 ring-emerald-400/20' 
+                      : 'border-slate-100 hover:border-emerald-200 hover:bg-emerald-50/30'
+                  }`}
+                >
                   <div className="flex items-center justify-between mb-1.5">
                     <div className="flex items-center gap-2 font-bold text-slate-800">
                       <span className={`w-5 h-5 rounded-md ${BAR_COLORS[idx % BAR_COLORS.length]} flex items-center justify-center text-white text-[9px] font-black`}>
@@ -374,7 +556,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ pipes, installations, moni
                     <span>📋 {visits} visits</span>
                   </div>
                   <ProgressBar pct={totalInstalled > 0 ? (pipes / totalInstalled) * 100 : 0} color={BAR_COLORS[idx % BAR_COLORS.length]} thin />
-                </div>
+                </button>
               ))}
             </div>
           </div>
@@ -575,6 +757,81 @@ export const Dashboard: React.FC<DashboardProps> = ({ pipes, installations, moni
                 <div key={label} className="text-center bg-white/10 rounded-xl p-2.5 border border-white/20">
                   <div className="text-xl font-black">{value}</div>
                   <div className="text-[10px] text-emerald-200 font-semibold">{label}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* ── Row 4: Field Staff & Overdue Monitoring ── */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          
+          {/* Field Staff Performance */}
+          <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm">
+            <SectionTitle icon={Trophy} title="Field Staff Performance" sub="Ranked by total registrations" />
+            <div className="space-y-2 mt-4 max-h-80 overflow-y-auto pr-2">
+              {staffPerformance.length === 0 ? (
+                <div className="text-center py-6 text-slate-400 text-xs">No staff data</div>
+              ) : staffPerformance.map((staff, idx) => (
+                <div key={staff.name} className="flex items-center justify-between p-3 rounded-xl border border-slate-100 hover:border-emerald-200 bg-slate-50/50 transition">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-full bg-emerald-100 text-emerald-700 font-bold flex items-center justify-center text-xs shrink-0">
+                      #{idx + 1}
+                    </div>
+                    <div>
+                      <div className="font-bold text-slate-800 text-sm">{staff.name}</div>
+                      <div className="text-[10px] font-semibold text-slate-500 mt-0.5">
+                        <span className="text-emerald-600">{staff.regs} Regs</span>
+                        <span className="mx-1.5 text-slate-300">|</span>
+                        <span className="text-blue-600">{staff.visits} Visits</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-lg font-black text-slate-700">{staff.awdRate}%</div>
+                    <div className="text-[9px] font-bold text-slate-400 uppercase tracking-wide">AWD Rate</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Overdue Monitoring Widget */}
+          <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3 mb-4">
+              <div className="flex items-center gap-2">
+                <div className="w-7 h-7 bg-red-50 rounded-lg flex items-center justify-center">
+                  <Clock className="w-4 h-4 text-red-500" />
+                </div>
+                <div>
+                  <div className="font-extrabold text-slate-800 text-sm">Needs Attention</div>
+                  <div className="text-[10px] text-slate-400">Pipes overdue for monitoring ({'>'}14 days)</div>
+                </div>
+              </div>
+              <span className="bg-red-100 text-red-700 font-bold px-2.5 py-1 rounded-full text-xs shrink-0">
+                {overduePipes.length} Overdue
+              </span>
+            </div>
+            <div className="space-y-2 max-h-80 overflow-y-auto pr-2">
+              {overduePipes.length === 0 ? (
+                <div className="text-center py-6 text-slate-400 text-xs">All pipes are up to date! 🎉</div>
+              ) : overduePipes.map(({ pipe, days, lastDate }, idx) => (
+                <div key={pipe.Pipe_ID} className="flex items-start justify-between p-3 rounded-xl border border-red-100 bg-red-50/30 hover:bg-red-50/80 transition">
+                  <div>
+                    <div className="font-bold text-slate-800 text-sm flex items-center gap-1.5">
+                      <AlertTriangle className="w-3.5 h-3.5 text-red-500 shrink-0" />
+                      {pipe.Farmer_Name}
+                    </div>
+                    <div className="text-[10px] font-medium text-slate-500 mt-1 flex flex-wrap gap-1.5">
+                      <span className="bg-white px-1.5 py-0.5 rounded shadow-xs">ID: {pipe.Pipe_ID}</span>
+                      <span className="bg-white px-1.5 py-0.5 rounded shadow-xs">{pipe.District}</span>
+                    </div>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <div className="text-sm font-black text-red-600">{days} days</div>
+                    <div className="text-[9px] font-bold text-slate-400 uppercase tracking-wide">Overdue</div>
+                    <div className="text-[9px] text-slate-400 mt-0.5">Last: {fmtDate(lastDate)}</div>
+                  </div>
                 </div>
               ))}
             </div>

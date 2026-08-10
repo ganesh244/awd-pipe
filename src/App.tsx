@@ -1322,6 +1322,7 @@ export default function App() {
                     pipes={scopedPipes}
                     installations={scopedInstallations}
                     monitoringList={scopedMonitoringList}
+                    currentUser={currentUser}
                   />
                 )}
                 {subTab === 'reports' && (
