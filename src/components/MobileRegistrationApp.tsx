@@ -111,7 +111,27 @@ export const MobileRegistrationApp: React.FC<MobileRegistrationAppProps> = ({
     setPhotoUrl(undefined);
     setCurrentStep(1);
     setPipeSearch('');
-  }, [activePipeId]);
+
+    if (selectedPipe && selectedPipe.District) {
+      // Map common 3-letter codes back to full names for better UX, or just use the code
+      const districtMap: Record<string, string> = {
+        'KRM': 'Karimnagar', 'NGD': 'Nalgonda', 'KMN': 'Khammam', 'MDK': 'Medak', 'PED': 'Peddapalli',
+        'HYD': 'Hyderabad', 'NZB': 'Nizamabad', 'MBN': 'Mahabubnagar', 'GNT': 'Guntur', 'VSP': 'Visakhapatnam',
+        'EG': 'East Godavari', 'WG': 'West Godavari', 'KRI': 'Krishna', 'KRN': 'Kurnool', 'CTR': 'Chittoor',
+        'RAI': 'Raichur', 'SHI': 'Shivamogga', 'BELL': 'Ballari', 'BLR': 'Bengaluru', 'MYS': 'Mysuru',
+        'PUN': 'Pune', 'NGP': 'Nagpur', 'NSK': 'Nashik', 'MUM': 'Mumbai', 'CHE': 'Chennai',
+        'CBE': 'Coimbatore', 'MDU': 'Madurai', 'SLM': 'Salem', 'LKO': 'Lucknow', 'KNP': 'Kanpur',
+        'VNS': 'Varanasi', 'AGR': 'Agra', 'ADB': 'Adilabad', 'BDK': 'Bhadradri Kothagudem', 'HNK': 'Hanamkonda',
+        'JGT': 'Jagtial', 'JGN': 'Jangaon', 'JSB': 'Jayashankar Bhupalpally', 'JGD': 'Jogulamba Gadwal',
+        'KMR': 'Kamareddy', 'KMM': 'Khammam', 'KBA': 'Komaram Bheem Asifabad', 'MBD': 'Mahabubabad',
+        'MNC': 'Mancherial', 'MED': 'Medchal-Malkajgiri', 'MLG': 'Mulugu', 'NGK': 'Nagarkurnool',
+        'NLG': 'Nalgonda', 'NRP': 'Narayanpet', 'NRM': 'Nirmal', 'PDP': 'Peddapalli', 'RJS': 'Rajanna Sircilla',
+        'RRD': 'Ranga Reddy', 'SRD': 'Sangareddy', 'SDP': 'Siddipet', 'SRP': 'Suryapet', 'VKB': 'Vikarabad',
+        'WNP': 'Wanaparthy', 'WGL': 'Warangal', 'YDB': 'Yadadri Bhuvanagiri'
+      };
+      setDistrict(districtMap[selectedPipe.District] || selectedPipe.District);
+    }
+  }, [activePipeId, selectedPipe]);
 
   const filteredPipes = pipes.filter((p) => {
     const term = pipeSearch.trim().toLowerCase();
