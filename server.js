@@ -228,7 +228,8 @@ const ACTIVE_JWT_SECRET = JWT_SECRET || crypto.randomBytes(32).toString('hex');
 
 const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 10,
+  max: 20,
+  skipSuccessfulRequests: true,
   message: { error: 'Too many login attempts' }
 });
 
@@ -338,6 +339,10 @@ const getScopeFilter = async (user) => {
 };
 
 // API Endpoints
+
+app.get('/api/health', (req, res) => {
+  res.json({ status: 'ok' });
+});
 
 app.post('/api/login', loginLimiter, async (req, res) => {
   const { username, password } = req.body;

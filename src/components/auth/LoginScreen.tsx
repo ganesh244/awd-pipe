@@ -19,15 +19,11 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ users, onLogin }) => {
   useEffect(() => {
     const check = async () => {
       try {
-        // POST with empty body — will get a 400 (bad request) but NOT a network error,
-        // which means the backend is reachable. Any non-network response = online.
-        const res = await fetch('/api/login', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({}),
+        const res = await fetch('/api/health', {
+          method: 'GET',
           signal: AbortSignal.timeout(4000),
         });
-        setBackendStatus(res.status < 500 ? 'online' : 'offline');
+        setBackendStatus(res.ok ? 'online' : 'offline');
       } catch {
         setBackendStatus('offline');
       }

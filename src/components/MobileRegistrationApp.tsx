@@ -6,6 +6,7 @@ import { CameraCapture } from './CameraCapture';
 import { GpsFieldMiniMap } from './GpsFieldMiniMap';
 import { QrCodeScannerModal } from './QrCodeScannerModal';
 import { reverseGeocodeLocation } from '../utils/geoUtils';
+import { playSuccessSound } from '../utils/soundUtils';
 import { MapPin, CheckCircle2, AlertTriangle, QrCode, Search, Smartphone, Sprout, ArrowRight, RefreshCw, ShieldCheck, Sparkles, Share2, Camera, UserCheck, Users, Plus, ClipboardCheck } from 'lucide-react';
 
 interface MobileRegistrationAppProps {
@@ -376,6 +377,7 @@ export const MobileRegistrationApp: React.FC<MobileRegistrationAppProps> = ({
     setTimeout(() => {
       onRegisterSuccess(newInstallation, updatedPipe);
       setSuccessRecord(newInstallation);
+      playSuccessSound();
       // NOTE: Do NOT clear activePipeId here — that would trigger resetRegistrationSession
       // which would race against the success screen. activePipeId is cleared when user
       // explicitly clicks "Register Another Pipe".

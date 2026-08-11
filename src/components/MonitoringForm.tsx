@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { MonitoringRecord, CropStage, AWDFollowed, PipeCondition, User } from '../types';
 import { CameraCapture } from './CameraCapture';
+import { playSuccessSound } from '../utils/soundUtils';
 import { X, Calendar, Droplet, UserCheck, AlertCircle, MapPin } from 'lucide-react';
 
 interface MonitoringFormProps {
@@ -118,6 +119,7 @@ export const MonitoringForm: React.FC<MonitoringFormProps> = ({
     };
 
     onSubmit(record);
+    playSuccessSound();
     setPhotoUrl(undefined);
     onClose();
   };
