@@ -6,7 +6,7 @@ import { CameraCapture } from './CameraCapture';
 import { GpsFieldMiniMap } from './GpsFieldMiniMap';
 import { QrCodeScannerModal } from './QrCodeScannerModal';
 import { reverseGeocodeLocation } from '../utils/geoUtils';
-import { MapPin, CheckCircle2, AlertTriangle, QrCode, Search, Smartphone, Sprout, ArrowRight, RefreshCw, ShieldCheck, Sparkles, Share2, Camera, UserCheck, Users, Plus } from 'lucide-react';
+import { MapPin, CheckCircle2, AlertTriangle, QrCode, Search, Smartphone, Sprout, ArrowRight, RefreshCw, ShieldCheck, Sparkles, Share2, Camera, UserCheck, Users, Plus, ClipboardCheck } from 'lucide-react';
 
 interface MobileRegistrationAppProps {
   pipes: AWDPipe[];
@@ -32,7 +32,7 @@ export const MobileRegistrationApp: React.FC<MobileRegistrationAppProps> = ({
   const today = new Date().toISOString().substring(0, 10);
 
   // Selected Pipe Object & Status
-  const selectedPipe = pipes.find((p) => p.Pipe_ID === activePipeId) || pipes[0];
+  const selectedPipe = pipes.find((p) => p.Pipe_ID === activePipeId);
   const existingInstallation = installations.find((i) => i.Pipe_ID === selectedPipe?.Pipe_ID);
 
   // Form State
@@ -69,6 +69,8 @@ export const MobileRegistrationApp: React.FC<MobileRegistrationAppProps> = ({
   const [successRecord, setSuccessRecord] = useState<Installation | null>(null);
   const [isMonitoringModalOpen, setIsMonitoringModalOpen] = useState(false);
   const [isQrScannerOpen, setIsQrScannerOpen] = useState(false);
+  const [manualPipeId, setManualPipeId] = useState('');
+  const [manualError, setManualError] = useState('');
   const [currentStep, setCurrentStep] = useState(1);
   const [pipeSearch, setPipeSearch] = useState('');
   const [showPipeDropdown, setShowPipeDropdown] = useState(false);
@@ -100,38 +102,79 @@ export const MobileRegistrationApp: React.FC<MobileRegistrationAppProps> = ({
     }
   };
 
-  // Reset form when active pipe changes
-  useEffect(() => {
-    setSuccessRecord(null);
+  // Reset registration session completely
+  const resetRegistrationSession = () => {
+    // NOTE: Does NOT clear successRecord — that is managed explicitly by user action only
     setFormError(null);
+    
+    // GPS State
     setGpsData(null);
     setGpsError(null);
     setGpsIsFallback(false);
     setGeoAutoFilledNotice(null);
+    
+    // Farmer State
+    setFarmerSelectionMode('new');
+    setFarmerName('');
+    setMobile('');
+    setFarmerId('');
+    setVillage('');
+    setMandal('');
+    setDistrict('');
+    
+    // Plot State
+    setSurveyNo('');
+    setPlotSize('');
+    setPlotSizeUnit('Acres');
+    setCrop('Paddy');
+    setVariety('');
+    setEstablishmentMethod('Dry DSR');
+    
+    // Installation State
+    setIrrigationSource('Borewell');
+    setIrrigationSourceOther('');
+    setInstallationDate(new Date().toISOString().split('T')[0]);
     setPhotoUrl(undefined);
+    setRemarks('');
+    
+    // Form control
     setCurrentStep(1);
     setPipeSearch('');
+  };
 
-    if (selectedPipe && selectedPipe.District) {
-      // Map common 3-letter codes back to full names for better UX, or just use the code
-      const districtMap: Record<string, string> = {
-        'KRM': 'Karimnagar', 'NGD': 'Nalgonda', 'KMN': 'Khammam', 'MDK': 'Medak', 'PED': 'Peddapalli',
-        'HYD': 'Hyderabad', 'NZB': 'Nizamabad', 'MBN': 'Mahabubnagar', 'GNT': 'Guntur', 'VSP': 'Visakhapatnam',
-        'EG': 'East Godavari', 'WG': 'West Godavari', 'KRI': 'Krishna', 'KRN': 'Kurnool', 'CTR': 'Chittoor',
-        'RAI': 'Raichur', 'SHI': 'Shivamogga', 'BELL': 'Ballari', 'BLR': 'Bengaluru', 'MYS': 'Mysuru',
-        'PUN': 'Pune', 'NGP': 'Nagpur', 'NSK': 'Nashik', 'MUM': 'Mumbai', 'CHE': 'Chennai',
-        'CBE': 'Coimbatore', 'MDU': 'Madurai', 'SLM': 'Salem', 'LKO': 'Lucknow', 'KNP': 'Kanpur',
-        'VNS': 'Varanasi', 'AGR': 'Agra', 'ADB': 'Adilabad', 'BDK': 'Bhadradri Kothagudem', 'HNK': 'Hanamkonda',
-        'JGT': 'Jagtial', 'JGN': 'Jangaon', 'JSB': 'Jayashankar Bhupalpally', 'JGD': 'Jogulamba Gadwal',
-        'KMR': 'Kamareddy', 'KMM': 'Khammam', 'KBA': 'Komaram Bheem Asifabad', 'MBD': 'Mahabubabad',
-        'MNC': 'Mancherial', 'MED': 'Medchal-Malkajgiri', 'MLG': 'Mulugu', 'NGK': 'Nagarkurnool',
-        'NLG': 'Nalgonda', 'NRP': 'Narayanpet', 'NRM': 'Nirmal', 'PDP': 'Peddapalli', 'RJS': 'Rajanna Sircilla',
-        'RRD': 'Ranga Reddy', 'SRD': 'Sangareddy', 'SDP': 'Siddipet', 'SRP': 'Suryapet', 'VKB': 'Vikarabad',
-        'WNP': 'Wanaparthy', 'WGL': 'Warangal', 'YDB': 'Yadadri Bhuvanagiri'
-      };
-      setDistrict(districtMap[selectedPipe.District] || selectedPipe.District);
+  // Reset form when active pipe changes
+  useEffect(() => {
+    // If we just completed a registration (successRecord is set), do NOT reset—
+    // the user is reviewing the success screen. Reset only happens via explicit user action.
+    if (successRecord) return;
+
+    // Otherwise perform a full session reset on every activePipeId change
+    resetRegistrationSession();
+
+    if (activePipeId) {
+      const currentPipe = pipes.find(p => p.Pipe_ID === activePipeId);
+      // Pre-fill the district based on the newly selected pipe
+      if (currentPipe && currentPipe.District) {
+        const districtMap: Record<string, string> = {
+          'KRM': 'Karimnagar', 'NGD': 'Nalgonda', 'KMN': 'Khammam', 'MDK': 'Medak', 'PED': 'Peddapalli',
+          'HYD': 'Hyderabad', 'NZB': 'Nizamabad', 'MBN': 'Mahabubnagar', 'GNT': 'Guntur', 'VSP': 'Visakhapatnam',
+          'EG': 'East Godavari', 'WG': 'West Godavari', 'KRI': 'Krishna', 'KRN': 'Kurnool', 'CTR': 'Chittoor',
+          'RAI': 'Raichur', 'SHI': 'Shivamogga', 'BELL': 'Ballari', 'BLR': 'Bengaluru', 'MYS': 'Mysuru',
+          'PUN': 'Pune', 'NGP': 'Nagpur', 'NSK': 'Nashik', 'MUM': 'Mumbai', 'CHE': 'Chennai',
+          'CBE': 'Coimbatore', 'MDU': 'Madurai', 'SLM': 'Salem', 'LKO': 'Lucknow', 'KNP': 'Kanpur',
+          'VNS': 'Varanasi', 'AGR': 'Agra', 'ADB': 'Adilabad', 'BDK': 'Bhadradri Kothagudem', 'HNK': 'Hanamkonda',
+          'JGT': 'Jagtial', 'JGN': 'Jangaon', 'JSB': 'Jayashankar Bhupalpally', 'JGD': 'Jogulamba Gadwal',
+          'KMR': 'Kamareddy', 'KMM': 'Khammam', 'KBA': 'Komaram Bheem Asifabad', 'MBD': 'Mahabubabad',
+          'MNC': 'Mancherial', 'MED': 'Medchal-Malkajgiri', 'MLG': 'Mulugu', 'NGK': 'Nagarkurnool',
+          'NLG': 'Nalgonda', 'NRP': 'Narayanpet', 'NRM': 'Nirmal', 'PDP': 'Peddapalli', 'RJS': 'Rajanna Sircilla',
+          'RRD': 'Ranga Reddy', 'SRD': 'Sangareddy', 'SDP': 'Siddipet', 'SRP': 'Suryapet', 'VKB': 'Vikarabad',
+          'WNP': 'Wanaparthy', 'WGL': 'Warangal', 'YDB': 'Yadadri Bhuvanagiri'
+        };
+        setDistrict(districtMap[currentPipe.District] || currentPipe.District);
+      }
     }
-  }, [activePipeId, selectedPipe]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activePipeId]);
 
   const filteredPipes = pipes.filter((p) => {
     const term = pipeSearch.trim().toLowerCase();
@@ -145,18 +188,20 @@ export const MobileRegistrationApp: React.FC<MobileRegistrationAppProps> = ({
 
   const validateStep = (step: number): string | null => {
     if (step === 1) {
-      const cleanMobile = mobile.replace(/\D/g, '');
-      if (!farmerName.trim()) return 'Farmer name is required.';
-      if (!/^[6-9]\d{9}$/.test(cleanMobile)) return 'Enter a valid 10-digit Indian mobile number.';
+      if (!gpsData) return 'GPS location is required. Tap "Capture Current Location" first.';
+      if (gpsIsFallback) return 'Real GPS coordinates are required. Enable location permissions and recapture.';
       if (!village.trim() || !mandal.trim() || !district.trim()) return 'Village, Mandal, and District are required.';
     }
     if (step === 2) {
-      if (!plotSize || Number(plotSize) <= 0) return 'Plot size must be greater than zero.';
-      if (irrigationSource === 'Other' && !irrigationSourceOther.trim()) return 'Please specify the irrigation source.';
+      if (farmerSelectionMode === 'new') {
+        if (!farmerName.trim()) return 'Farmer Name is required.';
+        const cleanMobile = mobile.replace(/\D/g, '');
+        if (!/^[6-9]\d{9}$/.test(cleanMobile)) return 'Enter a valid 10-digit Indian mobile number.';
+      }
     }
     if (step === 3) {
-      if (!gpsData) return 'GPS location is required. Tap "Capture Current Location" first.';
-      if (gpsIsFallback) return 'Real GPS coordinates are required. Enable location permissions and recapture.';
+      if (!plotSize || Number(plotSize) <= 0) return 'Plot size must be greater than zero.';
+      if (irrigationSource === 'Other' && !irrigationSourceOther.trim()) return 'Please specify the irrigation source.';
     }
     return null;
   };
@@ -165,7 +210,7 @@ export const MobileRegistrationApp: React.FC<MobileRegistrationAppProps> = ({
     const err = validateStep(currentStep);
     if (err) { setFormError(err); return; }
     setFormError(null);
-    setCurrentStep((s) => Math.min(3, s + 1));
+    setCurrentStep((s) => Math.min(4, s + 1));
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -197,12 +242,21 @@ export const MobileRegistrationApp: React.FC<MobileRegistrationAppProps> = ({
     setIsLocating(true);
     setGpsError(null);
     setGeoAutoFilledNotice(null);
+    setGpsData(null);
 
-    if (!navigator.geolocation) {
+    const useMockGps = import.meta.env.DEV && import.meta.env.VITE_ENABLE_MOCK_GPS === "true";
+
+    if (useMockGps) {
       setTimeout(async () => {
         await processCapturedGPS(18.6184, 79.3783, 6);
         setIsLocating(false);
       }, 600);
+      return;
+    }
+
+    if (!navigator.geolocation) {
+      setGpsError("GPS Location is mandatory. Please check your browser/device permissions and try again.");
+      setIsLocating(false);
       return;
     }
 
@@ -215,10 +269,7 @@ export const MobileRegistrationApp: React.FC<MobileRegistrationAppProps> = ({
         setIsLocating(false);
       },
       async (err) => {
-        await processCapturedGPS(18.6184, 79.3783, 8);
-        setGpsError(
-          "Note: Geolocation permission was blocked by browser. Captured calibrated field location (Lat: 18.6184, Lng: 79.3783)."
-        );
+        setGpsError("GPS Location is mandatory. Please check your browser/device permissions and try again.");
         setIsLocating(false);
       },
       { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
@@ -244,7 +295,7 @@ export const MobileRegistrationApp: React.FC<MobileRegistrationAppProps> = ({
     } else {
       try {
         await navigator.clipboard.writeText(mapUrl);
-        setGeoAutoFilledNotice('📋 Google Maps location link copied to clipboard!');
+        setGeoAutoFilledNotice('Google Maps location link copied to clipboard!');
       } catch (e) {
         console.error('Clipboard copy error:', e);
       }
@@ -254,6 +305,7 @@ export const MobileRegistrationApp: React.FC<MobileRegistrationAppProps> = ({
   // Submit Handler
   const handleSubmitRegistration = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!selectedPipe) return;
     setFormError(null);
 
     // 1. Mobile number validation
@@ -265,7 +317,7 @@ export const MobileRegistrationApp: React.FC<MobileRegistrationAppProps> = ({
 
     // 2. GPS Lock Validation
     if (!gpsData) {
-      setFormError('GPS Location is required! Please click "📍 Capture Current Location" before submitting.');
+      setFormError('GPS Location is required! Please click "Capture Current Location" before submitting.');
       return;
     }
 
@@ -324,10 +376,13 @@ export const MobileRegistrationApp: React.FC<MobileRegistrationAppProps> = ({
     setTimeout(() => {
       onRegisterSuccess(newInstallation, updatedPipe);
       setSuccessRecord(newInstallation);
+      // NOTE: Do NOT clear activePipeId here — that would trigger resetRegistrationSession
+      // which would race against the success screen. activePipeId is cleared when user
+      // explicitly clicks "Register Another Pipe".
       setIsSubmitting(false);
     }, 600);
   };
-  if (!selectedPipe) {
+  if (pipes.length === 0) {
     return (
       <div className="max-w-md mx-auto my-8 p-6 bg-white rounded-3xl shadow-xl text-center">
         <AlertTriangle className="w-12 h-12 text-amber-500 mx-auto mb-4" />
@@ -341,655 +396,666 @@ export const MobileRegistrationApp: React.FC<MobileRegistrationAppProps> = ({
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6 animate-fadeIn">
-      
-      {/* TOP DESKTOP BANNER: QR SCANNER & PIPE SELECTOR */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-center">
-        <div className="lg:col-span-4">
-          {/* PROMINENT QR SCANNER CAMERA BUTTON */}
+      {successRecord ? (
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-8 text-center space-y-6 animate-fadeIn max-w-2xl mx-auto">
+          <div className="w-20 h-20 bg-emerald-100 rounded-full flex items-center justify-center mx-auto animate-bounce shadow-inner">
+            <ShieldCheck className="w-10 h-10 text-emerald-600" />
+          </div>
+          <div>
+            <h2 className="text-2xl font-black text-slate-800 tracking-tight">Registration Successful!</h2>
+            <p className="text-emerald-700 font-semibold mt-1">Pipe {successRecord.Pipe_ID} has been successfully assigned.</p>
+          </div>
+
+          <div className="bg-slate-50 rounded-xl p-6 text-sm text-left max-w-sm mx-auto border border-slate-100 space-y-3 shadow-xs">
+            <div className="flex justify-between py-1 border-b"><span className="text-slate-500">Farmer</span><strong className="text-slate-800">{successRecord.Farmer_Name}</strong></div>
+            <div className="flex justify-between py-1 border-b"><span className="text-slate-500">Mobile</span><strong className="text-slate-800">{successRecord.Mobile}</strong></div>
+            <div className="flex justify-between py-1 border-b"><span className="text-slate-500">Village / Mandal</span><strong className="text-slate-800">{successRecord.Village}, {successRecord.Mandal}</strong></div>
+            <div className="flex justify-between py-1"><span className="text-slate-500">Plot Size</span><strong className="text-slate-800">{successRecord.Plot_Size} {successRecord.Plot_Size_Unit}</strong></div>
+          </div>
+
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-4">
+            <button
+              type="button"
+              onClick={() => {
+                setSuccessRecord(null);
+                setActivePipeId('');
+                resetRegistrationSession();
+              }}
+              className="w-full sm:w-auto px-8 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl transition flex items-center justify-center gap-2 shadow-md active:scale-95 min-h-[44px]"
+            >
+              <QrCode className="w-5 h-5" /> Register Another Pipe
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                // If they want to view it, we put it back as active pipe and clear success
+                setActivePipeId(successRecord.Pipe_ID);
+                setSuccessRecord(null);
+              }}
+              className="w-full sm:w-auto px-8 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl transition flex items-center justify-center gap-2 shadow-sm active:scale-95 min-h-[44px]"
+            >
+              <ClipboardCheck className="w-5 h-5" /> View Record
+            </button>
+          </div>
+        </div>
+      ) : !activePipeId ? (
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 sm:p-10 space-y-8 animate-fadeIn text-center max-w-lg mx-auto mt-4 sm:mt-12">
+          <div className="w-20 h-20 bg-emerald-100 rounded-full flex items-center justify-center mx-auto shadow-inner">
+            <QrCode className="w-10 h-10 text-emerald-600" />
+          </div>
+          <div className="space-y-3">
+            <h2 className="text-2xl font-black text-slate-800 tracking-tight">Scan Pipe QR</h2>
+            <p className="text-sm text-slate-500 max-w-sm mx-auto">
+              Scan the QR code on the AWD pipe to verify its identity and begin the registration workflow.
+            </p>
+          </div>
           <button
             type="button"
             onClick={() => setIsQrScannerOpen(true)}
-            className="w-full bg-[#88b04b] hover:bg-[#779942] active:scale-[0.98] text-slate-950 font-black text-sm py-3.5 px-4 rounded-2xl shadow-lg transition flex items-center justify-center gap-2.5 uppercase tracking-wider border-2 border-emerald-400 group cursor-pointer"
+            className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold py-4 px-6 rounded-xl text-lg transition-all shadow-md active:scale-95 flex items-center justify-center gap-3 min-h-[56px]"
           >
-            <span className="w-8 h-8 rounded-xl bg-slate-950 text-[#88b04b] flex items-center justify-center group-hover:scale-110 transition-transform">
-              <Camera className="w-5 h-5" />
-            </span>
-            <div className="text-left">
-              <span className="block leading-none text-xs font-black">Scan Pipe QR Code</span>
-              <span className="block text-[10px] font-bold text-slate-800 normal-case opacity-80">
-                Click to open live camera / upload photo
-              </span>
-            </div>
+            <QrCode className="w-6 h-6" /> Scan Now
           </button>
-        </div>
-
-        <div className="lg:col-span-8">
-          {/* Pipe ID Selector Simulation Bar */}
-          <div className="bg-slate-900 text-white rounded-2xl p-3.5 shadow-md border border-slate-800 space-y-2">
-            <div className="flex items-center justify-between text-xs">
-              <span className="text-slate-400 flex items-center gap-1">
-                <QrCode className="w-3.5 h-3.5 text-emerald-400" /> Scanned QR Code / Active Registry Selection
-              </span>
-              <span className="text-emerald-400 font-mono text-[11px]">?id={selectedPipe.Pipe_ID}</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="relative flex-1">
-                <select
-                  value={activePipeId}
-                  onChange={(e) => setActivePipeId(e.target.value)}
-                  className="w-full bg-slate-800 text-white font-mono font-bold text-sm rounded-xl py-2 pl-3 pr-8 border border-slate-700 outline-none focus:ring-2 focus:ring-emerald-500 appearance-none cursor-pointer"
-                >
-                  {pipes.map((p) => (
-                    <option key={p.Pipe_ID} value={p.Pipe_ID}>
-                      {p.Pipe_ID} ({p.Status}) - {p.Farmer_Name || 'Unregistered'}
-                    </option>
-                  ))}
-                </select>
-                <Search className="w-4 h-4 text-slate-400 absolute right-3 top-2.5 pointer-events-none" />
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* SUCCESS SCREEN */}
-      {successRecord ? (
-        <div className="bg-white rounded-2xl p-6 text-center shadow-xl border border-emerald-200 space-y-4 animate-fadeIn max-w-2xl mx-auto">
-          <div className="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto text-3xl font-black">
-            ✓
-          </div>
-          <h2 className="text-xl font-black text-slate-800">AWD Pipe Registered Successfully!</h2>
           
-          <div className="bg-slate-50 rounded-xl p-4 text-left space-y-2 text-xs border border-slate-200">
-            <div className="flex justify-between py-1 border-b"><span className="text-slate-500">Pipe ID</span><strong className="text-emerald-800 font-mono text-sm">{successRecord.Pipe_ID}</strong></div>
-            <div className="flex justify-between py-1 border-b"><span className="text-slate-500">Farmer Name</span><strong className="text-slate-800">{successRecord.Farmer_Name}</strong></div>
-            <div className="flex justify-between py-1 border-b"><span className="text-slate-500">Village / Mandal</span><strong className="text-slate-800">{successRecord.Village}, {successRecord.Mandal}</strong></div>
-            <div className="flex justify-between py-1 border-b"><span className="text-slate-500">Plot Size</span><strong className="text-slate-800">{successRecord.Plot_Size} {successRecord.Plot_Size_Unit}</strong></div>
-            <div className="flex justify-between py-1 border-b"><span className="text-slate-500">Establishment Method</span><strong className="text-slate-800">{successRecord.Establishment_Method}</strong></div>
-            <div className="flex justify-between py-1 border-b"><span className="text-slate-500">Installation Date</span><strong className="text-slate-800">{successRecord.Installation_Date}</strong></div>
-            {successRecord.Photo_URL && (
-              <div className="pt-2">
-                <span className="text-slate-500 block mb-1 font-semibold">Captured Pipe Photo:</span>
-                <img src={successRecord.Photo_URL} alt="Installed Pipe" className="w-full h-48 object-cover rounded-lg border border-[#88b04b]" />
-              </div>
+          <div className="pt-6 border-t border-slate-100">
+            <p className="text-sm text-slate-500 mb-3 text-left">Can't scan the QR? Enter Pipe ID manually</p>
+            <div className="flex gap-2">
+              <input 
+                type="text"
+                placeholder="AWD-XXXX"
+                value={manualPipeId}
+                onChange={(e) => {
+                  setManualError('');
+                  setManualPipeId(e.target.value.toUpperCase());
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && manualPipeId.trim()) {
+                    e.preventDefault();
+                    const id = manualPipeId.trim().toUpperCase();
+                    if (!id.startsWith('AWD-')) {
+                      setManualError('Pipe ID must start with AWD- (e.g. AWD-1234)');
+                      return;
+                    }
+                    const existing = pipes.find((p) => p.Pipe_ID.toUpperCase() === id);
+                    if (!existing) {
+                      setManualError('Pipe ID not found in registry.');
+                      return;
+                    }
+                    if (existing.Status === 'Installed') {
+                      // Already installed — open its card for visit logging
+                      setActivePipeId(existing.Pipe_ID);
+                      setManualPipeId('');
+                      return;
+                    }
+                    if (existing.Status !== 'Available') {
+                      setManualError(`Pipe status is "${existing.Status}". Only Available pipes can be registered.`);
+                      return;
+                    }
+                    setActivePipeId(existing.Pipe_ID);
+                    setManualPipeId('');
+                  }
+                }}
+                className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 font-mono font-bold text-slate-800 uppercase focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              />
+              <button
+                type="button"
+                onClick={() => {
+                  const id = manualPipeId.trim().toUpperCase();
+                  if (!id.startsWith('AWD-')) {
+                    setManualError('Pipe ID must start with AWD- (e.g. AWD-1234)');
+                    return;
+                  }
+                  const existing = pipes.find((p) => p.Pipe_ID.toUpperCase() === id);
+                  if (!existing) {
+                    setManualError('Pipe ID not found in registry.');
+                    return;
+                  }
+                  if (existing.Status === 'Installed') {
+                    // Already installed — open its card for visit logging
+                    setActivePipeId(existing.Pipe_ID);
+                    setManualPipeId('');
+                    return;
+                  }
+                  if (existing.Status !== 'Available') {
+                    setManualError(`Pipe status is "${existing.Status}". Only Available pipes can be registered.`);
+                    return;
+                  }
+                  setActivePipeId(existing.Pipe_ID);
+                  setManualPipeId('');
+                }}
+                disabled={!manualPipeId.trim()}
+                className="bg-slate-800 hover:bg-slate-900 disabled:bg-slate-300 text-white font-bold px-6 py-3 rounded-xl transition-all shadow-sm active:scale-95"
+              >
+                Verify
+              </button>
+            </div>
+            {manualError && (
+              <p className="text-red-500 text-xs text-left mt-2 font-semibold flex items-center gap-1 animate-fadeIn">
+                <AlertTriangle className="w-3 h-3" /> {manualError}
+              </p>
             )}
           </div>
-
-          {/* ── REGISTER ANOTHER FARMER BUTTON ── */}
-          <button
-            onClick={() => {
-              // Reset all form fields for a fresh registration
-              setSuccessRecord(null);
-              setFarmerName('');
-              setMobile('');
-              setVillage('');
-              setMandal('');
-              setDistrict(currentUser?.district || 'West Godavari');
-              setFarmerId('');
-              setSurveyNo('');
-              setPlotSize('2.0');
-              setVariety('');
-              setSowingDate(today);
-              setNurserySowingDate('');
-              setRemarks('');
-              setPhotoUrl(undefined);
-              setGpsData(null);
-              setGpsError(null);
-              setGeoAutoFilledNotice(null);
-              setFormError(null);
-              setFarmerSelectionMode('new');
-              setFarmerSearch('');
-              // Move to next available pipe
-              const nextPipe = pipes.find((p) => p.Status === 'Available' && p.Pipe_ID !== selectedPipe?.Pipe_ID);
-              if (nextPipe) setActivePipeId(nextPipe.Pipe_ID);
-            }}
-            className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3.5 rounded-xl text-sm transition shadow-md flex items-center justify-center gap-2 active:scale-[0.97] transition-transform"
-          >
-            <Plus className="w-4 h-4" /> Register Another Farmer
-          </button>
-          <button
-            onClick={() => setSuccessRecord(null)}
-            className="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2.5 rounded-xl text-sm transition flex items-center justify-center gap-2 active:scale-[0.97] transition-transform"
-          >
-            <ShieldCheck className="w-4 h-4" /> View This Pipe Record
-          </button>
         </div>
-      ) : existingInstallation ? (
-        /* REGISTERED PIPE INFORMATION VIEW */
+      ) : existingInstallation && selectedPipe ? (
         <PipeInfoCard
           pipe={selectedPipe}
           installation={existingInstallation}
           monitoringList={monitoringList}
           allInstallations={installations}
           onOpenMonitoringModal={() => setIsMonitoringModalOpen(true)}
+          onClose={() => setActivePipeId('')}
         />
       ) : (
         /* UNREGISTERED PIPE REGISTRATION FORM */
-        <form onSubmit={handleSubmitRegistration} className="bg-white rounded-2xl shadow-lg border border-slate-200 p-4 sm:p-6 space-y-6">
-          
-          {/* Form Header */}
-          <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 flex items-center justify-between">
-            <div>
-              <span className="text-[10px] text-emerald-700 font-bold uppercase tracking-wider block">Register AWD Pipe</span>
-              <span className="text-2xl font-black text-emerald-900 font-mono">{selectedPipe.Pipe_ID}</span>
-            </div>
-            <span className="bg-emerald-200/80 text-emerald-900 text-xs font-bold px-3 py-1.5 rounded-full shadow-xs">
-              Available Pipe
-            </span>
-          </div>
-
-          {/* Form Top Error Alert */}
-          {formError && (
-            <div className="bg-red-50 border border-red-200 text-red-700 rounded-xl p-3.5 text-xs flex items-center gap-2 font-semibold">
-              <AlertTriangle className="w-4 h-4 shrink-0 text-red-600" />
-              <span>{formError}</span>
-            </div>
-          )}
-
-          {/* 3-Column Desktop Grid for Form Sections */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
-            
-            {/* Column 1: Farmer Selection & Multi-Pipe Assignment */}
-            <div className="bg-slate-50/70 p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-xs space-y-3.5">
-              {/* 1. Farmer Details */}
-              <div className="space-y-3">
-            <h3 className="text-xs font-extrabold text-slate-800 uppercase tracking-wider flex items-center gap-2 border-b pb-1.5">
-              <span className="w-5 h-5 bg-emerald-600 text-white rounded-full flex items-center justify-center text-xs">1</span>
-              Farmer Selection & Multi-Pipe Assignment
-            </h3>
-
-            {/* Farmer Mode Selection Toggle */}
-            <div className="grid grid-cols-2 gap-2 p-1 bg-slate-100 rounded-xl border border-slate-200 text-xs font-bold">
-              <button
-                type="button"
-                onClick={() => {
-                  setFarmerSelectionMode('new');
-                  setFarmerName('');
-                  setMobile('');
-                  setVillage('');
-                  setMandal('');
-                  setDistrict('');
-                  setFarmerId('');
-                }}
-                className={`py-2 px-2 rounded-lg transition flex items-center justify-center gap-1 active:scale-[0.97] transition-transform ${
-                  farmerSelectionMode === 'new'
-                    ? 'bg-emerald-700 text-white shadow-xs'
-                    : 'text-slate-600 hover:text-slate-900'
-                }`}
-              >
-                <Plus className="w-3.5 h-3.5" />
-                <span>New Farmer</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setFarmerSelectionMode('existing')}
-                className={`py-2 px-2 rounded-lg transition flex items-center justify-center gap-1 active:scale-[0.97] transition-transform ${
-                  farmerSelectionMode === 'existing'
-                    ? 'bg-emerald-700 text-white shadow-xs'
-                    : 'text-slate-600 hover:text-slate-900'
-                }`}
-              >
-                <Users className="w-3.5 h-3.5" />
-                <span>Select Existing ({registeredFarmersList.length})</span>
-              </button>
-            </div>
-
-            {/* Live Search for Existing Farmer by name or mobile */}
-            {farmerSelectionMode === 'existing' && registeredFarmersList.length > 0 && (
-              <div className="bg-emerald-50/90 border border-emerald-300 rounded-xl p-3 space-y-2 animate-fadeIn shadow-xs">
-                <label className="block text-xs font-bold text-emerald-950 flex items-center gap-1">
-                  <UserCheck className="w-4 h-4 text-emerald-700" />
-                  Search Registered Farmer (by Name or Mobile)
-                </label>
-                {/* Search input */}
-                <div className="relative">
-                  <Search className="absolute left-2.5 top-2.5 w-3.5 h-3.5 text-slate-400" />
-                  <input
-                    type="text"
-                    value={farmerSearch}
-                    onChange={(e) => setFarmerSearch(e.target.value)}
-                    placeholder="Type name or mobile number..."
-                    className="w-full pl-8 pr-3 py-2 text-xs border border-emerald-300 rounded-xl bg-white focus:ring-2 focus:ring-emerald-500 outline-none"
-                  />
+        <div className="relative">
+          {/* COMPACT STICKY PIPE CONTEXT BAR */}
+          <div className="sticky top-0 z-30 bg-emerald-50 border-b border-emerald-200 px-4 py-3 flex items-center justify-between shadow-sm sm:rounded-t-2xl">
+            <div className="flex items-center gap-2">
+              <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+              <div className="flex flex-col">
+                <span className="text-[10px] text-emerald-700 font-bold uppercase leading-tight">Selected Pipe</span>
+                <div className="flex items-center gap-2">
+                  <span className="font-mono text-emerald-900 font-black text-sm">{selectedPipe?.Pipe_ID}</span>
+                  <span className="text-[10px] bg-emerald-200 text-emerald-900 px-1.5 py-0.5 rounded shadow-xs font-bold flex items-center gap-1"><QrCode className="w-3 h-3" /> Verified</span>
                 </div>
-                {/* Filtered results */}
-                {(() => {
-                  const term = farmerSearch.trim().toLowerCase();
-                  const numSearch = farmerSearch.replace(/\D/g, '');
-                  const results = registeredFarmersList.filter(
-                    (f) =>
-                      f.Farmer_Name.toLowerCase().includes(term) ||
-                      (numSearch.length > 0 && f.Mobile && f.Mobile.includes(numSearch))
-                  );
-                  return results.length === 0 ? (
-                    <div className="text-xs text-slate-500 text-center py-2">No farmers found matching "{farmerSearch}"</div>
-                  ) : (
-                    <div className="max-h-48 overflow-y-auto rounded-xl border border-emerald-200 bg-white divide-y divide-slate-100">
-                      {results.map((f) => {
-                        const pipeCount = installations.filter((i) => i.Farmer_Name === f.Farmer_Name).length;
-                        return (
-                          <button
-                            key={f.Farmer_Name}
-                            type="button"
-                            onClick={() => {
-                              handleSelectExistingFarmer(f.Farmer_Name);
-                              setFarmerSearch(f.Farmer_Name);
-                            }}
-                            className="w-full text-left px-3 py-2.5 hover:bg-emerald-50 transition text-xs active:bg-emerald-100 active:opacity-70"
-                          >
-                            <div className="font-bold text-slate-800">🧑‍🌾 {f.Farmer_Name}</div>
-                            <div className="text-slate-500 flex items-center gap-3 mt-0.5">
-                              <span>📞 {f.Mobile}</span>
-                              <span>📍 {f.Village}, {f.Mandal}</span>
-                              <span className="text-emerald-700 font-semibold">{pipeCount} pipe{pipeCount > 1 ? 's' : ''}</span>
-                            </div>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  );
-                })()}
-                {farmerName && (
-                  <div className="text-[11px] font-semibold text-emerald-900 bg-white p-2.5 rounded-lg border border-emerald-200 space-y-1">
-                    <span className="font-bold block text-emerald-800">🌾 Multi-Pipe Assignment Activated:</span>
-                    <span>
-                      Farmer <strong>{farmerName}</strong> currently holds{' '}
-                      <strong>{installations.filter((i) => i.Farmer_Name === farmerName).length}</strong> pipe(s).
-                      Registering this pipe will assign pipe <strong>{selectedPipe.Pipe_ID}</strong> to {farmerName}.
-                    </span>
-                  </div>
-                )}
               </div>
-            )}
-
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">Farmer Name *</label>
-              <input
-                type="text"
-                required
-                value={farmerName}
-                onChange={(e) => setFarmerName(e.target.value)}
-                placeholder="Full Name of Farmer"
-                className="w-full border rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-emerald-500 outline-none"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">
-                Mobile Number * (10-digit Indian Format)
-              </label>
-              <input
-                type="tel"
-                required
-                maxLength={10}
-                value={mobile}
-                onChange={(e) => setMobile(e.target.value)}
-                placeholder="e.g. 9848012345"
-                className="w-full border rounded-xl p-2.5 text-sm font-mono focus:ring-2 focus:ring-emerald-500 outline-none"
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-2">
-              <div className="min-w-0">
-                <label className="block text-xs font-semibold text-slate-700 mb-1">Village *</label>
-                <input
-                  type="text"
-                  required
-                  value={village}
-                  onChange={(e) => setVillage(e.target.value)}
-                  placeholder="Village Name"
-                  className="w-full border rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-emerald-500 outline-none"
-                />
-              </div>
-              <div className="min-w-0">
-                <label className="block text-xs font-semibold text-slate-700 mb-1">Mandal *</label>
-                <input
-                  type="text"
-                  required
-                  value={mandal}
-                  onChange={(e) => setMandal(e.target.value)}
-                  placeholder="Mandal Name"
-                  className="w-full border rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-emerald-500 outline-none"
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-2">
-              <div className="min-w-0">
-                <label className="block text-xs font-semibold text-slate-700 mb-1">District *</label>
-                <input
-                  type="text"
-                  required
-                  value={district}
-                  onChange={(e) => setDistrict(e.target.value)}
-                  placeholder="District"
-                  className="w-full border rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-emerald-500 outline-none"
-                />
-              </div>
-              <div className="min-w-0">
-                <label className="block text-xs font-semibold text-slate-700 mb-1">Farmer ID (Optional)</label>
-                <input
-                  type="text"
-                  value={farmerId}
-                  onChange={(e) => setFarmerId(e.target.value)}
-                  placeholder="State Farmer ID"
-                  className="w-full border rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-emerald-500 outline-none"
-                />
-              </div>
-            </div>
-          </div>
-          </div>
-
-          {/* Column 2: Plot & Agronomic Details */}
-          <div className="bg-slate-50/70 p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-xs space-y-3.5">
-            {/* 2. Plot Details */}
-            <div className="space-y-3">
-              <h3 className="text-xs font-extrabold text-slate-800 uppercase tracking-wider flex items-center gap-2 border-b pb-1.5">
-                <span className="w-5 h-5 bg-emerald-600 text-white rounded-full flex items-center justify-center text-xs">2</span>
-                Plot & Agronomic Details
-              </h3>
-
-            <div className="grid grid-cols-3 gap-2">
-              <div className="min-w-0">
-                <label className="block text-xs font-semibold text-slate-700 mb-1">Survey No.</label>
-                <input
-                  type="text"
-                  value={surveyNo}
-                  onChange={(e) => setSurveyNo(e.target.value)}
-                  placeholder="Plot/Survey"
-                  className="w-full border rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-emerald-500 outline-none"
-                />
-              </div>
-              <div className="min-w-0">
-                <label className="block text-xs font-semibold text-slate-700 mb-1">Plot Size *</label>
-                <input
-                  type="number"
-                  step="0.1"
-                  min="0.1"
-                  required
-                  value={plotSize}
-                  onChange={(e) => setPlotSize(e.target.value)}
-                  className="w-full border rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-emerald-500 outline-none font-bold"
-                />
-              </div>
-              <div className="min-w-0">
-                <label className="block text-xs font-semibold text-slate-700 mb-1">Unit *</label>
-                <select
-                  value={plotSizeUnit}
-                  onChange={(e) => setPlotSizeUnit(e.target.value as PlotUnit)}
-                  className="w-full border rounded-xl p-2.5 text-sm bg-white focus:ring-2 focus:ring-emerald-500 outline-none"
-                >
-                  <option value="Acres">Acres</option>
-                  <option value="Hectares">Hectares</option>
-                </select>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-2">
-              <div className="min-w-0">
-                <label className="block text-xs font-semibold text-slate-700 mb-1">Crop</label>
-                <input
-                  type="text"
-                  value={crop}
-                  readOnly
-                  className="w-full border rounded-xl p-2.5 text-sm bg-slate-100 text-slate-600 outline-none font-semibold"
-                />
-              </div>
-              <div className="min-w-0">
-                <label className="block text-xs font-semibold text-slate-700 mb-1">Paddy Variety</label>
-                <input
-                  type="text"
-                  value={variety}
-                  onChange={(e) => setVariety(e.target.value)}
-                  placeholder="e.g. BPT 5204"
-                  className="w-full border rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-emerald-500 outline-none"
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">Establishment Method *</label>
-              <select
-                value={establishmentMethod}
-                onChange={(e) => setEstablishmentMethod(e.target.value as EstablishmentMethod)}
-                className="w-full border rounded-xl p-2.5 text-sm bg-white focus:ring-2 focus:ring-emerald-500 outline-none font-bold text-emerald-800"
-              >
-                <option value="Dry DSR">Dry DSR (Dry Direct Seeded Rice)</option>
-                <option value="Wet DSR">Wet DSR (Wet Direct Seeded Rice)</option>
-                <option value="TPR">TPR (Transplanted Rice)</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">
-                {establishmentMethod === 'TPR' ? 'Transplantation Date *' : 'Sowing Date *'}
-              </label>
-              <input
-                type="date"
-                required
-                value={sowingDate}
-                onChange={(e) => setSowingDate(e.target.value)}
-                className="w-full border rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-emerald-500 outline-none font-semibold"
-              />
-            </div>
-
-            {establishmentMethod === 'TPR' && (
-              <div className="animate-fadeIn">
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Nursery Sowing Date (Optional for TPR)
-                </label>
-                <input
-                  type="date"
-                  value={nurserySowingDate}
-                  onChange={(e) => setNurserySowingDate(e.target.value)}
-                  className="w-full border rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-emerald-500 outline-none"
-                />
-              </div>
-            )}
-
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">Irrigation Source *</label>
-              <select
-                value={irrigationSource}
-                onChange={(e) => setIrrigationSource(e.target.value as IrrigationSource)}
-                className="w-full border rounded-xl p-2.5 text-sm bg-white focus:ring-2 focus:ring-emerald-500 outline-none font-medium"
-              >
-                <option value="Borewell">Borewell</option>
-                <option value="Canal">Canal</option>
-                <option value="Tank">Tank</option>
-                <option value="Other">Other</option>
-              </select>
-            </div>
-
-            {irrigationSource === 'Other' && (
-              <div className="animate-fadeIn">
-                <label className="block text-xs font-semibold text-slate-700 mb-1">Specify Irrigation Source *</label>
-                <input
-                  type="text"
-                  required
-                  value={irrigationSourceOther}
-                  onChange={(e) => setIrrigationSourceOther(e.target.value)}
-                  placeholder="Specify custom source"
-                  className="w-full border rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-emerald-500 outline-none"
-                />
-              </div>
-            )}
-          </div>
-          </div>
-
-          {/* Column 3: Installation, GPS & Photo */}
-          <div className="bg-slate-50/70 p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-xs space-y-3.5 flex flex-col justify-between">
-            {/* 3. Installation & GPS Location */}
-            <div className="space-y-3">
-              <h3 className="text-xs font-extrabold text-slate-800 uppercase tracking-wider flex items-center gap-2 border-b pb-1.5">
-                <span className="w-5 h-5 bg-emerald-600 text-white rounded-full flex items-center justify-center text-xs">3</span>
-                Installation & GPS Verification
-              </h3>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-              <div className="min-w-0">
-                <label className="block text-xs font-semibold text-slate-700 mb-1">Installation Date *</label>
-                <input
-                  type="date"
-                  required
-                  value={installationDate}
-                  onChange={(e) => setInstallationDate(e.target.value)}
-                  className="w-full border rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-emerald-500 outline-none font-semibold"
-                />
-              </div>
-              <div className="min-w-0">
-                <label className="block text-xs font-semibold text-slate-700 mb-1">Installed By *</label>
-                <input
-                  type="text"
-                  required
-                  value={installedBy}
-                  onChange={(e) => setInstalledBy(e.target.value)}
-                  placeholder="Staff Name / Designation"
-                  className="w-full border rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-emerald-500 outline-none"
-                />
-              </div>
-            </div>
-
-            {/* GPS CAPTURE BUTTON & DISPLAY */}
-            <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 space-y-2">
-              <button
-                type="button"
-                onClick={handleCaptureGPS}
-                disabled={isLocating}
-                className={`w-full font-bold rounded-xl text-xs py-3 px-3 transition shadow-sm flex items-center justify-center gap-2 active:scale-[0.97] transition-transform ${
-                  gpsData
-                    ? 'bg-emerald-700 text-white hover:bg-emerald-800'
-                    : 'bg-emerald-600 text-white hover:bg-emerald-700'
-                }`}
-              >
-                {isLocating ? (
-                  <>
-                    <RefreshCw className="w-4 h-4 animate-spin" /> Locating GPS Satellite Signal...
-                  </>
-                ) : (
-                  <>
-                    <MapPin className="w-4 h-4" />
-                    {gpsData ? '✓ GPS Location Captured (Tap to Recapture)' : '📍 Capture Current Location'}
-                  </>
-                )}
-              </button>
-
-              {gpsData && (
-                <div className="bg-emerald-100/80 border border-emerald-300 rounded-lg p-2.5 text-xs text-emerald-900 font-mono space-y-0.5 animate-fadeIn">
-                  <div className="font-bold flex items-center justify-between text-emerald-800 border-b border-emerald-200/60 pb-1 mb-1">
-                    <span className="flex items-center gap-1">
-                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-700" /> Location Captured ✓
-                    </span>
-                    <div className="flex items-center gap-1.5">
-                      <button
-                        type="button"
-                        onClick={handleShareLocation}
-                        title="Share field location via messaging apps"
-                        className="text-[10px] bg-emerald-800 hover:bg-emerald-900 text-white font-sans font-bold px-2 py-0.5 rounded transition shadow-xs flex items-center gap-1 active:scale-[0.97] transition-transform"
-                      >
-                        <Share2 className="w-3 h-3 text-emerald-300" /> Share
-                      </button>
-                      <a
-                        href={`https://www.google.com/maps?q=${gpsData.latitude},${gpsData.longitude}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-[10px] bg-emerald-700 hover:bg-emerald-800 text-white font-sans font-bold px-2 py-0.5 rounded transition shadow-xs flex items-center gap-1"
-                      >
-                        <MapPin className="w-3 h-3 text-red-300" /> Open Map ↗
-                      </a>
-                    </div>
-                  </div>
-                  <div>Latitude: <strong>{gpsData.latitude}</strong></div>
-                  <div>Longitude: <strong>{gpsData.longitude}</strong></div>
-                  <div>Accuracy: <strong>{gpsData.accuracy} meters</strong></div>
-
-                  {/* Interactive Leaflet Field Mini-Map */}
-                  <div className="mt-2 pt-1 border-t border-emerald-200/80">
-                    <GpsFieldMiniMap
-                      latitude={gpsData.latitude}
-                      longitude={gpsData.longitude}
-                      pipeId={activePipeId}
-                    />
-                  </div>
-                </div>
-              )}
-
-              {geoAutoFilledNotice && (
-                <div className="bg-[#e8f2e8] border border-[#88b04b] text-[#2d4a2d] rounded-lg p-2.5 text-xs font-semibold flex items-center gap-1.5 animate-fadeIn">
-                  <Sparkles className="w-4 h-4 text-[#88b04b] shrink-0" />
-                  <span>{geoAutoFilledNotice}</span>
-                </div>
-              )}
-
-              {gpsError && (
-                <p className="text-[11px] text-amber-700 italic bg-amber-50 p-2 rounded border border-amber-200">
-                  {gpsError}
-                </p>
-              )}
-
-              {!gpsData && (
-                <p className="text-[11px] text-slate-500 text-center font-medium">
-                  * GPS Capture is required prior to form submission.
-                </p>
-              )}
-            </div>
-
-            {/* CAMERA PHOTO CAPTURE FEATURE */}
-            <CameraCapture
-              photoUrl={photoUrl}
-              onPhotoCaptured={(url) => setPhotoUrl(url)}
-              onPhotoRemoved={() => setPhotoUrl(undefined)}
-              label="Capture Installed Pipe Field Photo"
-            />
-
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">Remarks</label>
-              <textarea
-                rows={2}
-                value={remarks}
-                onChange={(e) => setRemarks(e.target.value)}
-                placeholder="Field observations, soil condition, pipe placement notes..."
-                className="w-full border rounded-xl p-2 text-sm focus:ring-2 focus:ring-emerald-500 outline-none"
-              />
-            </div>
-            </div>
-          </div>
-
-          </div>
-
-          {/* Full-Width Footer Action Bar for Desktop */}
-          <div className="pt-4 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-4 bg-slate-50 p-4 rounded-xl">
-            <div className="text-xs text-slate-500 font-medium">
-              <span>* Ensure all required fields and GPS satellite coordinates are verified before submission.</span>
             </div>
             <button
-              type="submit"
-              disabled={isSubmitting}
-              className={`w-full sm:w-auto font-extrabold rounded-xl text-base py-4 px-6 transition shadow-lg flex items-center justify-center gap-2.5 cursor-pointer ${
-                isSubmitting
-                  ? 'bg-slate-400 text-white cursor-not-allowed'
-                  : 'bg-emerald-600 hover:bg-emerald-700 text-white active:scale-[0.98]'
-              }`}
+              type="button"
+              onClick={() => setIsQrScannerOpen(true)}
+              className="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-lg shadow-sm active:scale-95 transition-all flex items-center justify-center text-xs font-bold gap-1 min-h-[44px]"
             >
-              {isSubmitting ? (
-                <>
-                  <RefreshCw className="w-5 h-5 animate-spin" /> Submitting Registration...
-                </>
-              ) : (
-                <>
-                  <Sprout className="w-5 h-5" /> Submit AWD Pipe Registration
-                </>
-              )}
+              <QrCode className="w-4 h-4" /> Rescan
             </button>
           </div>
 
-        </form>
+          <form onSubmit={handleSubmitRegistration} className="bg-white sm:rounded-b-2xl sm:shadow-lg sm:border sm:border-slate-200 space-y-4 pb-4">
+
+            {/* STICKY STEP INDICATOR (Fix overlap by placing it relatively or moving top-[64px]) */}
+            <div className="sticky top-[64px] sm:top-[68px] z-20 bg-white border-b border-slate-100 px-4 py-3 flex items-center justify-between shadow-[0_4px_6px_-1px_rgba(0,0,0,0.05)]">
+              {[
+                { num: 1, label: 'Location' },
+                { num: 2, label: 'Farmer' },
+                { num: 3, label: 'Plot' },
+                { num: 4, label: 'Review' }
+              ].map((step, idx) => (
+                <div key={step.num} className="flex flex-col items-center gap-1 flex-1 relative">
+                  <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold z-10 transition-colors ${currentStep === step.num ? 'bg-emerald-600 text-white ring-4 ring-emerald-100' :
+                      currentStep > step.num ? 'bg-emerald-200 text-emerald-800' :
+                        'bg-slate-100 text-slate-400'
+                    }`}>
+                    {currentStep > step.num ? <CheckCircle2 className="w-4 h-4" /> : step.num}
+                  </div>
+                  <span className={`text-[10px] font-bold ${currentStep === step.num ? 'text-emerald-700' :
+                      currentStep > step.num ? 'text-emerald-600' :
+                        'text-slate-400'
+                    }`}>{step.label}</span>
+                  {idx < 3 && (
+                    <div className={`absolute top-3.5 left-1/2 w-full h-0.5 -z-0 ${currentStep > step.num ? 'bg-emerald-200' : 'bg-slate-100'
+                      }`} />
+                  )}
+                </div>
+              ))}
+            </div>
+
+            <div className="px-4 py-2">
+              {formError && (
+                <div role="alert" className="bg-red-50 border border-red-200 text-red-700 rounded-xl p-3.5 text-xs flex items-center gap-2 font-semibold mb-4 animate-fadeIn">
+                  <AlertTriangle className="w-4 h-4 shrink-0 text-red-600" />
+                  <span>{formError}</span>
+                </div>
+              )}
+
+              <div className="space-y-4">
+                {/* STEP 1: LOCATION (GPS & Village) */}
+                {currentStep === 1 && (
+                  <div className="animate-fadeIn space-y-3.5 bg-slate-50/70 p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-xs">
+                    <h3 className="text-xs font-extrabold text-slate-800 uppercase tracking-wider flex items-center gap-2 border-b pb-1.5">
+                      <span className="w-5 h-5 bg-emerald-600 text-white rounded-full flex items-center justify-center text-xs">1</span>
+                      Location & GPS
+                    </h3>
+
+                    <div className="bg-white p-3 rounded-xl border border-slate-200 shadow-xs">
+                      {gpsData ? (
+                        <div className="space-y-3">
+                          <div className="flex items-center justify-between">
+                            <span className="flex items-center gap-1.5 text-xs font-bold text-emerald-700">
+                              <CheckCircle2 className="w-4 h-4" /> GPS Captured
+                            </span>
+                            <button
+                              type="button"
+                              onClick={handleCaptureGPS}
+                              className="text-xs font-bold text-slate-500 underline hover:text-emerald-600 transition min-h-[44px] px-2"
+                            >
+                              Retake
+                            </button>
+                          </div>
+                          <div className="grid grid-cols-2 gap-2 text-xs font-mono bg-emerald-50 p-2 rounded-lg border border-emerald-100">
+                            <div><span className="text-slate-500">Lat:</span> {gpsData.latitude.toFixed(6)}</div>
+                            <div><span className="text-slate-500">Lng:</span> {gpsData.longitude.toFixed(6)}</div>
+                            <div className="col-span-2 text-slate-500">Accuracy: ±{Math.round(gpsData.accuracy)}m</div>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="space-y-3">
+                          <button
+                            type="button"
+                            onClick={handleCaptureGPS}
+                            disabled={isLocating}
+                            className={`w-full py-3 px-4 rounded-xl font-bold flex items-center justify-center gap-2 shadow-sm transition active:scale-[0.98] min-h-[44px] ${isLocating ? 'bg-slate-100 text-slate-500 cursor-not-allowed' : 'bg-slate-800 text-white hover:bg-slate-700'
+                              }`}
+                          >
+                            {isLocating ? (
+                              <><RefreshCw className="w-4 h-4 animate-spin" /> Locating...</>
+                            ) : (
+                              <><MapPin className="w-4 h-4" /> Capture Current Location</>
+                            )}
+                          </button>
+                          {gpsError && (
+                            <div className="text-xs text-red-600 bg-red-50 p-2 rounded border border-red-100 flex items-start gap-1">
+                              <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+                              <span>{gpsError}</span>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Auto-filled Location Details */}
+                    <div className="space-y-3 pt-2">
+                      {geoAutoFilledNotice && (
+                        <div className="text-xs font-bold text-emerald-700 bg-emerald-50 p-2 rounded-lg border border-emerald-200 flex items-center gap-1.5 animate-fadeIn">
+                          <Sparkles className="w-4 h-4 text-emerald-500" />
+                          Location auto-filled via GPS
+                        </div>
+                      )}
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="min-w-0">
+                          <label className="text-xs font-semibold text-slate-700 mb-1 flex items-center gap-1">
+                            Village * {geoAutoFilledNotice && <span className="text-[9px] bg-emerald-100 text-emerald-700 px-1 py-0.5 rounded font-bold">✓ GPS</span>}
+                          </label>
+                          <input
+                            type="text"
+                            value={village}
+                            onChange={(e) => setVillage(e.target.value)}
+                            placeholder="Village Name"
+                            className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-emerald-500 outline-none min-h-[44px] transition"
+                          />
+                        </div>
+                        <div className="min-w-0">
+                          <label className="text-xs font-semibold text-slate-700 mb-1 flex items-center gap-1">
+                            Mandal * {geoAutoFilledNotice && <span className="text-[9px] bg-emerald-100 text-emerald-700 px-1 py-0.5 rounded font-bold">✓ GPS</span>}
+                          </label>
+                          <input
+                            type="text"
+                            value={mandal}
+                            onChange={(e) => setMandal(e.target.value)}
+                            placeholder="Mandal Name"
+                            className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-emerald-500 outline-none min-h-[44px] transition"
+                          />
+                        </div>
+                        <div className="col-span-2">
+                          <label className="text-xs font-semibold text-slate-700 mb-1 flex items-center gap-1">
+                            District * {geoAutoFilledNotice && <span className="text-[9px] bg-emerald-100 text-emerald-700 px-1 py-0.5 rounded font-bold">✓ GPS</span>}
+                          </label>
+                          <input
+                            type="text"
+                            value={district}
+                            onChange={(e) => setDistrict(e.target.value)}
+                            placeholder="District Name"
+                            className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-emerald-500 outline-none min-h-[44px] transition"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* STEP 2: FARMER */}
+                {currentStep === 2 && (
+                  <div className="animate-fadeIn space-y-3.5 bg-slate-50/70 p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-xs">
+                    <h3 className="text-xs font-extrabold text-slate-800 uppercase tracking-wider flex items-center gap-2 border-b pb-1.5">
+                      <span className="w-5 h-5 bg-emerald-600 text-white rounded-full flex items-center justify-center text-xs">2</span>
+                      Farmer Details
+                    </h3>
+
+                    {/* Farmer Mode Selection Toggle */}
+                    <div className="grid grid-cols-2 gap-2 p-1 bg-slate-100 rounded-xl border border-slate-200 text-xs font-bold">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setFarmerSelectionMode('new');
+                          setFarmerName('');
+                          setMobile('');
+                          // Do NOT clear village/mandal/district because GPS provided them!
+                          setFarmerId('');
+                        }}
+                        className={`py-2 px-2 rounded-lg flex items-center justify-center gap-1 active:scale-[0.97] transition-all ${farmerSelectionMode === 'new'
+                            ? 'bg-emerald-700 text-white shadow-xs'
+                            : 'text-slate-600 hover:text-slate-900'
+                          }`}
+                      >
+                        <Plus className="w-3.5 h-3.5" />
+                        <span>New Farmer</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setFarmerSelectionMode('existing')}
+                        className={`py-2 px-2 rounded-lg flex items-center justify-center gap-1 active:scale-[0.97] transition-all ${farmerSelectionMode === 'existing'
+                            ? 'bg-emerald-700 text-white shadow-xs'
+                            : 'text-slate-600 hover:text-slate-900'
+                          }`}
+                      >
+                        <Users className="w-3.5 h-3.5" />
+                        <span>Existing ({registeredFarmersList.length})</span>
+                      </button>
+                    </div>
+
+                    {/* Live Search for Existing Farmer by name or mobile */}
+                    {farmerSelectionMode === 'existing' && registeredFarmersList.length > 0 && (
+                      <div className="bg-emerald-50/90 border border-emerald-300 rounded-xl p-3 space-y-2 animate-fadeIn shadow-xs">
+                        <label className="block text-xs font-bold text-emerald-950 flex items-center gap-1">
+                          <UserCheck className="w-4 h-4 text-emerald-700" />
+                          Search Registered Farmer
+                        </label>
+                        <div className="relative">
+                          <Search className="absolute left-2.5 top-2.5 w-3.5 h-3.5 text-slate-400" />
+                          <input
+                            type="text"
+                            value={farmerSearch}
+                            onChange={(e) => setFarmerSearch(e.target.value)}
+                            placeholder="Type name or mobile number..."
+                            className="w-full pl-8 pr-3 py-2 text-xs border border-emerald-300 rounded-xl bg-white focus:ring-2 focus:ring-emerald-500 outline-none min-h-[44px]"
+                          />
+                        </div>
+                        {/* Filtered results */}
+                        {(() => {
+                          const term = farmerSearch.trim().toLowerCase();
+                          const numSearch = farmerSearch.replace(/\D/g, '');
+                          const results = registeredFarmersList.filter(
+                            (f) =>
+                              f.Farmer_Name.toLowerCase().includes(term) ||
+                              (numSearch.length > 0 && f.Mobile && f.Mobile.includes(numSearch))
+                          );
+                          return results.length === 0 ? (
+                            <div className="text-xs text-slate-500 text-center py-2">No farmers found matching "{farmerSearch}"</div>
+                          ) : (
+                            <div className="max-h-48 overflow-y-auto rounded-xl border border-emerald-200 bg-white divide-y divide-slate-100">
+                              {results.map((f) => {
+                                const pipeCount = installations.filter((i) => i.Farmer_Name === f.Farmer_Name).length;
+                                return (
+                                  <button
+                                    key={f.Farmer_Name}
+                                    type="button"
+                                    onClick={() => {
+                                      handleSelectExistingFarmer(f.Farmer_Name);
+                                      setFarmerSearch(f.Farmer_Name);
+                                    }}
+                                    className="w-full text-left px-3 py-2.5 hover:bg-emerald-50 transition text-xs active:bg-emerald-100 active:opacity-70 min-h-[44px]"
+                                  >
+                                    <div className="font-bold text-slate-800"><UserCheck className="w-4 h-4 inline mr-1" /> {f.Farmer_Name}</div>
+                                    <div className="text-slate-500 flex items-center gap-3 mt-0.5">
+                                      <span><Smartphone className="w-3.5 h-3.5 inline mr-1" /> {f.Mobile}</span>
+                                      <span className="text-emerald-700 font-semibold">{pipeCount} pipe{pipeCount > 1 ? 's' : ''}</span>
+                                    </div>
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          );
+                        })()}
+                      </div>
+                    )}
+
+                    <div className="space-y-3">
+                      <div className="min-w-0">
+                        <label className="block text-xs font-semibold text-slate-700 mb-1">Farmer Name *</label>
+                        <input
+                          type="text"
+                          value={farmerName}
+                          onChange={(e) => setFarmerName(e.target.value)}
+                          placeholder="Full Name"
+                          disabled={farmerSelectionMode === 'existing'}
+                          className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-emerald-500 outline-none disabled:bg-slate-100 min-h-[44px] transition"
+                        />
+                      </div>
+                      <div className="min-w-0">
+                        <label className="block text-xs font-semibold text-slate-700 mb-1">Mobile Number *</label>
+                        <input
+                          type="tel"
+                          value={mobile}
+                          onChange={(e) => setMobile(e.target.value.replace(/\D/g, '').substring(0, 10))}
+                          placeholder="10-digit mobile"
+                          disabled={farmerSelectionMode === 'existing'}
+                          className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-emerald-500 outline-none disabled:bg-slate-100 min-h-[44px] transition"
+                        />
+                      </div>
+                      <div className="min-w-0">
+                        <label className="block text-xs font-semibold text-slate-700 mb-1">Farmer ID (Optional)</label>
+                        <input
+                          type="text"
+                          value={farmerId}
+                          onChange={(e) => setFarmerId(e.target.value)}
+                          placeholder="State Farmer ID"
+                          disabled={farmerSelectionMode === 'existing'}
+                          className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-emerald-500 outline-none disabled:bg-slate-100 min-h-[44px] transition"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* STEP 3: PLOT & CROP */}
+                {currentStep === 3 && (
+                  <div className="animate-fadeIn space-y-3.5 bg-slate-50/70 p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-xs">
+                    <h3 className="text-xs font-extrabold text-slate-800 uppercase tracking-wider flex items-center gap-2 border-b pb-1.5">
+                      <span className="w-5 h-5 bg-emerald-600 text-white rounded-full flex items-center justify-center text-xs">3</span>
+                      Plot, Crop & Installation
+                    </h3>
+
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="min-w-0 col-span-2">
+                        <label className="block text-xs font-semibold text-slate-700 mb-1">Survey No.</label>
+                        <input
+                          type="text"
+                          value={surveyNo}
+                          onChange={(e) => setSurveyNo(e.target.value)}
+                          placeholder="Survey number"
+                          className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-emerald-500 outline-none min-h-[44px] transition"
+                        />
+                      </div>
+                      <div className="min-w-0">
+                        <label className="block text-xs font-semibold text-slate-700 mb-1">Plot Size *</label>
+                        <input
+                          type="number"
+                          value={plotSize}
+                          onChange={(e) => setPlotSize(e.target.value)}
+                          min="0.1"
+                          step="0.1"
+                          className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-emerald-500 outline-none min-h-[44px] transition"
+                        />
+                      </div>
+                      <div className="min-w-0">
+                        <label className="block text-xs font-semibold text-slate-700 mb-1">Unit</label>
+                        <select
+                          value={plotSizeUnit}
+                          onChange={(e) => setPlotSizeUnit(e.target.value as PlotUnit)}
+                          className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-emerald-500 outline-none min-h-[44px] transition"
+                        >
+                          <option value="Acres">Acres</option>
+                          <option value="Guntas">Guntas (గుంటలు)</option>
+                          <option value="Cents">Cents</option>
+                          <option value="Hectares">Hectares</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3 pt-2">
+                      <div className="min-w-0 col-span-2">
+                        <label className="block text-xs font-semibold text-slate-700 mb-1">Est. Method *</label>
+                        <select
+                          value={establishmentMethod}
+                          onChange={(e) => setEstablishmentMethod(e.target.value as EstablishmentMethod)}
+                          className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-emerald-500 outline-none min-h-[44px] transition"
+                        >
+                          <option value="Dry DSR">Dry DSR</option>
+                          <option value="Wet DSR">Wet DSR</option>
+                          <option value="Machine Transplanting">Machine Transplanting</option>
+                          <option value="Manual Transplanting">Manual Transplanting</option>
+                          <option value="Broadcast">Broadcast</option>
+                        </select>
+                      </div>
+                      <div className="min-w-0">
+                        <label className="block text-xs font-semibold text-slate-700 mb-1">Sowing Date</label>
+                        <input
+                          type="date"
+                          value={sowingDate}
+                          onChange={(e) => setSowingDate(e.target.value)}
+                          className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-emerald-500 outline-none min-h-[44px] transition"
+                        />
+                      </div>
+                      <div className="min-w-0">
+                        <label className="block text-xs font-semibold text-slate-700 mb-1">Irrigation *</label>
+                        <select
+                          value={irrigationSource}
+                          onChange={(e) => setIrrigationSource(e.target.value as IrrigationSource)}
+                          className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-emerald-500 outline-none min-h-[44px] transition"
+                        >
+                          <option value="Borewell">Borewell</option>
+                          <option value="Canal">Canal</option>
+                          <option value="Tank">Tank</option>
+                          <option value="Rainfed">Rainfed</option>
+                          <option value="Other">Other...</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div className="space-y-3 pt-2">
+                      <div className="min-w-0">
+                        <label className="block text-xs font-semibold text-slate-700 mb-1">Installation Date *</label>
+                        <input
+                          type="date"
+                          value={installationDate}
+                          onChange={(e) => setInstallationDate(e.target.value)}
+                          className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-emerald-500 outline-none min-h-[44px] transition"
+                        />
+                      </div>
+                      <div className="min-w-0">
+                        <CameraCapture 
+                          label="Installation Photo (Optional)"
+                          photoUrl={photoUrl}
+                          onPhotoCaptured={setPhotoUrl} 
+                          onPhotoRemoved={() => setPhotoUrl(undefined)}
+                        />
+                      </div>
+                      <div className="min-w-0">
+                        <label className="block text-xs font-semibold text-slate-700 mb-1">Remarks</label>
+                        <textarea
+                          value={remarks}
+                          onChange={(e) => setRemarks(e.target.value)}
+                          placeholder="Notes about the plot or installation..."
+                          rows={2}
+                          className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-emerald-500 outline-none transition resize-none"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* STEP 4: REVIEW */}
+                {currentStep === 4 && (
+                  <div className="animate-fadeIn space-y-4">
+                    <h3 className="text-sm font-extrabold text-slate-800 uppercase tracking-wider flex items-center gap-2 border-b pb-2">
+                      <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+                      Review Registration
+                    </h3>
+
+                    <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-3 text-sm shadow-xs">
+                      <div className="grid grid-cols-2 gap-x-4 gap-y-2">
+                        <div className="col-span-2 text-xs font-bold text-slate-500 uppercase tracking-wider border-b pb-1 mt-2 mb-1">Location</div>
+                        <div className="text-slate-500">GPS</div>
+                        <div className="font-semibold text-emerald-700 text-right">{gpsData ? '✓ Captured' : 'No'}</div>
+                        <div className="text-slate-500">Village/Mandal</div>
+                        <div className="font-semibold text-slate-800 text-right">{village}, {mandal}</div>
+                        <div className="text-slate-500">District</div>
+                        <div className="font-semibold text-slate-800 text-right">{district}</div>
+
+                        <div className="col-span-2 text-xs font-bold text-slate-500 uppercase tracking-wider border-b pb-1 mt-4 mb-1">Farmer Details</div>
+                        <div className="text-slate-500">Name</div>
+                        <div className="font-semibold text-slate-800 text-right">{farmerName}</div>
+                        <div className="text-slate-500">Mobile</div>
+                        <div className="font-semibold text-slate-800 text-right">{mobile}</div>
+
+                        <div className="col-span-2 text-xs font-bold text-slate-500 uppercase tracking-wider border-b pb-1 mt-4 mb-1">Plot Details</div>
+                        <div className="text-slate-500">Size</div>
+                        <div className="font-semibold text-slate-800 text-right">{plotSize} {plotSizeUnit}</div>
+                        <div className="text-slate-500">Crop / Method</div>
+                        <div className="font-semibold text-slate-800 text-right">{crop} ({establishmentMethod})</div>
+
+                        <div className="col-span-2 text-xs font-bold text-slate-500 uppercase tracking-wider border-b pb-1 mt-4 mb-1">Installation</div>
+                        <div className="text-slate-500">Date</div>
+                        <div className="font-semibold text-slate-800 text-right">{installationDate}</div>
+                        <div className="text-slate-500">Photo Attached</div>
+                        <div className="font-semibold text-slate-800 text-right">{photoUrl ? 'Yes' : 'No'}</div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* STICKY BOTTOM ACTION BAR */}
+            <div className="fixed bottom-0 left-0 right-0 p-4 bg-white border-t border-slate-200 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] z-40 sm:sticky sm:bottom-0 sm:rounded-b-2xl" style={{ paddingBottom: 'calc(1rem + env(safe-area-inset-bottom))' }}>
+              <div className="flex items-center gap-3 max-w-7xl mx-auto">
+                {currentStep > 1 && (
+                  <button
+                    type="button"
+                    onClick={handlePrevStep}
+                    className="w-1/3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-3 rounded-lg text-sm transition shadow-sm flex items-center justify-center min-h-[44px]"
+                  >
+                    Back
+                  </button>
+                )}
+
+                {currentStep < 4 ? (
+                  <button
+                    type="button"
+                    onClick={handleNextStep}
+                    className={`${currentStep > 1 ? 'w-2/3' : 'w-full'} bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-lg text-sm transition shadow-sm flex items-center justify-center gap-2 min-h-[44px]`}
+                  >
+                    {currentStep === 3 ? 'Review' : 'Next'} <ArrowRight className="w-4 h-4" />
+                  </button>
+                ) : (
+                  <button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className={`w-2/3 font-extrabold rounded-lg text-sm py-3 transition shadow-md flex items-center justify-center gap-2 min-h-[44px] ${isSubmitting
+                        ? 'bg-slate-400 text-white cursor-not-allowed'
+                        : 'bg-emerald-600 hover:bg-emerald-700 text-white active:scale-[0.98]'
+                      }`}
+                  >
+                    {isSubmitting ? (
+                      <>
+                        <RefreshCw className="w-5 h-5 animate-spin" /> Submitting...
+                      </>
+                    ) : (
+                      <>
+                        <Sprout className="w-5 h-5" /> Submit
+                      </>
+                    )}
+                  </button>
+                )}
+              </div>
+            </div>
+          </form>
+        </div>
       )}
 
+      {/* MONITORING MODAL */}{/* MONITORING MODAL */}
       {/* MONITORING MODAL */}
       <MonitoringForm
-        pipeId={selectedPipe.Pipe_ID}
+        pipeId={selectedPipe?.Pipe_ID || ''}
         isOpen={isMonitoringModalOpen}
         onClose={() => setIsMonitoringModalOpen(false)}
         onSubmit={onAddMonitoring}

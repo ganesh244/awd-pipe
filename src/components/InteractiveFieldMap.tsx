@@ -245,8 +245,8 @@ export const InteractiveFieldMap: React.FC<InteractiveFieldMapProps> = ({
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 border-b border-slate-100 pb-3">
           <div>
             <div className="flex items-center gap-2">
-              <span className="w-8 h-8 rounded-lg bg-[#2d4a2d] text-white flex items-center justify-center font-bold">
-                <Compass className="w-5 h-5 text-[#88b04b]" />
+              <span className="w-8 h-8 rounded-lg bg-[emerald-700] text-white flex items-center justify-center font-bold">
+                <Compass className="w-5 h-5 text-[emerald-600]" />
               </span>
               <div>
                 <h1 className="text-base font-bold text-slate-800 uppercase tracking-wide">
@@ -285,7 +285,7 @@ export const InteractiveFieldMap: React.FC<InteractiveFieldMapProps> = ({
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               placeholder="Search Farmer Name, Pipe ID, Village..."
-              className="w-full pl-9 pr-3 py-2 text-xs font-medium border border-slate-300 rounded-lg outline-none focus:border-[#88b04b]"
+              className="w-full pl-9 pr-3 py-2 text-xs font-medium border border-slate-300 rounded-lg outline-none focus:border-[emerald-600]"
             />
           </div>
 
@@ -295,7 +295,7 @@ export const InteractiveFieldMap: React.FC<InteractiveFieldMapProps> = ({
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value as any)}
-              className="w-full p-2 text-xs font-bold border border-slate-300 rounded-lg outline-none focus:border-[#88b04b] bg-white text-slate-800"
+              className="w-full p-2 text-xs font-bold border border-slate-300 rounded-lg outline-none focus:border-[emerald-600] bg-white text-slate-800"
             >
               <option value="All">All Statuses</option>
               <option value="Installed">🟢 Installed Only</option>
@@ -310,7 +310,7 @@ export const InteractiveFieldMap: React.FC<InteractiveFieldMapProps> = ({
             <select
               value={villageFilter}
               onChange={(e) => setVillageFilter(e.target.value)}
-              className="w-full p-2 text-xs font-bold border border-slate-300 rounded-lg outline-none focus:border-[#88b04b] bg-white text-slate-800"
+              className="w-full p-2 text-xs font-bold border border-slate-300 rounded-lg outline-none focus:border-[emerald-600] bg-white text-slate-800"
             >
               <option value="All">All Villages</option>
               {villages.map((v) => (
@@ -328,7 +328,7 @@ export const InteractiveFieldMap: React.FC<InteractiveFieldMapProps> = ({
               onClick={() => setTileType(tileType === 'streets' ? 'satellite' : 'streets')}
               className="flex-1 bg-slate-800 hover:bg-slate-900 text-white font-bold text-xs py-2 px-3 rounded-lg transition flex items-center justify-center gap-1.5"
             >
-              <Layers className="w-3.5 h-3.5 text-[#88b04b]" />
+              <Layers className="w-3.5 h-3.5 text-[emerald-600]" />
               {tileType === 'streets' ? 'Satellite View' : 'Map View'}
             </button>
 
@@ -352,19 +352,19 @@ export const InteractiveFieldMap: React.FC<InteractiveFieldMapProps> = ({
 
         {/* FLOATING INSPECTION CARD (Appears when pointing / clicking a map pin) */}
         {selectedPipeDetails && (
-          <div className="absolute top-4 right-4 z-30 max-w-sm w-full bg-white rounded-2xl shadow-2xl border-2 border-[#88b04b] overflow-hidden animate-scaleIn">
+          <div className="absolute top-4 right-4 z-30 max-w-sm w-full bg-white rounded-2xl shadow-2xl border-2 border-[emerald-600] overflow-hidden animate-scaleIn">
             
             {/* Card Top Header */}
-            <div className="bg-[#2d4a2d] text-white p-3.5 flex items-center justify-between">
+            <div className="bg-[emerald-700] text-white p-3.5 flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <span className="w-7 h-7 rounded-lg bg-[#88b04b] text-slate-900 font-extrabold flex items-center justify-center text-xs">
+                <span className="w-7 h-7 rounded-lg bg-[emerald-600] text-slate-900 font-extrabold flex items-center justify-center text-xs">
                   📍
                 </span>
                 <div>
                   <h3 className="text-sm font-bold tracking-wide text-white font-mono">
                     {selectedPipeDetails.pipe.Pipe_ID}
                   </h3>
-                  <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full inline-block mt-0.5 ${
+                  <span className={`text-xs font-extrabold px-2 py-0.5 rounded-full inline-block mt-0.5 ${
                     selectedPipeDetails.pipe.Status === 'Installed'
                       ? 'bg-emerald-400 text-slate-950'
                       : selectedPipeDetails.pipe.Status === 'Available'
@@ -415,7 +415,7 @@ export const InteractiveFieldMap: React.FC<InteractiveFieldMapProps> = ({
                   </div>
 
                   {/* Field Crop Info */}
-                  <div className="grid grid-cols-2 gap-2 text-[11px]">
+                  <div className="grid grid-cols-2 gap-2 text-xs">
                     <div className="bg-emerald-50 p-2 rounded-lg border border-emerald-200">
                       <span className="text-emerald-800 font-bold block mb-0.5">🌾 Crop / Variety</span>
                       <span className="font-semibold">{selectedPipeDetails.installation.Crop} ({selectedPipeDetails.installation.Variety})</span>
@@ -429,7 +429,7 @@ export const InteractiveFieldMap: React.FC<InteractiveFieldMapProps> = ({
                   {/* Captured Photo if existing */}
                   {selectedPipeDetails.installation.Photo_URL && (
                     <div>
-                      <span className="text-slate-500 text-[10px] font-bold block uppercase mb-1">
+                      <span className="text-slate-500 text-xs font-bold block uppercase mb-1">
                         Field Pipe Installation Photo:
                       </span>
                       <div className="w-full bg-slate-900 rounded-xl p-1 flex items-center justify-center min-h-[120px] max-h-44 border border-slate-800">
@@ -445,7 +445,7 @@ export const InteractiveFieldMap: React.FC<InteractiveFieldMapProps> = ({
                   {/* Last Water Level Visit */}
                   {selectedPipeDetails.lastMonitoring && (
                     <div className="bg-blue-50 border border-blue-200 rounded-xl p-2.5 space-y-1">
-                      <span className="text-blue-900 font-bold text-[10px] uppercase block">
+                      <span className="text-blue-900 font-bold text-xs uppercase block">
                         Latest Water Level Inspection:
                       </span>
                       <div className="flex justify-between">
@@ -460,7 +460,7 @@ export const InteractiveFieldMap: React.FC<InteractiveFieldMapProps> = ({
                   )}
 
                   {/* Coordinates & Direct Maps Link */}
-                  <div className="flex items-center justify-between pt-1 border-t border-slate-200 text-[11px]">
+                  <div className="flex items-center justify-between pt-1 border-t border-slate-200 text-xs">
                     <span className="font-mono text-slate-500">
                       GPS: {selectedPipeDetails.installation.Latitude.toFixed(4)}, {selectedPipeDetails.installation.Longitude.toFixed(4)}
                     </span>
@@ -479,7 +479,7 @@ export const InteractiveFieldMap: React.FC<InteractiveFieldMapProps> = ({
                   <p className="text-slate-600">
                     This pipe is currently <strong className="text-amber-700 font-bold">Unregistered / Available</strong>.
                   </p>
-                  <p className="text-slate-400 text-[11px]">
+                  <p className="text-slate-400 text-xs">
                     Ready to be scanned and registered to a farmer's plot in the Field Mobile App.
                   </p>
                 </div>
@@ -492,9 +492,9 @@ export const InteractiveFieldMap: React.FC<InteractiveFieldMapProps> = ({
                   onSelectPipeForMobile(selectedPipeDetails.pipe.Pipe_ID);
                   setSelectedPipeDetails(null);
                 }}
-                className="w-full bg-[#2d4a2d] hover:bg-[#1a2d1a] text-white font-bold py-2.5 px-3 rounded-xl transition shadow-md flex items-center justify-center gap-2 uppercase tracking-wider text-xs border-b-2 border-black/20"
+                className="w-full bg-[emerald-700] hover:bg-emerald-800 text-white font-bold py-2.5 px-3 rounded-xl transition shadow-md flex items-center justify-center gap-2 uppercase tracking-wider text-xs border-b-2 border-black/20"
               >
-                <Smartphone className="w-4 h-4 text-[#88b04b]" />
+                <Smartphone className="w-4 h-4 text-[emerald-600]" />
                 Open Pipe in Mobile App
               </button>
 

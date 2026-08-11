@@ -95,26 +95,46 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({
   };
 
   const captureSnapshot = () => {
-    if (!videoRef.current) return;
-    const video = videoRef.current;
-    const canvas = document.createElement('canvas');
-    canvas.width = video.videoWidth || 640;
-    canvas.height = video.videoHeight || 480;
-    const ctx = canvas.getContext('2d');
-    if (ctx) {
-      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-      // Add watermark overlay for AWD Pipe verification
-      ctx.fillStyle = 'rgba(4, 47, 46, 0.7)';
-      ctx.fillRect(10, canvas.height - 40, 280, 30);
-      ctx.fillStyle = '#ffffff';
-      ctx.font = 'bold 14px sans-serif';
-      ctx.fillText(`AWD FIELD VERIFIED • ${new Date().toLocaleDateString()}`, 20, canvas.height - 20);
+    try {
+      if (!videoRef.current) return;
+      const video = videoRef.current;
+      
+      let vWidth = video.videoWidth;
+      let vHeight = video.videoHeight;
+      
+      // If video dimensions are 0 (can happen on some mobile browsers before metadata fully loads)
+      // fallback to the actual rendered element dimensions.
+      if (!vWidth || !vHeight) {
+        vWidth = video.clientWidth || 640;
+        vHeight = video.clientHeight || 480;
+      }
 
-      const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
-      compressImage(dataUrl).then((compressed) => {
-        onPhotoCaptured(compressed);
-        stopCameraStream();
-      });
+      const canvas = document.createElement('canvas');
+      canvas.width = vWidth;
+      canvas.height = vHeight;
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        // Add watermark overlay for AWD Pipe verification
+        ctx.fillStyle = 'rgba(4, 47, 46, 0.7)';
+        ctx.fillRect(10, canvas.height - 40, 280, 30);
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 14px sans-serif';
+        ctx.fillText(`AWD FIELD VERIFIED • ${new Date().toLocaleDateString()}`, 20, canvas.height - 20);
+
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+        compressImage(dataUrl).then((compressed) => {
+          onPhotoCaptured(compressed);
+          stopCameraStream();
+        }).catch(() => {
+          // Fallback if compression fails
+          onPhotoCaptured(dataUrl);
+          stopCameraStream();
+        });
+      }
+    } catch (err) {
+      console.error('Snapshot error:', err);
+      setStreamError('Failed to capture photo from live stream. Please use the Upload File option instead.');
     }
   };
 
@@ -139,7 +159,7 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({
     if (ctx) {
       // Background Paddy Green Gradient
       const grad = ctx.createLinearGradient(0, 0, 0, 400);
-      grad.addColorStop(0, '#2d4a2d');
+      grad.addColorStop(0, 'emerald-700');
       grad.addColorStop(0.6, '#4d7c0f');
       grad.addColorStop(1, '#15803d');
       ctx.fillStyle = grad;
@@ -208,14 +228,14 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({
   };
 
   return (
-    <div className="space-y-2 bg-[#f4f7f2] border border-[#d1dbd1] p-3.5 rounded-lg">
+    <div className="space-y-2 bg-slate-50 border border-slate-200 p-3.5 rounded-lg">
       <div className="flex items-center justify-between">
-        <label className="text-xs font-bold text-[#2d3a2d] uppercase tracking-wider flex items-center gap-1.5">
-          <Camera className="w-4 h-4 text-[#88b04b]" />
+        <label className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
+          <Camera className="w-4 h-4 text-emerald-600" />
           {label}
         </label>
         {photoUrl && (
-          <span className="bg-[#88b04b] text-white text-[10px] font-bold px-2 py-0.5 rounded flex items-center gap-1">
+          <span className="bg-emerald-600 text-white text-xs font-bold px-2 py-0.5 rounded flex items-center gap-1">
             <CheckCircle2 className="w-3 h-3" /> Photo Attached
           </span>
         )}
@@ -233,24 +253,24 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({
 
       {/* PHOTO PREVIEW STATE */}
       {photoUrl ? (
-        <div className="relative rounded-lg overflow-hidden border-2 border-[#88b04b] shadow-sm bg-black group">
+        <div className="relative rounded-lg overflow-hidden border-2 border-emerald-600 shadow-sm bg-black group">
           <img src={photoUrl} alt="AWD Pipe Installation Photo" className="w-full h-44 object-cover" />
           <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent p-2 text-white flex items-center justify-between text-xs">
-            <span className="font-mono text-[10px] text-emerald-300 font-bold flex items-center gap-1">
+            <span className="font-mono text-xs text-emerald-300 font-bold flex items-center gap-1">
               <CheckCircle2 className="w-3.5 h-3.5" /> Photo Logged
             </span>
             <div className="flex items-center gap-2">
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
-                className="bg-white/20 hover:bg-white/30 text-white font-bold text-[10px] px-2.5 py-1 rounded transition backdrop-blur-sm active:scale-[0.97] transition-transform"
+                className="bg-white/20 hover:bg-white/30 text-white font-bold text-xs px-2.5 py-1 rounded transition backdrop-blur-sm active:scale-[0.97] transition-transform"
               >
                 Retake
               </button>
               <button
                 type="button"
                 onClick={onPhotoRemoved}
-                className="bg-red-600/80 hover:bg-red-600 text-white font-bold text-[10px] px-2 py-1 rounded transition active:scale-[0.97] transition-transform"
+                className="bg-red-600/80 hover:bg-red-600 text-white font-bold text-xs px-2 py-1 rounded transition active:scale-[0.97] transition-transform"
               >
                 Remove
               </button>
@@ -259,13 +279,13 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({
         </div>
       ) : isCameraActive ? (
         /* LIVE CAMERA STREAM VIEW */
-        <div className="relative rounded-lg overflow-hidden border-2 border-[#2d4a2d] bg-black">
-          <video ref={videoRef} autoPlay playsInline muted className="w-full h-52 object-cover" />
+        <div className="relative rounded-lg overflow-hidden border-2 border-emerald-700 bg-black">
+          <video ref={videoRef} autoPlay playsInline muted className="w-full aspect-[3/4] md:aspect-video object-cover" />
           <div className="absolute bottom-3 left-0 right-0 flex items-center justify-center gap-3 px-4">
             <button
               type="button"
               onClick={captureSnapshot}
-              className="bg-[#88b04b] hover:bg-[#779942] text-white font-bold px-5 py-2.5 rounded-lg shadow-lg text-xs flex items-center gap-2 uppercase tracking-wider active:scale-[0.97] transition-transform"
+              className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-5 py-2.5 rounded-lg shadow-lg text-xs flex items-center gap-2 uppercase tracking-wider active:scale-[0.97] transition-transform"
             >
               <Camera className="w-4 h-4" /> Snap Photo
             </button>
@@ -285,30 +305,30 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({
             <button
               type="button"
               onClick={startCamera}
-              className="bg-[#2d4a2d] hover:bg-[#1a2d1a] text-white font-bold text-xs py-2.5 px-3 rounded-lg transition shadow flex items-center justify-center gap-2 uppercase tracking-wider active:scale-[0.97] transition-transform"
+              className="bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs py-2.5 px-3 rounded-lg transition shadow flex items-center justify-center gap-2 uppercase tracking-wider active:scale-[0.97] transition-transform"
             >
-              <Camera className="w-4 h-4 text-[#88b04b]" /> Open Camera
+              <Camera className="w-4 h-4 text-emerald-600" /> Open Camera
             </button>
 
             <button
               type="button"
               onClick={() => fileInputRef.current?.click()}
-              className="bg-white hover:bg-slate-50 text-[#2d3a2d] border-2 border-[#d1dbd1] font-bold text-xs py-2.5 px-3 rounded-lg transition flex items-center justify-center gap-2 uppercase tracking-wider active:scale-[0.97] transition-transform"
+              className="bg-white hover:bg-slate-50 text-slate-800 border-2 border-slate-200 font-bold text-xs py-2.5 px-3 rounded-lg transition flex items-center justify-center gap-2 uppercase tracking-wider active:scale-[0.97] transition-transform"
             >
-              <ImageIcon className="w-4 h-4 text-[#88b04b]" /> Upload File
+              <ImageIcon className="w-4 h-4 text-emerald-600" /> Upload File
             </button>
           </div>
 
           <button
             type="button"
             onClick={handleSamplePhoto}
-            className="w-full bg-[#e2e8f0] hover:bg-slate-300 text-slate-700 text-[11px] font-bold py-1.5 rounded transition flex items-center justify-center gap-1.5 active:scale-[0.98] transition-transform"
+            className="w-full bg-[#e2e8f0] hover:bg-slate-300 text-slate-700 text-xs font-bold py-1.5 rounded transition flex items-center justify-center gap-1.5 active:scale-[0.98] transition-transform"
           >
             <span>📷 Attach Field Pipe Sample Photo</span>
           </button>
 
           {streamError && (
-            <p className="text-[10px] text-amber-700 bg-amber-50 p-2 rounded border border-amber-200 flex items-center gap-1">
+            <p className="text-xs text-amber-700 bg-amber-50 p-2 rounded border border-amber-200 flex items-center gap-1">
               <AlertCircle className="w-3 h-3 text-amber-600 shrink-0" />
               {streamError}
             </p>

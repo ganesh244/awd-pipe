@@ -109,7 +109,7 @@ export const AdminDevToolsModal: React.FC<AdminDevToolsModalProps> = ({ isOpen, 
             <div>
               <div className="flex items-center gap-2">
                 <h2 className="font-black text-white text-base tracking-wide uppercase">Admin Dev Tools & Storage Diagnostics</h2>
-                <span className="bg-purple-500/20 text-purple-300 text-[10px] font-extrabold px-2 py-0.5 rounded-md border border-purple-500/30">
+                <span className="bg-purple-500/20 text-purple-300 text-xs font-extrabold px-2 py-0.5 rounded-md border border-purple-500/30">
                   DEV DASHBOARD
                 </span>
               </div>
@@ -163,7 +163,7 @@ export const AdminDevToolsModal: React.FC<AdminDevToolsModalProps> = ({ isOpen, 
                     <span className="flex items-center gap-1.5 font-bold">
                       <Server className="w-4 h-4 text-emerald-400" /> Database Cluster
                     </span>
-                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-black border ${
+                    <span className={`px-2 py-0.5 rounded-full text-xs font-black border ${
                       stats.dbStatus === 'cloud'
                         ? 'bg-emerald-950 text-emerald-400 border-emerald-800'
                         : 'bg-amber-950 text-amber-400 border-amber-800'
@@ -172,7 +172,7 @@ export const AdminDevToolsModal: React.FC<AdminDevToolsModalProps> = ({ isOpen, 
                     </span>
                   </div>
                   <div className="text-lg font-black text-white font-mono">{stats.dbName}</div>
-                  <div className="text-[11px] text-slate-400 flex items-center justify-between pt-1 border-t border-slate-800/80">
+                  <div className="text-xs text-slate-400 flex items-center justify-between pt-1 border-t border-slate-800/80">
                     <span>Collections: <strong className="text-white">{stats.collectionsCount}</strong></span>
                     <span>Total Objects: <strong className="text-white">{stats.objectsCount}</strong></span>
                   </div>
@@ -184,7 +184,7 @@ export const AdminDevToolsModal: React.FC<AdminDevToolsModalProps> = ({ isOpen, 
                     <span className="flex items-center gap-1.5 font-bold">
                       <HardDrive className="w-4 h-4 text-purple-400" /> Storage Allocated
                     </span>
-                    <span className="text-[11px] font-mono text-purple-300 font-bold">{formatBytes(stats.storageSize)}</span>
+                    <span className="text-xs font-mono text-purple-300 font-bold">{formatBytes(stats.storageSize)}</span>
                   </div>
 
                   {/* Storage Bar */}
@@ -195,7 +195,7 @@ export const AdminDevToolsModal: React.FC<AdminDevToolsModalProps> = ({ isOpen, 
                         style={{ width: `${Math.max(3, storagePercent)}%` }}
                       />
                     </div>
-                    <div className="flex justify-between text-[10px] text-slate-400">
+                    <div className="flex justify-between text-xs text-slate-400">
                       <span>Data: {formatBytes(stats.dataSize)}</span>
                       <span>Indexes: {formatBytes(stats.indexSize)}</span>
                     </div>
@@ -208,13 +208,13 @@ export const AdminDevToolsModal: React.FC<AdminDevToolsModalProps> = ({ isOpen, 
                     <span className="flex items-center gap-1.5 font-bold">
                       <Cpu className="w-4 h-4 text-sky-400" /> Node & Engine Runtime
                     </span>
-                    <span className="text-[10px] font-mono text-sky-300 font-bold">{stats.system.nodeVersion}</span>
+                    <span className="text-xs font-mono text-sky-300 font-bold">{stats.system.nodeVersion}</span>
                   </div>
                   <div className="text-sm font-bold text-white flex items-center gap-1.5">
                     <Clock className="w-3.5 h-3.5 text-slate-400" />
                     <span>Uptime: {formatUptime(stats.system.uptimeSeconds)}</span>
                   </div>
-                  <div className="text-[10px] text-slate-400 flex items-center justify-between pt-1 border-t border-slate-800/80 font-mono">
+                  <div className="text-xs text-slate-400 flex items-center justify-between pt-1 border-t border-slate-800/80 font-mono">
                     <span>Heap: {formatBytes(stats.system.heapUsed)} / {formatBytes(stats.system.heapTotal)}</span>
                     <span>RSS: {formatBytes(stats.system.rss)}</span>
                   </div>
@@ -229,12 +229,12 @@ export const AdminDevToolsModal: React.FC<AdminDevToolsModalProps> = ({ isOpen, 
                     <Layers className="w-4 h-4 text-purple-400" />
                     Collection Storage Breakdown ({stats.collections.length} Collections)
                   </h3>
-                  <span className="text-[10px] text-slate-400">Avg Doc Size: {formatBytes(stats.avgDocSize)}</span>
+                  <span className="text-xs text-slate-400">Avg Doc Size: {formatBytes(stats.avgDocSize)}</span>
                 </div>
 
                 <div className="border border-slate-800 rounded-2xl overflow-hidden bg-slate-950/50 shadow-inner">
                   <table className="w-full text-left text-xs text-slate-300">
-                    <thead className="bg-slate-800/70 text-[10px] uppercase tracking-wider text-slate-400 border-b border-slate-800 font-bold">
+                    <thead className="bg-slate-800/70 text-xs uppercase tracking-wider text-slate-400 border-b border-slate-800 font-bold">
                       <tr>
                         <th className="p-3">Collection Name</th>
                         <th className="p-3 text-right">Document Count</th>
@@ -244,7 +244,7 @@ export const AdminDevToolsModal: React.FC<AdminDevToolsModalProps> = ({ isOpen, 
                         <th className="p-3 text-right">Avg Doc Size</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-800/60 font-mono text-[11px]">
+                    <tbody className="divide-y divide-slate-800/60 font-mono text-xs">
                       {stats.collections.map((coll) => (
                         <tr key={coll.name} className="hover:bg-slate-800/40 transition">
                           <td className="p-3 font-extrabold text-white flex items-center gap-2">
@@ -268,7 +268,7 @@ export const AdminDevToolsModal: React.FC<AdminDevToolsModalProps> = ({ isOpen, 
                 <ShieldCheck className="w-5 h-5 text-purple-400 shrink-0 mt-0.5" />
                 <div className="space-y-1">
                   <strong className="text-white block font-bold">Database Storage Optimization Note:</strong>
-                  <p className="text-[11px] leading-relaxed text-purple-200/90">
+                  <p className="text-xs leading-relaxed text-purple-200/90">
                     MongoDB Atlas automatically compresses data using the WiredTiger storage engine. Indices improve search performance across field parameters (Farmer ID, Village, Pipe ID, User Scope).
                   </p>
                 </div>
@@ -279,7 +279,7 @@ export const AdminDevToolsModal: React.FC<AdminDevToolsModalProps> = ({ isOpen, 
 
         {/* Footer actions */}
         <div className="p-4 border-t border-slate-800 bg-slate-950/80 flex items-center justify-between">
-          <div className="text-[11px] text-slate-500">
+          <div className="text-xs text-slate-500">
             AWD Pipe Registry · Systems Health Diagnostics
           </div>
 

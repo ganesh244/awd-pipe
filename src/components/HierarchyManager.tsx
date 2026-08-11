@@ -539,7 +539,7 @@ export const HierarchyManager: React.FC<HierarchyManagerProps> = ({
               <MapPin className="w-4 h-4 text-amber-600" /> 1. States ({visibleStates.length})
             </h3>
             <div className="flex items-center gap-2">
-              <span className="text-[10px] font-bold bg-amber-100 text-amber-800 px-2 py-0.5 rounded-md uppercase">
+              <span className="text-xs font-bold bg-amber-100 text-amber-800 px-2 py-0.5 rounded-md uppercase">
                 State Level
               </span>
               {(isAdmin || isSM) && (
@@ -606,7 +606,7 @@ export const HierarchyManager: React.FC<HierarchyManagerProps> = ({
                         </div>
                       )}
                     </div>
-                    <span className="text-[11px] text-slate-500 mt-0.5 flex items-center gap-1">
+                    <span className="text-xs text-slate-500 mt-0.5 flex items-center gap-1">
                       Manager: <strong className="text-slate-800">{stateUser?.name || st.managerName || 'Unassigned'}</strong>
                       {stateUser && (isAdmin || isSM) && (
                         <div className="flex items-center gap-1 ml-2">
@@ -658,7 +658,7 @@ export const HierarchyManager: React.FC<HierarchyManagerProps> = ({
               <Building2 className="w-4 h-4 text-blue-600" /> 2. Districts ({visibleDistricts.length})
             </h3>
             <div className="flex items-center gap-2">
-              <span className="text-[10px] font-bold bg-blue-100 text-blue-800 px-2 py-0.5 rounded-md uppercase">
+              <span className="text-xs font-bold bg-blue-100 text-blue-800 px-2 py-0.5 rounded-md uppercase">
                 District Level
               </span>
               {(isAdmin || isSM || isDM) && selectedStateId && (
@@ -724,7 +724,7 @@ export const HierarchyManager: React.FC<HierarchyManagerProps> = ({
                           </div>
                         )}
                       </div>
-                      <span className="text-[11px] text-slate-500 mt-0.5 flex items-center gap-1">
+                      <span className="text-xs text-slate-500 mt-0.5 flex items-center gap-1">
                         DM: <strong className="text-slate-800">{distUser?.name || dt.managerName || 'Unassigned'}</strong>
                         {distUser && (isAdmin || isSM || isDM) && (
                           <div className="flex items-center gap-1 ml-2">
@@ -777,7 +777,7 @@ export const HierarchyManager: React.FC<HierarchyManagerProps> = ({
               <Map className="w-4 h-4 text-teal-600" /> 3. Areas & Field Teams
             </h3>
             <div className="flex items-center gap-2">
-              <span className="text-[10px] font-bold bg-teal-100 text-teal-800 px-2 py-0.5 rounded-md uppercase">
+              <span className="text-xs font-bold bg-teal-100 text-teal-800 px-2 py-0.5 rounded-md uppercase">
                 Field Operations
               </span>
               {(isAdmin || isSM || isDM || isAM) && selectedDistrictId && (
@@ -838,7 +838,7 @@ export const HierarchyManager: React.FC<HierarchyManagerProps> = ({
                           )}
                         </div>
                         <div className="flex items-center gap-1.5 mt-1">
-                          <span className="text-[11px] text-teal-800 font-bold bg-teal-100 px-2 py-0.5 rounded-md flex items-center gap-2">
+                          <span className="text-xs text-teal-800 font-bold bg-teal-100 px-2 py-0.5 rounded-md flex items-center gap-2">
                             <span>AM: {areaUser?.name || 'Unassigned'}</span>
                             {areaUser && (isAdmin || isSM || isDM || isAM) && (
                               <div className="flex items-center gap-2">
@@ -878,7 +878,7 @@ export const HierarchyManager: React.FC<HierarchyManagerProps> = ({
                       {(isAdmin || isSM || isDM) && (
                         <button
                           onClick={() => openAddModal('CF', ar.name)}
-                          className="text-[11px] font-extrabold text-teal-700 hover:text-teal-900 bg-teal-100/70 hover:bg-teal-200 px-2.5 py-1 rounded-lg flex items-center gap-1 transition cursor-pointer"
+                          className="text-xs font-extrabold text-teal-700 hover:text-teal-900 bg-teal-100/70 hover:bg-teal-200 px-2.5 py-1 rounded-lg flex items-center gap-1 transition cursor-pointer"
                         >
                           <Plus className="w-3.5 h-3.5" /> Add Staff
                         </button>
@@ -888,14 +888,14 @@ export const HierarchyManager: React.FC<HierarchyManagerProps> = ({
                     {/* CF / JCF Field Staff List */}
                     <div className="space-y-2 pl-2 border-l-2 border-teal-500/60 max-h-[400px] overflow-y-auto pr-1">
                       <div className="flex items-center justify-between">
-                        <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">
+                        <span className="text-xs font-black uppercase tracking-wider text-slate-400">
                           Assigned Facilitators ({fieldStaff.length})
                         </span>
                         <span className="text-[9px] text-slate-400 italic">Strict data scoping enabled</span>
                       </div>
 
                       {fieldStaff.length === 0 ? (
-                        <p className="text-[11px] text-slate-400 italic py-1">No CF/JCF assigned to this area yet.</p>
+                        <p className="text-xs text-slate-400 italic py-1">No CF/JCF assigned to this area yet.</p>
                       ) : (
                         fieldStaff.map((staff) => {
                           const isJCF = staff.role === 'JCF';
@@ -941,7 +941,7 @@ export const HierarchyManager: React.FC<HierarchyManagerProps> = ({
                               </div>
 
                               {/* Credentials preview for supervisors */}
-                              <div className="flex items-center justify-between text-[11px] bg-slate-50 px-2 py-1 rounded-lg font-mono border border-slate-100">
+                              <div className="flex items-center justify-between text-xs bg-slate-50 px-2 py-1 rounded-lg font-mono border border-slate-100">
                                 <span className="text-slate-600">ID: <strong>@{staff.username}</strong></span>
                                 <span className="text-slate-400">Pwd: <span className="italic">Hidden for Security</span></span>
                               </div>
@@ -1017,7 +1017,7 @@ export const HierarchyManager: React.FC<HierarchyManagerProps> = ({
                           </div>
                         )}
                       </div>
-                      <div className="text-[11px] text-slate-500 font-medium">
+                      <div className="text-xs text-slate-500 font-medium">
                         {u.areaName || u.district || u.state || 'System Admin'}
                       </div>
                     </div>
@@ -1258,7 +1258,7 @@ export const HierarchyManager: React.FC<HierarchyManagerProps> = ({
                             : 'No District Manager for this location.'}
                         </span>
                       </div>
-                      <label className="block text-[10px] font-extrabold text-amber-900 mb-1">Reporting Manager Override</label>
+                      <label className="block text-xs font-extrabold text-amber-900 mb-1">Reporting Manager Override</label>
                       <select
                         value={manualReportsToId}
                         onChange={(e) => setManualReportsToId(e.target.value)}
@@ -1280,12 +1280,12 @@ export const HierarchyManager: React.FC<HierarchyManagerProps> = ({
               )}
 
               <div className="bg-purple-50/70 border border-purple-200 rounded-2xl p-4 space-y-3">
-                <span className="text-[11px] font-black uppercase tracking-wider text-purple-900 flex items-center gap-1.5">
+                <span className="text-xs font-black uppercase tracking-wider text-purple-900 flex items-center gap-1.5">
                   <Key className="w-4 h-4 text-purple-600" /> Login Credentials Assignment
                 </span>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-[10px] font-extrabold text-purple-800 mb-1">Username ID *</label>
+                    <label className="block text-xs font-extrabold text-purple-800 mb-1">Username ID *</label>
                     <input
                       type="text"
                       required
@@ -1296,7 +1296,7 @@ export const HierarchyManager: React.FC<HierarchyManagerProps> = ({
                     />
                   </div>
                   <div>
-                    <label className="block text-[10px] font-extrabold text-purple-800 mb-1">Assigned Password *</label>
+                    <label className="block text-xs font-extrabold text-purple-800 mb-1">Assigned Password *</label>
                     <div className="relative">
                       <input
                         type={showNewPassword ? 'text' : 'password'}
@@ -1317,7 +1317,7 @@ export const HierarchyManager: React.FC<HierarchyManagerProps> = ({
                     </div>
                   </div>
                   <div>
-                    <label className="block text-[10px] font-extrabold text-purple-800 mb-1">Confirm Password *</label>
+                    <label className="block text-xs font-extrabold text-purple-800 mb-1">Confirm Password *</label>
                     <div className="relative">
                       <input
                         type={showNewPassword ? 'text' : 'password'}
@@ -1337,7 +1337,7 @@ export const HierarchyManager: React.FC<HierarchyManagerProps> = ({
                     )}
                   </div>
                 </div>
-                <p className="text-[10px] text-purple-700 leading-normal">
+                <p className="text-xs text-purple-700 leading-normal">
                   💡 The assigned user will use this exact ID and password to sign in. They will only have access to scoped field data in their assigned jurisdiction.
                 </p>
               </div>
@@ -1548,12 +1548,12 @@ export const HierarchyManager: React.FC<HierarchyManagerProps> = ({
               )}
 
               <div className="bg-blue-50/70 border border-blue-200 rounded-2xl p-4 space-y-3">
-                <span className="text-[11px] font-black uppercase tracking-wider text-blue-900 flex items-center gap-1.5">
+                <span className="text-xs font-black uppercase tracking-wider text-blue-900 flex items-center gap-1.5">
                   <Key className="w-4 h-4 text-blue-600" /> Update Login Credentials
                 </span>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-[10px] font-extrabold text-blue-800 mb-1">Username ID</label>
+                    <label className="block text-xs font-extrabold text-blue-800 mb-1">Username ID</label>
                     <input
                       type="text"
                       required
@@ -1563,7 +1563,7 @@ export const HierarchyManager: React.FC<HierarchyManagerProps> = ({
                     />
                   </div>
                   <div>
-                    <label className="block text-[10px] font-extrabold text-blue-800 mb-1">Set New Password</label>
+                    <label className="block text-xs font-extrabold text-blue-800 mb-1">Set New Password</label>
                     <div className="relative">
                       <input
                         id="edit-password"
@@ -1754,7 +1754,7 @@ export const HierarchyManager: React.FC<HierarchyManagerProps> = ({
                 <h3 className="text-base font-extrabold text-slate-900">
                   {confirmDeleteModal.title}
                 </h3>
-                <p className="text-[11px] text-slate-500 font-bold uppercase tracking-wider mt-0.5">
+                <p className="text-xs text-slate-500 font-bold uppercase tracking-wider mt-0.5">
                   Permanent Action Required
                 </p>
               </div>

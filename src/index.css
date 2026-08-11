@@ -6,17 +6,25 @@
 /* ── Global Reset & Base ── */
 *, *::before, *::after { box-sizing: border-box; }
 
+@theme {
+  --color-primary: #15803D;
+  --color-primary-light: #DCFCE7;
+  --color-primary-dark: #14532D;
+  --color-secondary: #0F766E;
+  --color-warning: #B45309;
+  --color-background: #F1F5F9;
+  --color-surface: #FFFFFF;
+  --color-surface-alt: #F8FAFC;
+  --color-text-primary: #0F172A;
+  --color-text-secondary: #475569;
+  --color-text-muted: #94A3B8;
+  --color-border-light: #E2E8F0;
+  --color-border-strong: #CBD5E1;
+  --color-focus-ring: #15803D;
+}
+
 :root {
-  --brand-green:   #16a34a;
-  --brand-teal:    #0d9488;
-  --brand-lime:    #88b04b;
-  --dark-bg:       #0a0f0d;
-  --dark-surface:  #111816;
-  --dark-border:   #1e2d24;
-  --radius-xl:     1rem;
-  --radius-2xl:    1.25rem;
-  --radius-3xl:    1.5rem;
-  --transition:    all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 html {
@@ -83,6 +91,15 @@ body {
 .animate-float   { animation: float 4s ease-in-out infinite; }
 .animate-pulse-ring { animation: pulse-ring 2s cubic-bezier(0.455, 0.03, 0.515, 0.955) infinite; }
 
+@media (prefers-reduced-motion: reduce) {
+  *, ::before, ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
 /* ── Shimmer loading skeleton ── */
 .skeleton {
   background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%);
@@ -115,8 +132,12 @@ body {
 }
 
 /* ── Input focus glow ── */
+input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-visible {
+  outline: 2px solid #16a34a;
+  outline-offset: 2px;
+}
 input:focus, select:focus, textarea:focus {
-  outline: none;
+  outline: none; /* Fallback for non-keyboard focus, managed by focus-visible if supported, or Tailwind rings */
 }
 
 /* ── Button press effect ── */

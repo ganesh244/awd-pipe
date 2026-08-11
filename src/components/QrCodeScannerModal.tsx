@@ -237,7 +237,7 @@ export const QrCodeScannerModal: React.FC<QrCodeScannerModalProps> = ({
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-950/85 backdrop-blur-md animate-fadeIn">
       <div className="flex min-h-full items-start justify-center p-4 pt-4 sm:items-center sm:pt-4">
-      <div className="bg-slate-900 border-2 border-[#88b04b] text-white rounded-3xl max-w-lg w-full shadow-2xl space-y-0 relative">
+      <div className="bg-slate-900 border-2 border-emerald-600 text-white rounded-3xl max-w-lg w-full shadow-2xl space-y-0 relative">
         
         {/* Hidden canvas for video QR frame processing */}
         <canvas ref={canvasRef} className="hidden" />
@@ -252,9 +252,9 @@ export const QrCodeScannerModal: React.FC<QrCodeScannerModalProps> = ({
         />
 
         {/* MODAL HEADER */}
-        <div className="bg-[#2d4a2d] p-4 flex items-center justify-between border-b border-emerald-900/60">
+        <div className="bg-[emerald-700] p-4 flex items-center justify-between border-b border-emerald-900/60">
           <div className="flex items-center gap-2.5">
-            <span className="w-9 h-9 rounded-xl bg-[#88b04b] text-slate-950 flex items-center justify-center font-extrabold shadow-md animate-pulse">
+            <span className="w-9 h-9 rounded-xl bg-emerald-600 text-slate-950 flex items-center justify-center font-extrabold shadow-md animate-pulse">
               <QrCode className="w-5 h-5" />
             </span>
             <div>
@@ -267,7 +267,7 @@ export const QrCodeScannerModal: React.FC<QrCodeScannerModalProps> = ({
                   </span>
                 )}
               </h2>
-              <p className="text-[11px] text-emerald-200 font-medium">
+              <p className="text-xs text-emerald-200 font-medium">
                 Live Camera Scanner • Point at physical AWD Pipe Tag
               </p>
             </div>
@@ -317,26 +317,26 @@ export const QrCodeScannerModal: React.FC<QrCodeScannerModalProps> = ({
 
           {/* Reticle Framing Box */}
           <div className={`relative z-10 w-56 h-56 border-2 rounded-3xl flex items-center justify-center transition-all duration-300 shadow-2xl backdrop-blur-[2px] ${
-            scanSuccess ? 'border-emerald-400 bg-emerald-500/30 scale-105' : 'border-[#88b04b]/90 border-dashed bg-black/10'
+            scanSuccess ? 'border-emerald-400 bg-emerald-500/30 scale-105' : 'border-emerald-600/90 border-dashed bg-black/10'
           }`}>
             {/* Corner Bracket Accents */}
-            <div className="absolute -top-2.5 -left-2.5 w-6 h-6 border-t-4 border-l-4 border-[#88b04b] rounded-tl-lg" />
-            <div className="absolute -top-2.5 -right-2.5 w-6 h-6 border-t-4 border-r-4 border-[#88b04b] rounded-tr-lg" />
-            <div className="absolute -bottom-2.5 -left-2.5 w-6 h-6 border-b-4 border-l-4 border-[#88b04b] rounded-bl-lg" />
-            <div className="absolute -bottom-2.5 -right-2.5 w-6 h-6 border-b-4 border-r-4 border-[#88b04b] rounded-br-lg" />
+            <div className="absolute -top-2.5 -left-2.5 w-6 h-6 border-t-4 border-l-4 border-emerald-600 rounded-tl-lg" />
+            <div className="absolute -top-2.5 -right-2.5 w-6 h-6 border-t-4 border-r-4 border-emerald-600 rounded-tr-lg" />
+            <div className="absolute -bottom-2.5 -left-2.5 w-6 h-6 border-b-4 border-l-4 border-emerald-600 rounded-bl-lg" />
+            <div className="absolute -bottom-2.5 -right-2.5 w-6 h-6 border-b-4 border-r-4 border-emerald-600 rounded-br-lg" />
 
             {scanSuccess && scannedPipe ? (
               <div className="text-center space-y-2 animate-scaleIn bg-slate-950/90 p-4 rounded-2xl border border-emerald-400/80 shadow-2xl">
                 <CheckCircle2 className="w-14 h-14 text-emerald-400 mx-auto animate-bounce" />
                 <span className="text-xs font-black text-white uppercase tracking-widest block">QR Verified!</span>
-                <span className="text-xl font-mono font-black text-[#88b04b] bg-emerald-950 px-3 py-1 rounded-xl border border-emerald-800 block">
+                <span className="text-xl font-mono font-black text-emerald-600 bg-emerald-950 px-3 py-1 rounded-xl border border-emerald-800 block">
                   {scannedPipe.Pipe_ID}
                 </span>
               </div>
             ) : isCameraActive ? (
               <div className="text-center space-y-2 p-2 bg-black/40 rounded-xl backdrop-blur-sm pointer-events-none">
-                <Camera className="w-8 h-8 text-[#88b04b] mx-auto animate-pulse" />
-                <span className="text-[11px] font-bold text-emerald-200 block uppercase tracking-wider">
+                <Camera className="w-8 h-8 text-emerald-600 mx-auto animate-pulse" />
+                <span className="text-xs font-bold text-emerald-200 block uppercase tracking-wider">
                   Align QR inside frame
                 </span>
                 <span className="text-[9px] text-slate-300 block">
@@ -352,7 +352,7 @@ export const QrCodeScannerModal: React.FC<QrCodeScannerModalProps> = ({
                 <button
                   type="button"
                   onClick={() => startCamera(facingMode)}
-                  className="bg-[#88b04b] hover:bg-[#779942] text-slate-950 font-extrabold text-xs px-4 py-2 rounded-xl transition uppercase shadow-md active:scale-[0.97] transition-transform"
+                  className="bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-extrabold text-xs px-4 py-2 rounded-xl transition uppercase shadow-md active:scale-[0.97] transition-transform"
                 >
                   Retry Camera
                 </button>
@@ -399,32 +399,37 @@ export const QrCodeScannerModal: React.FC<QrCodeScannerModalProps> = ({
         <div className="p-4 bg-slate-900 space-y-4">
           
           {/* Quick Photo Upload & Manual Entry Form */}
-          <div className="flex flex-col sm:flex-row gap-2.5">
+          <div className="flex flex-col gap-3">
             <button
               type="button"
               onClick={() => fileInputRef.current?.click()}
-              className="bg-slate-800 hover:bg-slate-700 text-emerald-300 font-extrabold text-xs py-2.5 px-4 rounded-xl border border-emerald-500/30 transition flex items-center justify-center gap-2 uppercase tracking-wider shadow-sm shrink-0 active:scale-[0.97] transition-transform"
+              className="w-full bg-slate-800 hover:bg-slate-700 text-emerald-300 font-bold text-sm py-3 px-4 rounded-xl border border-emerald-500/30 transition flex items-center justify-center gap-2 shadow-sm min-h-[44px] active:scale-[0.97] transition-transform"
             >
-              <Upload className="w-4 h-4 text-[#88b04b]" />
+              <Upload className="w-5 h-5 text-emerald-500" />
               <span>Upload QR Photo / Screenshot</span>
             </button>
 
-            <form onSubmit={handleManualSubmit} className="flex gap-2 flex-1">
+            <div className="relative flex items-center gap-3 py-1">
+              <div className="flex-1 h-px bg-slate-800"></div>
+              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">OR ENTER ID</span>
+              <div className="flex-1 h-px bg-slate-800"></div>
+            </div>
+
+            <form onSubmit={handleManualSubmit} className="flex gap-2 w-full">
               <div className="relative flex-1">
                 <input
                   type="text"
                   value={manualCode}
-                  onChange={(e) => setManualCode(e.target.value)}
-                  placeholder="Type ID (e.g. AWD-0004)"
-                  className="w-full bg-slate-800 text-white font-mono text-xs rounded-xl px-3 py-2.5 border border-slate-700 outline-none focus:border-[#88b04b] uppercase"
+                  onChange={(e) => setManualCode(e.target.value.toUpperCase())}
+                  placeholder="e.g. AWD-0004"
+                  className="w-full bg-slate-800 text-white font-mono text-sm rounded-xl px-4 py-3 border border-slate-700 outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 uppercase min-h-[44px] transition-shadow"
                 />
-                <Search className="w-4 h-4 text-slate-500 absolute right-3 top-3 pointer-events-none" />
               </div>
               <button
                 type="submit"
-                className="bg-[#88b04b] hover:bg-[#779942] text-slate-950 font-extrabold text-xs px-4 py-2.5 rounded-xl transition uppercase tracking-wider shrink-0 shadow-md font-sans active:scale-[0.97] transition-transform"
+                className="bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-extrabold text-sm px-6 py-3 rounded-xl transition shadow-md min-h-[44px] shrink-0 active:scale-[0.97] transition-transform flex items-center justify-center"
               >
-                Submit
+                Verify
               </button>
             </form>
           </div>

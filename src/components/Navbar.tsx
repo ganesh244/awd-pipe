@@ -126,10 +126,10 @@ export const Navbar: React.FC<NavbarProps> = ({
                 <span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-emerald-400 rounded-full border-2 border-[#0a0f0d] animate-pulse" />
               </div>
               <div className="leading-tight">
-                <div className="font-black text-[12px] sm:text-[13px] tracking-tight text-white flex items-center gap-1">
+                <div className="font-black text-[12px] sm:text-sm tracking-tight text-white flex items-center gap-1">
                   <span>AWD Pipe</span> <span className="text-emerald-400">Registry</span>
                 </div>
-                <div className="hidden sm:block text-[9.5px] text-emerald-400/90 font-extrabold uppercase tracking-wider">
+                <div className="hidden sm:block text-xs text-emerald-400/90 font-extrabold uppercase tracking-wider">
                   Dr. Reddy's Foundation
                 </div>
               </div>
@@ -146,7 +146,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                     <button
                       key={item.id}
                       onClick={() => handleTab(item.id)}
-                      className={`relative flex items-center gap-1.5 px-3 py-2 rounded-xl text-[11px] font-semibold transition-all duration-200 cursor-pointer whitespace-nowrap shrink-0 ${
+                      className={`relative flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all duration-200 cursor-pointer whitespace-nowrap shrink-0 ${
                         isActive
                           ? 'text-white'
                           : 'text-slate-400 hover:text-white hover:bg-white/[0.06]'
@@ -175,7 +175,8 @@ export const Navbar: React.FC<NavbarProps> = ({
               {/* Online/Offline indicator */}
               <button
                 onClick={onOpenSyncModal}
-                className={`flex items-center gap-1 px-2 py-1.5 rounded-xl text-[10px] font-bold border transition-all cursor-pointer ${
+                aria-label="View Offline Sync Queue"
+                className={`flex items-center gap-1 px-2 py-1.5 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
                   offlineQueueCount > 0
                     ? 'bg-amber-950/40 text-amber-400 border-amber-500/30 animate-pulse'
                     : isOnline
@@ -198,7 +199,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               {onOpenGenerateModal && (role === 'Admin' || role === 'State Manager') && (
                 <button
                   onClick={onOpenGenerateModal}
-                  className="hidden sm:flex items-center gap-1.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-[11px] px-3 py-1.5 rounded-xl transition-all shadow-lg shadow-emerald-900/30 active:scale-95 border border-emerald-400/20 cursor-pointer"
+                  className="hidden sm:flex items-center gap-1.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs px-3 py-1.5 rounded-xl transition-all shadow-lg shadow-emerald-900/30 active:scale-95 border border-emerald-400/20 cursor-pointer"
                 >
                   <Plus className="w-3.5 h-3.5" />
                   <span>Mint QR</span>
@@ -243,7 +244,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                       <Icon className="w-4 h-4" />
                       <span>{item.label}</span>
                       {item.badge && (
-                        <span className="text-[10px] font-mono bg-black/20 px-1.5 py-0.5 rounded-md">{item.badge}</span>
+                        <span className="text-xs font-mono bg-black/20 px-1.5 py-0.5 rounded-md">{item.badge}</span>
                       )}
                     </div>
                     <ChevronRight className="w-3.5 h-3.5 opacity-40" />
@@ -269,13 +270,13 @@ export const Navbar: React.FC<NavbarProps> = ({
                 key={item.id}
                 onClick={() => handleTab(item.id)}
                 className={`flex-1 flex flex-col items-center justify-center gap-0.5 py-2.5 transition-all cursor-pointer relative min-h-[56px] ${
-                  isActive ? 'opacity-100' : 'opacity-50 hover:opacity-80'
+                  isActive ? 'opacity-100' : 'hover:bg-white/[0.04]'
                 }`}
               >
                 {isActive && (
                   <span className={`absolute top-0 inset-x-0 h-0.5 bg-gradient-to-r ${colors.grad} rounded-b-full`} />
                 )}
-                <div className={`relative p-1.5 rounded-xl transition-all ${isActive ? `${colors.bg} ${colors.text}` : 'text-slate-500'}`}>
+                <div className={`relative p-1.5 rounded-xl transition-all ${isActive ? `${colors.bg} ${colors.text}` : 'text-slate-400'}`}>
                   <Icon className="w-5 h-5" />
                   {item.badge && (
                     <span className="absolute -top-1 -right-1 w-4 h-4 bg-emerald-500 text-white rounded-full text-[8px] font-extrabold flex items-center justify-center">
@@ -283,7 +284,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                     </span>
                   )}
                 </div>
-                <span className={`text-[9px] font-bold tracking-wide ${isActive ? colors.text : 'text-slate-500'}`}>
+                <span className={`text-xs font-bold tracking-wide ${isActive ? colors.text : 'text-slate-400'}`}>
                   {item.label}
                 </span>
               </button>
@@ -295,13 +296,13 @@ export const Navbar: React.FC<NavbarProps> = ({
             <button
               onClick={() => setMobileMenuOpen(v => !v)}
               className={`flex-1 flex flex-col items-center justify-center gap-0.5 py-2.5 transition-all cursor-pointer min-h-[56px] ${
-                mobileMenuOpen || overflowItems.some(i => i.id === activeTab) ? 'opacity-100' : 'opacity-50'
+                mobileMenuOpen || overflowItems.some(i => i.id === activeTab) ? 'opacity-100' : 'hover:bg-white/[0.04]'
               }`}
             >
-              <div className={`p-1.5 rounded-xl ${mobileMenuOpen ? 'bg-slate-800 text-white' : 'text-slate-500'}`}>
+              <div className={`p-1.5 rounded-xl ${mobileMenuOpen ? 'bg-slate-800 text-white' : 'text-slate-400'}`}>
                 {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
               </div>
-              <span className="text-[9px] font-bold tracking-wide text-slate-500">More</span>
+              <span className="text-xs font-bold tracking-wide text-slate-400">More</span>
             </button>
           )}
         </div>

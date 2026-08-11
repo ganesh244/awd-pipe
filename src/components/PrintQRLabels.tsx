@@ -380,7 +380,7 @@ export const PrintQRLabels: React.FC<PrintQRLabelsProps> = ({ pipes, onOpenGener
         {/* Row 1: Batch & Status Filters */}
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
           <div>
-            <label className="block text-[10px] font-extrabold text-slate-500 uppercase tracking-wider mb-1.5">
+            <label className="block text-xs font-extrabold text-slate-500 uppercase tracking-wider mb-1.5">
               1. Select Batch
             </label>
             <select
@@ -398,7 +398,7 @@ export const PrintQRLabels: React.FC<PrintQRLabelsProps> = ({ pipes, onOpenGener
           </div>
 
           <div>
-            <label className="block text-[10px] font-extrabold text-slate-500 uppercase tracking-wider mb-1.5">
+            <label className="block text-xs font-extrabold text-slate-500 uppercase tracking-wider mb-1.5">
               2. Status Filter
             </label>
             <select
@@ -413,7 +413,7 @@ export const PrintQRLabels: React.FC<PrintQRLabelsProps> = ({ pipes, onOpenGener
           </div>
 
           <div>
-            <label className="block text-[10px] font-extrabold text-slate-500 uppercase tracking-wider mb-1.5">
+            <label className="block text-xs font-extrabold text-slate-500 uppercase tracking-wider mb-1.5">
               3. Range Selection Mode
             </label>
             <select
@@ -434,7 +434,7 @@ export const PrintQRLabels: React.FC<PrintQRLabelsProps> = ({ pipes, onOpenGener
             {rangeMode === 'index' && (
               <div className="flex flex-col sm:flex-row items-center gap-4">
                 <div className="flex-1 min-w-[140px]">
-                  <label className="block text-[10px] font-extrabold text-slate-600 uppercase mb-1">
+                  <label className="block text-xs font-extrabold text-slate-600 uppercase mb-1">
                     Start Pipe Index (#)
                   </label>
                   <input
@@ -448,7 +448,7 @@ export const PrintQRLabels: React.FC<PrintQRLabelsProps> = ({ pipes, onOpenGener
                 </div>
 
                 <div className="flex-1 min-w-[140px]">
-                  <label className="block text-[10px] font-extrabold text-slate-600 uppercase mb-1">
+                  <label className="block text-xs font-extrabold text-slate-600 uppercase mb-1">
                     End Pipe Index (#)
                   </label>
                   <input
@@ -463,25 +463,25 @@ export const PrintQRLabels: React.FC<PrintQRLabelsProps> = ({ pipes, onOpenGener
 
                 {/* Quick Presets */}
                 <div className="flex items-center gap-1.5 self-end pt-1">
-                  <span className="text-[10px] font-bold text-slate-400 uppercase mr-1">Presets:</span>
+                  <span className="text-xs font-bold text-slate-400 uppercase mr-1">Presets:</span>
                   <button
                     type="button"
                     onClick={() => applyPresetRange(10)}
-                    className="px-2.5 py-1.5 bg-white border border-slate-300 hover:bg-emerald-50 hover:border-emerald-300 text-slate-700 text-[10px] font-bold rounded-lg transition cursor-pointer"
+                    className="px-2.5 py-1.5 bg-white border border-slate-300 hover:bg-emerald-50 hover:border-emerald-300 text-slate-700 text-xs font-bold rounded-lg transition cursor-pointer"
                   >
                     First 10
                   </button>
                   <button
                     type="button"
                     onClick={() => applyPresetRange(25)}
-                    className="px-2.5 py-1.5 bg-white border border-slate-300 hover:bg-emerald-50 hover:border-emerald-300 text-slate-700 text-[10px] font-bold rounded-lg transition cursor-pointer"
+                    className="px-2.5 py-1.5 bg-white border border-slate-300 hover:bg-emerald-50 hover:border-emerald-300 text-slate-700 text-xs font-bold rounded-lg transition cursor-pointer"
                   >
                     First 25
                   </button>
                   <button
                     type="button"
                     onClick={() => applyPresetRange(50)}
-                    className="px-2.5 py-1.5 bg-white border border-slate-300 hover:bg-emerald-50 hover:border-emerald-300 text-slate-700 text-[10px] font-bold rounded-lg transition cursor-pointer"
+                    className="px-2.5 py-1.5 bg-white border border-slate-300 hover:bg-emerald-50 hover:border-emerald-300 text-slate-700 text-xs font-bold rounded-lg transition cursor-pointer"
                   >
                     First 50
                   </button>
@@ -492,7 +492,7 @@ export const PrintQRLabels: React.FC<PrintQRLabelsProps> = ({ pipes, onOpenGener
             {rangeMode === 'id' && (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-[10px] font-extrabold text-slate-600 uppercase mb-1">
+                  <label className="block text-xs font-extrabold text-slate-600 uppercase mb-1">
                     Start Pipe ID
                   </label>
                   <select
@@ -509,7 +509,7 @@ export const PrintQRLabels: React.FC<PrintQRLabelsProps> = ({ pipes, onOpenGener
                 </div>
 
                 <div>
-                  <label className="block text-[10px] font-extrabold text-slate-600 uppercase mb-1">
+                  <label className="block text-xs font-extrabold text-slate-600 uppercase mb-1">
                     End Pipe ID
                   </label>
                   <select

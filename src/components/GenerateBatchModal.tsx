@@ -148,16 +148,16 @@ export const GenerateBatchModal: React.FC<GenerateBatchModalProps> = ({
       <div className="bg-white rounded-2xl max-w-xl w-full shadow-2xl border border-[#d1dbd1] overflow-hidden my-8 animate-scaleIn">
 
         {/* Modal Header */}
-        <div className="bg-[#2d4a2d] text-white p-5 flex items-center justify-between border-b border-[#3d5d3d]">
+        <div className="bg-[emerald-700] text-white p-5 flex items-center justify-between border-b border-[#3d5d3d]">
           <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-lg bg-[#88b04b] flex items-center justify-center text-white font-bold shadow">
+            <div className="w-9 h-9 rounded-lg bg-[emerald-600] flex items-center justify-center text-white font-bold shadow">
               <QrCode className="w-5 h-5" />
             </div>
             <div>
               <h2 className="text-base font-bold uppercase tracking-wider text-white">
                 Generate Authenticated QR Batch
               </h2>
-              <p className="text-[11px] text-[#d1dbd1]">
+              <p className="text-xs text-[#d1dbd1]">
                 Answer batch security questions to mint unique traceability QR codes
               </p>
             </div>
@@ -175,31 +175,31 @@ export const GenerateBatchModal: React.FC<GenerateBatchModalProps> = ({
           /* SUCCESS STATE */
           <div className="p-6 space-y-5 text-center">
             <div className="w-14 h-14 bg-emerald-100 text-emerald-700 rounded-full flex items-center justify-center mx-auto border-2 border-emerald-300 shadow-inner">
-              <CheckCircle2 className="w-8 h-8 text-[#88b04b]" />
+              <CheckCircle2 className="w-8 h-8 text-[emerald-600]" />
             </div>
 
             <div>
-              <h3 className="text-lg font-bold text-[#2d3a2d] uppercase tracking-wide">
+              <h3 className="text-lg font-bold text-[slate-800] uppercase tracking-wide">
                 Successfully Generated {generatedResult.pipes.length} QR Codes!
               </h3>
               <p className="text-xs text-slate-500 mt-1">
-                Batch Tag: <span className="font-mono font-bold text-[#2d4a2d] bg-slate-100 px-2 py-0.5 rounded">{generatedResult.batchNo}</span>
+                Batch Tag: <span className="font-mono font-bold text-[emerald-700] bg-slate-100 px-2 py-0.5 rounded">{generatedResult.batchNo}</span>
               </p>
             </div>
 
             <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 text-left space-y-2">
               <div className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
-                <ShieldCheck className="w-4 h-4 text-[#88b04b]" /> Authentic Pipe ID Samples:
+                <ShieldCheck className="w-4 h-4 text-[emerald-600]" /> Authentic Pipe ID Samples:
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs font-mono">
                 {generatedResult.pipes.slice(0, 4).map((p) => (
-                  <div key={p.Pipe_ID} className="bg-white p-2 rounded border border-slate-200 text-[#2d3a2d] font-bold">
-                    {p.Pipe_ID} <span className="text-[10px] text-emerald-600">✓ Sec:{p.Security_Hash}</span>
+                  <div key={p.Pipe_ID} className="bg-white p-2 rounded border border-slate-200 text-[slate-800] font-bold">
+                    {p.Pipe_ID} <span className="text-xs text-emerald-600">✓ Sec:{p.Security_Hash}</span>
                   </div>
                 ))}
               </div>
               {generatedResult.pipes.length > 4 && (
-                <p className="text-[10px] text-slate-400 italic">
+                <p className="text-xs text-slate-400 italic">
                   + {generatedResult.pipes.length - 4} more unique QR codes added to inventory.
                 </p>
               )}
@@ -220,9 +220,9 @@ export const GenerateBatchModal: React.FC<GenerateBatchModalProps> = ({
                     handleReset();
                     onNavigateToLabels();
                   }}
-                  className="w-full sm:w-auto bg-[#2d4a2d] hover:bg-[#1a2d1a] text-white text-xs font-bold px-5 py-2.5 rounded-lg transition shadow flex items-center justify-center gap-2 uppercase tracking-wider border-b-2 border-black/20"
+                  className="w-full sm:w-auto bg-[emerald-700] hover:bg-emerald-800 text-white text-xs font-bold px-5 py-2.5 rounded-lg transition shadow flex items-center justify-center gap-2 uppercase tracking-wider border-b-2 border-black/20"
                 >
-                  <Printer className="w-4 h-4 text-[#88b04b]" /> Print QR Label Sheet Now
+                  <Printer className="w-4 h-4 text-[emerald-600]" /> Print QR Label Sheet Now
                 </button>
               )}
             </div>
@@ -231,11 +231,11 @@ export const GenerateBatchModal: React.FC<GenerateBatchModalProps> = ({
           /* FORM QUESTIONS STATE */
           <form onSubmit={handleGenerate} className="p-6 space-y-4">
 
-            <div className="bg-[#f4f7f2] border border-[#d1dbd1] p-3 rounded-lg text-xs text-[#2d3a2d] flex items-start gap-2">
-              <ShieldCheck className="w-5 h-5 text-[#88b04b] shrink-0 mt-0.5" />
+            <div className="bg-[#f4f7f2] border border-[#d1dbd1] p-3 rounded-lg text-xs text-[slate-800] flex items-start gap-2">
+              <ShieldCheck className="w-5 h-5 text-[emerald-600] shrink-0 mt-0.5" />
               <div>
                 <span className="font-bold uppercase tracking-wide">Authenticity & Traceability Guarantee:</span>
-                <p className="text-[11px] text-slate-600 mt-0.5">
+                <p className="text-xs text-slate-600 mt-0.5">
                   Answering region, state, and batch questions generates a standardized <code className="bg-white px-1 py-0.5 rounded font-bold">AWD-[STATE]-[YEAR]-[DIST]-[SEQ]</code> code preventing counterfeit field registrations in Apps Script and carbon credit databases.
                 </p>
               </div>
@@ -244,8 +244,8 @@ export const GenerateBatchModal: React.FC<GenerateBatchModalProps> = ({
             {/* QUESTION 1 & 2: State & Year */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-bold text-[#2d3a2d] uppercase tracking-wider mb-1 flex items-center gap-1">
-                  <MapPin className="w-3.5 h-3.5 text-[#88b04b]" /> 1. State Code
+                <label className="block text-xs font-bold text-[slate-800] uppercase tracking-wider mb-1 flex items-center gap-1">
+                  <MapPin className="w-3.5 h-3.5 text-[emerald-600]" /> 1. State Code
                 </label>
                 <select
                   value={stateCode}
@@ -254,7 +254,7 @@ export const GenerateBatchModal: React.FC<GenerateBatchModalProps> = ({
                     const defaultDist = POPULAR_DISTRICTS[e.target.value]?.[0]?.code || 'KRM';
                     setDistrictCode(defaultDist);
                   }}
-                  className="w-full border-2 border-slate-200 rounded-lg p-2 text-xs font-bold text-slate-800 bg-white outline-none focus:border-[#88b04b]"
+                  className="w-full border-2 border-slate-200 rounded-lg p-2 text-xs font-bold text-slate-800 bg-white outline-none focus:border-[emerald-600]"
                 >
                   {INDIAN_STATES.map((s) => (
                     <option key={s.code} value={s.code}>
@@ -265,13 +265,13 @@ export const GenerateBatchModal: React.FC<GenerateBatchModalProps> = ({
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-[#2d3a2d] uppercase tracking-wider mb-1 flex items-center gap-1">
-                  <Calendar className="w-3.5 h-3.5 text-[#88b04b]" /> 2. Batch Year
+                <label className="block text-xs font-bold text-[slate-800] uppercase tracking-wider mb-1 flex items-center gap-1">
+                  <Calendar className="w-3.5 h-3.5 text-[emerald-600]" /> 2. Batch Year
                 </label>
                 <select
                   value={year}
                   onChange={(e) => setYear(e.target.value)}
-                  className="w-full border-2 border-slate-200 rounded-lg p-2 text-xs font-bold text-slate-800 bg-white outline-none focus:border-[#88b04b]"
+                  className="w-full border-2 border-slate-200 rounded-lg p-2 text-xs font-bold text-slate-800 bg-white outline-none focus:border-[emerald-600]"
                 >
                   <option value="2026">2026 Season</option>
                   <option value="2025">2025 Season</option>
@@ -282,14 +282,14 @@ export const GenerateBatchModal: React.FC<GenerateBatchModalProps> = ({
 
             {/* QUESTION 3: District Code */}
             <div>
-              <label className="block text-xs font-bold text-[#2d3a2d] uppercase tracking-wider mb-1 flex items-center gap-1">
-                <Building2 className="w-3.5 h-3.5 text-[#88b04b]" /> 3. District / Agriculture Zone Code
+              <label className="block text-xs font-bold text-[slate-800] uppercase tracking-wider mb-1 flex items-center gap-1">
+                <Building2 className="w-3.5 h-3.5 text-[emerald-600]" /> 3. District / Agriculture Zone Code
               </label>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 <select
                   value={districtCode}
                   onChange={(e) => setDistrictCode(e.target.value)}
-                  className="border-2 border-slate-200 rounded-lg p-2 text-xs font-bold text-slate-800 bg-white outline-none focus:border-[#88b04b]"
+                  className="border-2 border-slate-200 rounded-lg p-2 text-xs font-bold text-slate-800 bg-white outline-none focus:border-[emerald-600]"
                 >
                   {(POPULAR_DISTRICTS[stateCode] || []).map((d) => (
                     <option key={d.code} value={d.code}>
@@ -306,7 +306,7 @@ export const GenerateBatchModal: React.FC<GenerateBatchModalProps> = ({
                     value={customDistrict}
                     onChange={(e) => setCustomDistrict(e.target.value.toUpperCase())}
                     placeholder="E.g. HYD, MBN"
-                    className="border-2 border-slate-200 rounded-lg p-2 text-xs font-bold uppercase text-slate-800 outline-none focus:border-[#88b04b]"
+                    className="border-2 border-slate-200 rounded-lg p-2 text-xs font-bold uppercase text-slate-800 outline-none focus:border-[emerald-600]"
                   />
                 )}
               </div>
@@ -315,7 +315,7 @@ export const GenerateBatchModal: React.FC<GenerateBatchModalProps> = ({
             {/* QUESTION 4: Quantity of Codes */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-bold text-[#2d3a2d] uppercase tracking-wider mb-1">
+                <label className="block text-xs font-bold text-[slate-800] uppercase tracking-wider mb-1">
                   4. Number of QRs to Mint
                 </label>
                 <div className="flex items-center gap-2">
@@ -325,7 +325,7 @@ export const GenerateBatchModal: React.FC<GenerateBatchModalProps> = ({
                     max={500}
                     value={count}
                     onChange={(e) => setCount(Math.max(1, parseInt(e.target.value) || 1))}
-                    className="w-full border-2 border-slate-200 rounded-lg p-2 text-xs font-bold text-slate-800 outline-none focus:border-[#88b04b]"
+                    className="w-full border-2 border-slate-200 rounded-lg p-2 text-xs font-bold text-slate-800 outline-none focus:border-[emerald-600]"
                   />
                   <div className="flex gap-1">
                     {[10, 25, 50].map((num) => (
@@ -333,7 +333,7 @@ export const GenerateBatchModal: React.FC<GenerateBatchModalProps> = ({
                         key={num}
                         type="button"
                         onClick={() => setCount(num)}
-                        className={`text-[10px] font-bold px-2 py-1.5 rounded border ${count === num ? 'bg-[#2d4a2d] text-white border-[#2d4a2d]' : 'bg-slate-100 text-slate-700 border-slate-200'
+                        className={`text-xs font-bold px-2 py-1.5 rounded border ${count === num ? 'bg-[emerald-700] text-white border-[emerald-700]' : 'bg-slate-100 text-slate-700 border-slate-200'
                           }`}
                       >
                         +{num}
@@ -344,7 +344,7 @@ export const GenerateBatchModal: React.FC<GenerateBatchModalProps> = ({
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-[#2d3a2d] uppercase tracking-wider mb-1">
+                <label className="block text-xs font-bold text-[slate-800] uppercase tracking-wider mb-1">
                   Starting Sequence No.
                 </label>
                 <input
@@ -352,24 +352,24 @@ export const GenerateBatchModal: React.FC<GenerateBatchModalProps> = ({
                   min={1}
                   value={startSequence}
                   onChange={(e) => setStartSequence(parseInt(e.target.value) || 1)}
-                  className="w-full border-2 border-slate-200 rounded-lg p-2 text-xs font-bold text-slate-800 outline-none focus:border-[#88b04b]"
+                  className="w-full border-2 border-slate-200 rounded-lg p-2 text-xs font-bold text-slate-800 outline-none focus:border-[emerald-600]"
                 />
               </div>
             </div>
 
             {/* REALTIME FORMAT PREVIEW BOX */}
-            <div className="bg-[#2d3a2d]/5 border-2 border-dashed border-[#88b04b] rounded-xl p-3 space-y-1.5">
-              <div className="flex items-center justify-between text-[11px] font-bold text-[#2d3a2d] uppercase tracking-wider">
+            <div className="bg-[slate-800]/5 border-2 border-dashed border-[emerald-600] rounded-xl p-3 space-y-1.5">
+              <div className="flex items-center justify-between text-xs font-bold text-[slate-800] uppercase tracking-wider">
                 <span>Generated QR Format Preview:</span>
-                <span className="text-emerald-700 font-mono text-[10px]">{batchNo}</span>
+                <span className="text-emerald-700 font-mono text-xs">{batchNo}</span>
               </div>
               <div className="flex flex-wrap gap-1.5 font-mono text-xs">
                 {samplePipesPreview.map((id) => (
-                  <span key={id} className="bg-white border border-[#88b04b] text-[#2d4a2d] font-bold px-2 py-0.5 rounded shadow-xs">
+                  <span key={id} className="bg-white border border-[emerald-600] text-[emerald-700] font-bold px-2 py-0.5 rounded shadow-xs">
                     {id}
                   </span>
                 ))}
-                {count > 3 && <span className="text-slate-400 text-[10px] self-center">... ({count} total)</span>}
+                {count > 3 && <span className="text-slate-400 text-xs self-center">... ({count} total)</span>}
               </div>
             </div>
 
@@ -385,9 +385,9 @@ export const GenerateBatchModal: React.FC<GenerateBatchModalProps> = ({
 
               <button
                 type="submit"
-                className="bg-[#2d4a2d] hover:bg-[#1a2d1a] text-white font-bold text-xs px-5 py-2.5 rounded-lg transition shadow-md flex items-center gap-2 uppercase tracking-wider border-b-2 border-black/20"
+                className="bg-[emerald-700] hover:bg-emerald-800 text-white font-bold text-xs px-5 py-2.5 rounded-lg transition shadow-md flex items-center gap-2 uppercase tracking-wider border-b-2 border-black/20"
               >
-                <Sparkles className="w-4 h-4 text-[#88b04b]" />
+                <Sparkles className="w-4 h-4 text-[emerald-600]" />
                 Generate {count} Authenticated QRs
               </button>
             </div>

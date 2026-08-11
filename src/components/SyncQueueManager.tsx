@@ -60,7 +60,7 @@ export const SyncQueueManager: React.FC<SyncQueueManagerProps> = ({
             </div>
             <div>
               <h2 className="font-extrabold text-slate-800 text-base">Offline Sync Manager</h2>
-              <p className="text-[10px] text-slate-400">Queue local data uploads during field network drops</p>
+              <p className="text-xs text-slate-400">Queue local data uploads during field network drops</p>
             </div>
           </div>
           <button 
@@ -154,12 +154,12 @@ export const SyncQueueManager: React.FC<SyncQueueManagerProps> = ({
 
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <span className={`text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md ${
+                          <span className={`text-xs font-black uppercase tracking-wider px-2 py-0.5 rounded-md ${
                             isReg ? 'bg-indigo-100 text-indigo-800' : 'bg-cyan-100 text-cyan-800'
                           }`}>
                             {isReg ? 'Registration' : 'Visit log'}
                           </span>
-                          <span className="text-[10px] font-semibold text-slate-400 font-mono">
+                          <span className="text-xs font-semibold text-slate-400 font-mono">
                             {new Date(item.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                           </span>
                           {item.status === 'failed' && (
@@ -173,7 +173,7 @@ export const SyncQueueManager: React.FC<SyncQueueManagerProps> = ({
                           {isReg ? p.Farmer_Name : `AWD Pipe: ${p.Pipe_ID}`}
                         </div>
 
-                        <p className="text-[11px] text-slate-500 mt-0.5 truncate">
+                        <p className="text-xs text-slate-500 mt-0.5 truncate">
                           {isReg 
                             ? `Pipe: ${p.Pipe_ID} · Phone: ${p.Mobile} · Plot: ${p.Plot_Size} ${p.Plot_Size_Unit} in ${p.Village}` 
                             : `Water Level: ${p.Water_Level}cm · Crop Stage: ${p.Crop_Stage} · AWD: ${p.AWD_Followed}`
@@ -181,7 +181,7 @@ export const SyncQueueManager: React.FC<SyncQueueManagerProps> = ({
                         </p>
 
                         {item.error && (
-                          <div className="text-[10px] text-rose-600 font-medium mt-1">
+                          <div className="text-xs text-rose-600 font-medium mt-1">
                             Error: {item.error}
                           </div>
                         )}

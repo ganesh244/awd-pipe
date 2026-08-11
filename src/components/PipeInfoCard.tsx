@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { AWDPipe, Installation, MonitoringRecord } from '../types';
-import { MapPin, Plus, CheckCircle2, UserCheck, ShieldAlert, History, Calendar, Sprout, Phone, ZoomIn, Camera } from 'lucide-react';
+import { MapPin, Plus, CheckCircle2, UserCheck, ShieldAlert, History, Calendar, Sprout, Phone, ZoomIn, Camera, X } from 'lucide-react';
 import { PhotoLightbox } from './PhotoLightbox';
 
 interface PipeInfoCardProps {
@@ -9,6 +9,7 @@ interface PipeInfoCardProps {
   monitoringList: MonitoringRecord[];
   allInstallations?: Installation[];
   onOpenMonitoringModal: () => void;
+  onClose?: () => void;
 }
 
 export const PipeInfoCard: React.FC<PipeInfoCardProps> = ({
@@ -17,6 +18,7 @@ export const PipeInfoCard: React.FC<PipeInfoCardProps> = ({
   monitoringList,
   allInstallations = [],
   onOpenMonitoringModal,
+  onClose,
 }) => {
   const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
   const [lightboxCaption, setLightboxCaption] = useState<string>('');
@@ -58,7 +60,22 @@ export const PipeInfoCard: React.FC<PipeInfoCardProps> = ({
           caption={lightboxCaption}
           onClose={() => setLightboxUrl(null)}
         />
-      )}      
+      )}
+
+      {/* Top Action Bar — sticky, always visible */}
+      {onClose && (
+        <div className="sticky top-0 z-20 flex items-center justify-between bg-emerald-700 px-4 py-3 rounded-2xl shadow-lg border border-emerald-600">
+          <button
+            onClick={onClose}
+            className="flex items-center gap-2 text-sm font-extrabold text-white hover:text-emerald-100 transition-colors group"
+          >
+            <X className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" />
+            ← New Registration
+          </button>
+          <span className="text-xs text-emerald-200 font-mono font-semibold">{pipe.Pipe_ID}</span>
+        </div>
+      )}
+
       {/* Privacy Warning Banner */}
       <div className="bg-amber-500/10 border border-amber-500/30 text-amber-900 rounded-xl p-3 text-xs flex items-center gap-2 shadow-xs">
         <ShieldAlert className="w-4 h-4 text-amber-600 shrink-0" />
@@ -76,16 +93,21 @@ export const PipeInfoCard: React.FC<PipeInfoCardProps> = ({
           {/* Header Status Bar */}
           <div className="bg-gradient-to-r from-emerald-800 to-teal-800 text-white p-4 flex items-center justify-between">
             <div>
-              <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-200">AWD Pipe ID</span>
+              <span className="text-xs font-bold uppercase tracking-wider text-emerald-200">AWD Pipe ID</span>
               <h2 className="text-2xl font-black">{pipe.Pipe_ID}</h2>
             </div>
-            <div className="flex flex-col items-end gap-1">
-              <span className="inline-flex items-center gap-1 bg-emerald-500 text-slate-900 text-xs font-black px-3 py-1 rounded-full shadow-sm">
+            <div className="flex flex-col items-end gap-2">
+              <span className="bg-emerald-500/20 border border-emerald-400/30 text-emerald-100 px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1.5 shadow-sm">
                 <CheckCircle2 className="w-3.5 h-3.5" /> Installed
               </span>
-              <span className="text-[10px] text-emerald-200 font-medium">
-                Installed: {installation.Installation_Date}
-              </span>
+              {onClose && (
+                <button
+                  onClick={onClose}
+                  className="bg-white/10 hover:bg-white/20 text-white px-3 py-1 rounded-full text-xs font-bold transition-colors flex items-center gap-1"
+                >
+                  <X className="w-3 h-3" /> Close
+                </button>
+              )}
             </div>
           </div>
 
@@ -100,21 +122,21 @@ export const PipeInfoCard: React.FC<PipeInfoCardProps> = ({
               </h3>
               <div className="grid grid-cols-2 gap-3 bg-slate-50 p-3 rounded-xl border border-slate-100 text-xs">
                 <div>
-                  <span className="text-slate-400 block text-[10px]">Farmer Name</span>
+                  <span className="text-slate-400 block text-xs">Farmer Name</span>
                   <span className="font-bold text-slate-800 text-sm">{installation.Farmer_Name}</span>
                 </div>
                 <div>
-                  <span className="text-slate-400 block text-[10px] flex items-center gap-0.5">
+                  <span className="text-slate-400 block text-xs flex items-center gap-0.5">
                     <Phone className="w-2.5 h-2.5 text-slate-400" /> Mobile (Protected)
                   </span>
                   <span className="font-mono font-bold text-slate-600">{maskPhone(installation.Mobile)}</span>
                 </div>
                 <div>
-                  <span className="text-slate-400 block text-[10px]">Location</span>
+                  <span className="text-slate-400 block text-xs">Location</span>
                   <span className="font-semibold text-slate-800">{installation.Village}, {installation.Mandal}</span>
                 </div>
                 <div>
-                  <span className="text-slate-400 block text-[10px]">District</span>
+                  <span className="text-slate-400 block text-xs">District</span>
                   <span className="font-semibold text-slate-800">{installation.District}</span>
                 </div>
               </div>
@@ -123,7 +145,7 @@ export const PipeInfoCard: React.FC<PipeInfoCardProps> = ({
                 <div className="mt-2 bg-emerald-50 border border-emerald-200 rounded-xl p-2.5 text-xs text-emerald-900 flex flex-col gap-1">
                   <div className="font-bold flex items-center justify-between">
                     <span>🌾 Registered Pipes for {installation.Farmer_Name}:</span>
-                    <span className="bg-emerald-700 text-white font-mono px-2 py-0.5 rounded text-[10px]">
+                    <span className="bg-emerald-700 text-white font-mono px-2 py-0.5 rounded text-xs">
                       {farmerPipes.length} Pipe{farmerPipes.length > 1 ? 's' : ''} Assigned
                     </span>
                   </div>
@@ -131,7 +153,7 @@ export const PipeInfoCard: React.FC<PipeInfoCardProps> = ({
                     {farmerPipes.map((fp) => (
                       <span
                         key={fp.Pipe_ID}
-                        className={`font-mono text-[11px] font-bold px-2 py-0.5 rounded border ${
+                        className={`font-mono text-xs font-bold px-2 py-0.5 rounded border ${
                           fp.Pipe_ID === pipe.Pipe_ID
                             ? 'bg-emerald-800 text-white border-emerald-900'
                             : 'bg-white text-emerald-800 border-emerald-300'
@@ -184,7 +206,7 @@ export const PipeInfoCard: React.FC<PipeInfoCardProps> = ({
                 </div>
                 {installation.Photo_URL && (
                   <div className="pt-2">
-                    <div className="text-slate-400 text-[10px] mb-1.5 font-bold uppercase flex items-center gap-1">
+                    <div className="text-slate-400 text-xs mb-1.5 font-bold uppercase flex items-center gap-1">
                       <Camera className="w-3 h-3" /> Installation Field Photo
                       <span className="ml-auto text-slate-300 font-normal flex items-center gap-0.5">
                         <ZoomIn className="w-3 h-3" /> Click to expand
@@ -257,7 +279,7 @@ export const PipeInfoCard: React.FC<PipeInfoCardProps> = ({
                   <span className="font-bold text-emerald-800 flex items-center gap-1">
                     <Calendar className="w-3 h-3" /> {visit.Visit_Date}
                   </span>
-                  <span className={`px-2 py-0.5 rounded text-[10px] font-extrabold ${
+                  <span className={`px-2 py-0.5 rounded text-xs font-extrabold ${
                     visit.AWD_Followed === 'Yes'
                       ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
                       : visit.AWD_Followed === 'Partially'
@@ -274,7 +296,7 @@ export const PipeInfoCard: React.FC<PipeInfoCardProps> = ({
                   <div>Visited By: <strong className="text-slate-800">{visit.Visited_By}</strong></div>
                 </div>
                 {visit.Remarks && (
-                  <div className="text-[11px] text-slate-500 italic bg-white p-2 rounded border border-slate-100 mt-1">
+                  <div className="text-xs text-slate-500 italic bg-white p-2 rounded border border-slate-100 mt-1">
                     "{visit.Remarks}"
                   </div>
                 )}
@@ -285,7 +307,7 @@ export const PipeInfoCard: React.FC<PipeInfoCardProps> = ({
                       onClick={() => openLightbox(visit.Photo_URL!, `Visit Photo — ${visit.Visit_Date} · ${pipe.Pipe_ID}`)}
                       className="w-full group relative overflow-hidden rounded-lg border border-slate-200 hover:border-blue-400 transition-all"
                     >
-                      <div className="flex items-center gap-1 text-[10px] text-slate-400 font-bold uppercase tracking-wider px-2 pt-1.5 pb-1">
+                      <div className="flex items-center gap-1 text-xs text-slate-400 font-bold uppercase tracking-wider px-2 pt-1.5 pb-1">
                         <Camera className="w-3 h-3" /> Visit Photo <ZoomIn className="w-3 h-3 ml-auto" />
                       </div>
                       <img src={visit.Photo_URL} alt="Visit Photo" className="w-full h-32 object-cover group-hover:scale-105 transition-transform duration-300" />

@@ -1,12 +1,13 @@
 import React, { useMemo, useState } from 'react';
 import { AWDPipe, Installation, MonitoringRecord, User } from '../types';
+import { toAcres } from '../utils/plotUtils';
 import { ComposedChart, Bar, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend } from 'recharts';
 import {
   Sprout, Users, Map, Activity, ShieldAlert, CheckCircle2,
   PieChart, Layers, Droplets, TrendingUp, AlertTriangle,
   BarChart3, Calendar, Wheat, Pipette, Target, Flame,
   ArrowUpRight, ArrowDownRight, Minus, ClipboardList, MapPin,
-  Zap, Filter, Clock, X, Trophy
+  Zap, Filter, Clock, X, Trophy, Lightbulb
 } from 'lucide-react';
 
 const REGISTRATION_TARGET = 1000; // TODO: Make configurable
@@ -49,10 +50,10 @@ const KPICard: React.FC<{
       <Icon className="w-4.5 h-4.5 text-white w-5 h-5" />
     </div>
     <div className="text-2xl font-black text-slate-800 tabular-nums">{value}</div>
-    <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mt-0.5">{label}</div>
-    {sub && <div className="text-[10px] text-slate-400 mt-0.5">{sub}</div>}
+    <div className="text-xs font-bold text-slate-500 uppercase tracking-wider mt-0.5">{label}</div>
+    {sub && <div className="text-xs text-slate-400 mt-0.5">{sub}</div>}
     {trend && (
-      <div className={`flex items-center gap-1 mt-1.5 text-[10px] font-bold ${
+      <div className={`flex items-center gap-1 mt-1.5 text-xs font-bold ${
         trend === 'up' ? 'text-emerald-600' : trend === 'down' ? 'text-red-500' : 'text-slate-400'
       }`}>
         {trend === 'up' ? <ArrowUpRight className="w-3 h-3" /> : trend === 'down' ? <ArrowDownRight className="w-3 h-3" /> : <Minus className="w-3 h-3" />}
@@ -70,7 +71,7 @@ const SectionTitle: React.FC<{ icon: React.FC<any>; title: string; sub?: string 
     </div>
     <div>
       <div className="font-extrabold text-slate-800 text-sm">{title}</div>
-      {sub && <div className="text-[10px] text-slate-400">{sub}</div>}
+      {sub && <div className="text-xs text-slate-400">{sub}</div>}
     </div>
   </div>
 );
@@ -103,7 +104,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ pipes, installations, moni
   const totalAvailable   = pipes.filter(p => p.Status === 'Available').length;
   const totalDamaged     = pipes.filter(p => p.Status === 'Damaged').length;
   const totalFarmers     = new Set(filteredInstallations.map(i => i.Farmer_Name)).size;
-  const totalAcres       = filteredInstallations.reduce((s, i) => s + (Number(i.Plot_Size) || 0), 0);
+  const totalAcres       = filteredInstallations.reduce((s, i) => s + toAcres(Number(i.Plot_Size) || 0, i.Plot_Size_Unit), 0);
   const totalVisits      = filteredMonitoring.length;
   const awdYes           = filteredMonitoring.filter(m => m.AWD_Followed === 'Yes').length;
   const awdPartial       = filteredMonitoring.filter(m => m.AWD_Followed === 'Partially').length;
@@ -128,7 +129,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ pipes, installations, moni
 
   const methodAcres = useMemo(() =>
     filteredInstallations.reduce((acc, i) => {
-      acc[i.Establishment_Method] = (acc[i.Establishment_Method] || 0) + (Number(i.Plot_Size) || 0);
+      acc[i.Establishment_Method] = (acc[i.Establishment_Method] || 0) + toAcres(Number(i.Plot_Size) || 0, i.Plot_Size_Unit);
       return acc;
     }, {} as Record<string, number>), [filteredInstallations]);
 
@@ -140,7 +141,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ pipes, installations, moni
       const d = i.District || 'Unspecified';
       if (!m[d]) m[d] = { pipes: 0, acres: 0, farmers: new Set(), visits: 0 };
       m[d].pipes++;
-      m[d].acres += Number(i.Plot_Size) || 0;
+      m[d].acres += toAcres(Number(i.Plot_Size) || 0, i.Plot_Size_Unit);
       m[d].farmers.add(i.Farmer_Name);
     });
     monitoringList.forEach(v => {
@@ -284,7 +285,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ pipes, installations, moni
               {districtFilter !== 'All' && (
                 <button 
                   onClick={() => setDistrictFilter('All')}
-                  className="flex items-center gap-1 text-[10px] font-bold bg-emerald-100 text-emerald-800 px-2 py-1 rounded-full hover:bg-emerald-200 transition"
+                  className="flex items-center gap-1 text-xs font-bold bg-emerald-100 text-emerald-800 px-2 py-1 rounded-full hover:bg-emerald-200 transition"
                 >
                   <Filter className="w-3 h-3" />
                   {districtFilter}
@@ -302,7 +303,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ pipes, installations, moni
           </div>
           <div className="flex flex-col items-end gap-1.5">
             <div className="flex items-center gap-2 flex-wrap">
-              <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-bold border ${
+              <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold border ${
                 adoptionRate >= 70 ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
                 adoptionRate >= 40 ? 'bg-amber-50 text-amber-700 border-amber-200' :
                 'bg-red-50 text-red-700 border-red-200'
@@ -310,7 +311,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ pipes, installations, moni
                 <Zap className="w-3 h-3" />
                 AWD Adoption: {adoptionRate}%
               </span>
-              <span className="inline-flex items-center gap-1.5 bg-white border border-slate-200 px-3 py-1.5 rounded-full text-[11px] font-semibold text-slate-600">
+              <span className="inline-flex items-center gap-1.5 bg-white border border-slate-200 px-3 py-1.5 rounded-full text-xs font-semibold text-slate-600">
                 <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse" />
                 Live Data
               </span>
@@ -330,7 +331,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ pipes, installations, moni
             </div>
           </div>
           <div className="flex-1 w-full">
-            <div className="flex justify-between text-[10px] font-bold mb-1.5">
+            <div className="flex justify-between text-xs font-bold mb-1.5">
               <span className="text-slate-500">Progress</span>
               <span className="text-emerald-600">{Math.round((totalInstalled / REGISTRATION_TARGET) * 100)}% Complete</span>
             </div>
@@ -395,7 +396,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ pipes, installations, moni
                 </svg>
                 <div className="absolute inset-0 flex flex-col items-center justify-center">
                   <span className="text-3xl font-black text-slate-800">{adoptionRate}%</span>
-                  <span className="text-[10px] font-bold text-emerald-600 uppercase">AWD Rate</span>
+                  <span className="text-xs font-bold text-emerald-600 uppercase">AWD Rate</span>
                 </div>
               </div>
             </div>
@@ -441,8 +442,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ pipes, installations, moni
                   </div>
                 );
               })}
-              <div className="mt-3 bg-emerald-50 border border-emerald-100 rounded-xl p-3 text-[10px] text-emerald-800 leading-relaxed">
-                💡 <strong>DSR methods</strong> reduce water usage by up to 30% vs traditional TPR transplanting.
+              <div className="mt-3 bg-emerald-50 border border-emerald-100 rounded-xl p-3 text-xs text-emerald-800 leading-relaxed">
+                <Lightbulb className="w-4 h-4 text-emerald-500 inline mr-1 -mt-0.5" /> <strong>DSR methods</strong> reduce water usage by up to 30% vs traditional TPR transplanting.
               </div>
             </div>
           </div>
@@ -471,7 +472,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ pipes, installations, moni
                 );
               })}
             </div>
-            <div className="mt-3 text-[10px] text-slate-400 text-center">Avg water level: <strong className="text-slate-600">{avgWaterLevel} cm</strong> across {totalVisits} readings</div>
+            <div className="mt-3 text-xs text-slate-400 text-center">Avg water level: <strong className="text-slate-600">{avgWaterLevel} cm</strong> across {totalVisits} readings</div>
           </div>
         </div>
 
@@ -501,9 +502,9 @@ export const Dashboard: React.FC<DashboardProps> = ({ pipes, installations, moni
                       </span>
                       {name}
                     </div>
-                    <span className="bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full font-mono text-[10px]">{pipes} pipes</span>
+                    <span className="bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full font-mono text-xs">{pipes} pipes</span>
                   </div>
-                  <div className="grid grid-cols-3 gap-1 text-[10px] text-slate-500">
+                  <div className="grid grid-cols-3 gap-1 text-xs text-slate-500">
                     <span>👨‍🌾 {farmers} farmers</span>
                     <span>📐 {acres.toFixed(1)} Ac</span>
                     <span>📋 {visits} visits</span>
@@ -523,13 +524,13 @@ export const Dashboard: React.FC<DashboardProps> = ({ pipes, installations, moni
                 </div>
                 <div>
                   <div className="font-extrabold text-slate-800 text-sm">Top Villages</div>
-                  <div className="text-[10px] text-slate-400">By pipe installations</div>
+                  <div className="text-xs text-slate-400">By pipe installations</div>
                 </div>
               </div>
               <select
                 value={districtFilter}
                 onChange={e => setDistrictFilter(e.target.value)}
-                className="text-[10px] border border-slate-200 rounded-lg px-2 py-1 text-slate-600 font-semibold focus:ring-1 focus:ring-emerald-400 bg-white"
+                className="text-xs border border-slate-200 rounded-lg px-2 py-1 text-slate-600 font-semibold focus:ring-1 focus:ring-emerald-400 bg-white"
               >
                 {districts.map(d => <option key={d}>{d}</option>)}
               </select>
@@ -539,7 +540,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ pipes, installations, moni
                 <div className="text-center py-6 text-slate-400 text-xs">No data for this filter</div>
               ) : villageStats.map(([village, count], idx) => (
                 <div key={village} className="flex items-center gap-3">
-                  <span className="text-[10px] font-bold text-slate-400 w-4 text-right">{idx + 1}</span>
+                  <span className="text-xs font-bold text-slate-400 w-4 text-right">{idx + 1}</span>
                   <div className="flex-1 min-w-0">
                     <div className="flex justify-between text-xs mb-1">
                       <span className="font-semibold text-slate-700 truncate">{village}</span>
@@ -615,7 +616,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ pipes, installations, moni
                   const label = new Date(Number(yr), Number(mo) - 1).toLocaleDateString('en-IN', { month: 'short' });
                   return (
                     <div key={month} className="flex-1 flex flex-col items-center gap-1">
-                      <span className="text-[10px] font-bold text-slate-600">{count}</span>
+                      <span className="text-xs font-bold text-slate-600">{count}</span>
                       <div className="w-full flex items-end" style={{ height: '80px' }}>
                         <div
                           className={`w-full rounded-t-lg ${BAR_COLORS[idx % BAR_COLORS.length]} opacity-80 hover:opacity-100 transition-all`}
@@ -673,9 +674,9 @@ export const Dashboard: React.FC<DashboardProps> = ({ pipes, installations, moni
                     <div className="flex-1 min-w-0">
                       <div className="flex justify-between items-start gap-1">
                         <span className="font-bold text-slate-800 text-xs truncate">{inst?.Farmer_Name ?? v.Pipe_ID}</span>
-                        <span className="text-[10px] text-slate-400 shrink-0">{fmtDate(v.Visit_Date)}</span>
+                        <span className="text-xs text-slate-400 shrink-0">{fmtDate(v.Visit_Date)}</span>
                       </div>
-                      <div className="text-[10px] text-slate-500 mt-0.5 flex flex-wrap gap-x-2">
+                      <div className="text-xs text-slate-500 mt-0.5 flex flex-wrap gap-x-2">
                         <span>💧 {v.Water_Level}cm</span>
                         <span>🌾 {v.Crop_Stage}</span>
                         <span className={`font-semibold ${v.AWD_Followed === 'Yes' ? 'text-emerald-600' : v.AWD_Followed === 'Partially' ? 'text-amber-600' : 'text-red-500'}`}>
@@ -709,7 +710,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ pipes, installations, moni
               ].map(({ label, value }) => (
                 <div key={label} className="text-center bg-white/10 rounded-xl p-2.5 border border-white/20">
                   <div className="text-xl font-black">{value}</div>
-                  <div className="text-[10px] text-emerald-200 font-semibold">{label}</div>
+                  <div className="text-xs text-emerald-200 font-semibold">{label}</div>
                 </div>
               ))}
             </div>

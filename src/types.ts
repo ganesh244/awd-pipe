@@ -4,7 +4,7 @@ export type EstablishmentMethod = 'Dry DSR' | 'Wet DSR' | 'TPR';
 
 export type IrrigationSource = 'Borewell' | 'Canal' | 'Tank' | 'Other';
 
-export type PlotUnit = 'Acres' | 'Hectares';
+export type PlotUnit = 'Acres' | 'Guntas' | 'Cents' | 'Hectares';
 
 export type AWDFollowed = 'Yes' | 'No' | 'Partially';
 

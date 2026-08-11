@@ -186,7 +186,7 @@ export default function App() {
   const [activeTab, setActiveTab] = useState<string>('home');
   const [analyticsSubTab, setAnalyticsSubTab] = useState<'overview' | 'reports'>('overview');
   const [inventorySubTab, setInventorySubTab] = useState<'inventory' | 'labels'>('inventory');
-  const [activePipeId, setActivePipeId] = useState<string>('AWD-0004'); // Defaults to an available unregistered pipe
+  const [activePipeId, setActivePipeId] = useState<string>(''); // Defaults to empty to show scanner
   const [isGenerateModalOpen, setIsGenerateModalOpen] = useState<boolean>(false);
 
   // Offline Data Sync States

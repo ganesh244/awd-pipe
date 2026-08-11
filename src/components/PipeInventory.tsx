@@ -3,6 +3,8 @@ import ReactDOM from 'react-dom';
 import { AWDPipe } from '../types';
 import { Search, Filter, Plus, Box, CheckCircle2, AlertTriangle, X } from 'lucide-react';
 import QRCode from 'qrcode';
+import { StatusBadge } from './ui/StatusBadge';
+import { Button } from './ui/Button';
 
 interface PipeInventoryProps {
   pipes: AWDPipe[];
@@ -85,8 +87,8 @@ export const PipeInventory: React.FC<PipeInventoryProps> = ({
       <div className="border-b border-[#d1dbd1] pb-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h1 className="text-xl font-bold text-[#2d3a2d] tracking-tight flex items-center gap-2 uppercase">
-              <Box className="w-6 h-6 text-[#88b04b]" />
+            <h1 className="text-xl font-bold text-slate-800 tracking-tight flex items-center gap-2 uppercase">
+              <Box className="w-6 h-6 text-emerald-600" />
               AWD Pipe Master Inventory
             </h1>
             <p className="text-xs text-slate-500 mt-0.5">
@@ -95,21 +97,18 @@ export const PipeInventory: React.FC<PipeInventoryProps> = ({
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
-            <button
-              onClick={() => setIsBatchModalOpen(true)}
-              className="bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold uppercase tracking-widest px-3 py-2 rounded-lg transition shadow-sm flex items-center gap-1.5 border border-slate-200"
-            >
+            <Button variant="secondary" onClick={() => setIsBatchModalOpen(true)}>
               Manage Batches
-            </button>
-            <button
+            </Button>
+            <Button
+              variant="primary"
               onClick={() => {
                 if (onOpenGenerateModal) onOpenGenerateModal();
                 else onAddPipeBatch('BATCH-2026-02', 10);
               }}
-              className="bg-[#2d4a2d] hover:bg-[#1a2d1a] text-white text-xs font-bold uppercase tracking-widest px-3 py-2 rounded-lg transition shadow-md flex items-center gap-1.5 border-b-2 border-black/20"
             >
-              <Plus className="w-4 h-4 text-[#88b04b]" /> Generate New QR Batch
-            </button>
+              <Plus className="w-4 h-4" /> Generate New QR Batch
+            </Button>
           </div>
         </div>
       </div>
@@ -130,6 +129,7 @@ export const PipeInventory: React.FC<PipeInventoryProps> = ({
               <button
                 type="button"
                 onClick={() => setSearchTerm('')}
+                aria-label="Clear search"
                 className="absolute right-3 top-2.5 text-slate-400 hover:text-slate-600 p-0.5 rounded-full hover:bg-slate-200"
               >
                 <X className="w-4 h-4" />
@@ -145,11 +145,11 @@ export const PipeInventory: React.FC<PipeInventoryProps> = ({
               className="w-full border-2 border-slate-100 bg-slate-50 rounded-xl p-2.5 text-xs font-bold text-slate-800 outline-none focus:border-emerald-500 focus:bg-white cursor-pointer transition"
             >
               <option value="All">All Statuses ({pipes.length})</option>
-              <option value="Available">🟢 Available ({pipes.filter((p) => p.Status === 'Available').length})</option>
-              <option value="Installed">🟢 Installed ({pipes.filter((p) => p.Status === 'Installed').length})</option>
-              <option value="Damaged">🔴 Damaged ({pipes.filter((p) => p.Status === 'Damaged').length})</option>
-              <option value="Removed">⚪ Removed ({pipes.filter((p) => p.Status === 'Removed').length})</option>
-              <option value="Replaced">🔄 Replaced ({pipes.filter((p) => p.Status === 'Replaced').length})</option>
+              <option value="Available">Available ({pipes.filter((p) => p.Status === 'Available').length})</option>
+              <option value="Installed">Installed ({pipes.filter((p) => p.Status === 'Installed').length})</option>
+              <option value="Damaged">Damaged ({pipes.filter((p) => p.Status === 'Damaged').length})</option>
+              <option value="Removed">Removed ({pipes.filter((p) => p.Status === 'Removed').length})</option>
+              <option value="Replaced">Replaced ({pipes.filter((p) => p.Status === 'Replaced').length})</option>
             </select>
           </div>
         </div>
@@ -161,7 +161,7 @@ export const PipeInventory: React.FC<PipeInventoryProps> = ({
               <strong className="text-slate-800 font-bold">{pipes.length}</strong> pipes
             </span>
             {(searchTerm || statusFilter !== 'All') && (
-              <span className="bg-emerald-50 text-emerald-800 border border-emerald-200 text-[10px] font-bold px-2 py-0.5 rounded-md">
+              <span className="bg-emerald-50 text-emerald-800 border border-emerald-200 text-xs font-bold px-2 py-0.5 rounded-md">
                 Filtered
               </span>
             )}
@@ -182,7 +182,7 @@ export const PipeInventory: React.FC<PipeInventoryProps> = ({
       <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs">
-            <thead className="bg-slate-50 text-slate-500 uppercase font-bold text-[10px] tracking-wider border-b border-slate-200">
+            <thead className="bg-slate-50 text-slate-500 uppercase font-bold text-xs tracking-wider border-b border-slate-200">
               <tr>
                 <th className="px-4 py-3">Pipe ID</th>
                 <th className="px-4 py-3">Batch No</th>
@@ -206,18 +206,7 @@ export const PipeInventory: React.FC<PipeInventoryProps> = ({
                     <td className="px-4 py-3 font-mono font-bold text-emerald-800 text-sm">{p.Pipe_ID}</td>
                     <td className="px-4 py-3 font-mono text-slate-500">{p.Batch_No}</td>
                     <td className="px-4 py-3">
-                      <span
-                        className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold ${
-                          p.Status === 'Installed'
-                            ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
-                            : p.Status === 'Available'
-                            ? 'bg-blue-50 text-blue-700 border border-blue-200'
-                            : 'bg-amber-100 text-amber-800 border border-amber-300'
-                        }`}
-                      >
-                        {p.Status === 'Installed' ? <CheckCircle2 className="w-3 h-3" /> : <AlertTriangle className="w-3 h-3" />}
-                        {p.Status}
-                      </span>
+                      <StatusBadge status={p.Status} />
                     </td>
                     <td className="px-4 py-3 font-semibold text-slate-800">
                       {p.Farmer_Name || <span className="text-slate-300 italic">Unassigned</span>}
@@ -225,24 +214,27 @@ export const PipeInventory: React.FC<PipeInventoryProps> = ({
                     <td className="px-4 py-3">{p.Village || '--'}</td>
                     <td className="px-4 py-3">{p.Installation_Date || '--'}</td>
                     <td className="px-4 py-3 text-right space-x-1">
-                      <button
+                      <Button
+                        variant="secondary"
                         onClick={() => onSelectPipe(p.Pipe_ID)}
-                        className="bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-[11px] font-bold px-2.5 py-1 rounded-lg transition"
+                        className="!text-xs !py-1 !px-2.5 !min-h-[32px]"
                       >
                         Open Form
-                      </button>
-                      <button
+                      </Button>
+                      <Button
+                        variant="secondary"
                         onClick={() => { setEditingPipe(p); setEditBatchNo(p.Batch_No || ''); }}
-                        className="bg-blue-50 hover:bg-blue-100 text-blue-800 text-[11px] font-bold px-2.5 py-1 rounded-lg transition"
+                        className="!text-xs !py-1 !px-2.5 !min-h-[32px]"
                       >
                         Edit
-                      </button>
-                      <button
+                      </Button>
+                      <Button
+                        variant="ghost"
                         onClick={() => handleShowQrModal(p)}
-                        className="bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-bold px-2 py-1 rounded-lg transition"
+                        className="!text-xs !py-1 !px-2.5 !min-h-[32px]"
                       >
                         QR Code
-                      </button>
+                      </Button>
                     </td>
                   </tr>
                 ))
@@ -259,10 +251,10 @@ export const PipeInventory: React.FC<PipeInventoryProps> = ({
         <div className="bg-white rounded-2xl max-w-sm w-full p-6 text-center space-y-4 shadow-2xl border border-slate-200">
           <div className="flex justify-between items-center border-b pb-2">
             <div className="text-left">
-              <div className="text-[10px] font-black text-emerald-700 uppercase tracking-widest">DR. REDDY'S FOUNDATION</div>
+              <div className="text-xs font-black text-emerald-700 uppercase tracking-widest">DR. REDDY'S FOUNDATION</div>
               <span className="font-mono font-black text-base text-slate-900">{selectedQrPipe.Pipe_ID}</span>
             </div>
-            <button onClick={() => setSelectedQrPipe(null)} className="text-slate-400 hover:text-slate-600">
+            <button onClick={() => setSelectedQrPipe(null)} aria-label="Close QR Modal" className="text-slate-400 hover:text-slate-600">
               <X className="w-5 h-5" />
             </button>
           </div>
@@ -277,14 +269,15 @@ export const PipeInventory: React.FC<PipeInventoryProps> = ({
           </div>
           <div className="text-xs text-slate-600 space-y-1">
             <div className="font-mono font-extrabold text-sm text-slate-800">{selectedQrPipe.Pipe_ID}</div>
-            <p className="text-[11px] font-semibold text-[#88b04b]">AWD PIPE SYSTEM</p>
+            <p className="text-xs font-semibold text-emerald-600">AWD PIPE SYSTEM</p>
           </div>
-          <button
+          <Button
+            variant="primary"
+            fullWidth
             onClick={() => onSelectPipe(selectedQrPipe.Pipe_ID)}
-            className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 rounded-xl text-xs transition shadow-md"
           >
             Load in Mobile Registration View
-          </button>
+          </Button>
         </div>
       )}
 
@@ -293,7 +286,7 @@ export const PipeInventory: React.FC<PipeInventoryProps> = ({
         <div className="bg-white rounded-2xl max-w-sm w-full p-6 space-y-4 shadow-2xl border border-slate-200 text-left">
           <div className="flex justify-between items-center border-b pb-2">
             <h3 className="font-bold text-lg text-emerald-900">Edit Pipe</h3>
-            <button onClick={() => setEditingPipe(null)} className="text-slate-400 hover:text-slate-600">
+            <button onClick={() => setEditingPipe(null)} aria-label="Close Edit Modal" className="text-slate-400 hover:text-slate-600">
               <X className="w-5 h-5" />
             </button>
           </div>
@@ -342,6 +335,7 @@ export const PipeInventory: React.FC<PipeInventoryProps> = ({
             <h3 className="font-bold text-lg text-emerald-900">Manage Batches</h3>
             <button
               onClick={() => { setIsBatchModalOpen(false); setEditingBatchNo(null); setBatchToDelete(null); }}
+              aria-label="Close Manage Batches Modal"
               className="text-slate-400 hover:text-slate-600"
             >
               <X className="w-5 h-5" />
