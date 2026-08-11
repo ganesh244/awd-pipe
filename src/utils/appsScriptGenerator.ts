@@ -603,6 +603,8 @@ export const INDEX_HTML_GS = `<!DOCTYPE html>
               <label class="block text-xs font-semibold text-slate-700 mb-1">Unit *</label>
               <select id="plotSizeUnit" required class="w-full border rounded-xl p-2.5 text-sm bg-white focus:ring-2 focus:ring-emerald-500 outline-none">
                 <option value="Acres">Acres</option>
+                <option value="Guntas">Guntas (గుంటలు)</option>
+                <option value="Cents">Cents</option>
                 <option value="Hectares">Hectares</option>
               </select>
             </div>

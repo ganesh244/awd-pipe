@@ -379,6 +379,8 @@ const EditFarmerModal: React.FC<{
                   className="w-full bg-slate-50 border border-slate-300 rounded-xl p-2.5 text-xs font-semibold"
                 >
                   <option value="Acres">Acres</option>
+                  <option value="Guntas">Guntas (గుంటలు)</option>
+                  <option value="Cents">Cents</option>
                   <option value="Hectares">Hectares</option>
                 </select>
               </div>
