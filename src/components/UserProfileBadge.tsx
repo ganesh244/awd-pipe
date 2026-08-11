@@ -34,7 +34,7 @@ export const UserProfileBadge: React.FC<UserProfileBadgeProps> = ({ currentUser,
             {currentUser.role}
           </span>
         </div>
-        <p className="text-[10px] text-slate-400 font-medium leading-tight mt-0.5">
+        <p className="text-xs text-slate-400 font-medium leading-tight mt-0.5">
           {currentUser.areaName ? `${currentUser.areaName}, ${currentUser.district}` : currentUser.district ? `${currentUser.district}, ${currentUser.state}` : currentUser.state || 'Global Admin'}
         </p>
       </div>
@@ -42,6 +42,7 @@ export const UserProfileBadge: React.FC<UserProfileBadgeProps> = ({ currentUser,
       <button
         onClick={onLogout}
         title="Logout / Switch User"
+        aria-label="Logout"
         className="p-1.5 hover:bg-slate-700 rounded-xl text-slate-400 hover:text-red-400 transition cursor-pointer"
       >
         <LogOut className="w-4 h-4" />

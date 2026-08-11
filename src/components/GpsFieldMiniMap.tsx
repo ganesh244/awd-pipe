@@ -68,7 +68,7 @@ export const GpsFieldMiniMap: React.FC<GpsFieldMiniMapProps> = ({
     if (pipeId) {
       marker.bindPopup(`
         <div style="font-family: sans-serif; font-size: 12px; font-weight: bold; color: #1e293b;">
-          📍 AWD Field Pipe: <span style="color: #2d4a2d;">${pipeId}</span><br/>
+          📍 AWD Field Pipe: <span style="color: emerald-700;">${pipeId}</span><br/>
           <span style="font-size: 10px; color: #64748b;">Lat: ${latitude}, Lng: ${longitude}</span>
         </div>
       `);
@@ -97,15 +97,15 @@ export const GpsFieldMiniMap: React.FC<GpsFieldMiniMapProps> = ({
         <button
           type="button"
           onClick={() => setTileType(tileType === 'streets' ? 'satellite' : 'streets')}
-          className="text-[10px] font-bold text-white px-2 py-0.5 rounded flex items-center gap-1 hover:bg-white/20 transition active:scale-[0.97] transition-transform"
+          className="text-xs font-bold text-white px-2 py-0.5 rounded flex items-center gap-1 hover:bg-white/20 transition active:scale-[0.97] transition-transform"
         >
-          <Layers className="w-3 h-3 text-[#88b04b]" />
+          <Layers className="w-3 h-3 text-[emerald-600]" />
           {tileType === 'streets' ? 'Switch Satellite' : 'Switch Map'}
         </button>
       </div>
 
       {/* Live Pin Overlay Banner */}
-      <div className="absolute bottom-2 left-2 z-20 bg-slate-900/80 backdrop-blur-xs text-white text-[10px] font-mono px-2 py-1 rounded-md border border-white/20 shadow flex items-center gap-1.5">
+      <div className="absolute bottom-2 left-2 z-20 bg-slate-900/80 backdrop-blur-xs text-white text-xs font-mono px-2 py-1 rounded-md border border-white/20 shadow flex items-center gap-1.5">
         <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
         <span>GPS: {latitude.toFixed(4)}, {longitude.toFixed(4)}</span>
       </div>
@@ -115,7 +115,7 @@ export const GpsFieldMiniMap: React.FC<GpsFieldMiniMapProps> = ({
         href={`https://www.google.com/maps?q=${latitude},${longitude}`}
         target="_blank"
         rel="noopener noreferrer"
-        className="absolute top-2 right-2 z-20 bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-[10px] px-2.5 py-1 rounded-md transition shadow flex items-center gap-1 border border-emerald-500/50"
+        className="absolute top-2 right-2 z-20 bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs px-2.5 py-1 rounded-md transition shadow flex items-center gap-1 border border-emerald-500/50"
       >
         <span>Open Google Maps</span>
         <ExternalLink className="w-3 h-3 text-emerald-200" />

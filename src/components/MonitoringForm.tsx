@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { MonitoringRecord, CropStage, AWDFollowed, PipeCondition, User } from '../types';
 import { CameraCapture } from './CameraCapture';
 import { X, Calendar, Droplet, UserCheck, AlertCircle, MapPin } from 'lucide-react';
@@ -18,7 +18,8 @@ export const MonitoringForm: React.FC<MonitoringFormProps> = ({
   onSubmit,
   currentUser,
 }) => {
-  const today = new Date().toISOString().substring(0, 10);
+  // Stable: only computed once (or when the component mounts), NOT on every render
+  const today = useMemo(() => new Date().toISOString().substring(0, 10), []);
 
   const [visitDate, setVisitDate] = useState(today);
   const [waterLevel, setWaterLevel] = useState('-5 cm below soil surface');
@@ -28,35 +29,76 @@ export const MonitoringForm: React.FC<MonitoringFormProps> = ({
   const [visitedBy, setVisitedBy] = useState(currentUser ? `${currentUser.name} (${currentUser.role})` : 'M. Srinivas (Field Officer)');
   const [remarks, setRemarks] = useState('');
   const [photoUrl, setPhotoUrl] = useState<string | undefined>(undefined);
-  const [gpsCaptured, setGpsCaptured] = useState<{ lat: number; lng: number } | null>(null);
+  const [gpsCaptured, setGpsCaptured] = useState<{ lat: number; lng: number; accuracy?: number } | null>(null);
   const [showGpsWarning, setShowGpsWarning] = useState(false);
+  const [isLocating, setIsLocating] = useState(false);
+  const [gpsError, setGpsError] = useState<string | null>(null);
+
+  // Reset form fields when the modal opens for a new pipe
+  // `today` is intentionally excluded from deps — it's stable via useMemo
+  useEffect(() => {
+    if (isOpen) {
+      setVisitDate(today);
+      setWaterLevel('-5 cm below soil surface');
+      setCropStage('Tillering');
+      setAwdFollowed('Yes');
+      setPipeCondition('Good');
+      setRemarks('');
+      setPhotoUrl(undefined);
+      setGpsCaptured(null);
+      setShowGpsWarning(false);
+      setIsLocating(false);
+      setGpsError(null);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, pipeId]);
 
   if (!isOpen) return null;
 
   const handleCaptureGPS = () => {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (pos) => {
-          setGpsCaptured({
-            lat: Number(pos.coords.latitude.toFixed(6)),
-            lng: Number(pos.coords.longitude.toFixed(6)),
-          });
-        },
-        () => {
-          // Fallback mock location if denied or unavailable in sandbox
-          setGpsCaptured({ lat: 18.6184, lng: 79.3783 });
-        }
-      );
-    } else {
-      setGpsCaptured({ lat: 18.6184, lng: 79.3783 });
+    setIsLocating(true);
+    setGpsError(null);
+    setShowGpsWarning(false);
+    setGpsCaptured(null);
+
+    const useMockGps = import.meta.env.DEV && import.meta.env.VITE_ENABLE_MOCK_GPS === "true";
+
+    if (useMockGps) {
+      setTimeout(() => {
+        setGpsCaptured({ lat: 18.6184, lng: 79.3783, accuracy: 6 });
+        setIsLocating(false);
+      }, 600);
+      return;
     }
+
+    if (!navigator.geolocation) {
+      setGpsError("GPS Location is mandatory. Please check your browser/device permissions and try again.");
+      setIsLocating(false);
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setGpsCaptured({
+          lat: Number(pos.coords.latitude.toFixed(6)),
+          lng: Number(pos.coords.longitude.toFixed(6)),
+          accuracy: Math.round(pos.coords.accuracy)
+        });
+        setIsLocating(false);
+      },
+      () => {
+        setGpsError("GPS Location is mandatory. Please check your browser/device permissions and try again.");
+        setIsLocating(false);
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+    );
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!gpsCaptured) {
-      setShowGpsWarning(true);
-      // Allow submit through after showing warning — GPS will fall back to last known
+      setGpsError("GPS Location is mandatory. Please check your browser/device permissions and try again.");
+      return;
     }
 
     const record: MonitoringRecord = {
@@ -69,8 +111,8 @@ export const MonitoringForm: React.FC<MonitoringFormProps> = ({
       Pipe_Condition: pipeCondition,
       Visited_By: visitedBy,
       Visited_By_User_ID: currentUser?.id,
-      Latitude: gpsCaptured ? gpsCaptured.lat : 18.6184,
-      Longitude: gpsCaptured ? gpsCaptured.lng : 79.3783,
+      Latitude: gpsCaptured.lat,
+      Longitude: gpsCaptured.lng,
       Photo_URL: photoUrl,
       Remarks: remarks,
     };
@@ -88,7 +130,7 @@ export const MonitoringForm: React.FC<MonitoringFormProps> = ({
         {/* Modal Header */}
         <div className="flex justify-between items-center border-b pb-3">
           <div>
-            <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-600 block">
+            <span className="text-xs font-bold uppercase tracking-wider text-emerald-600 block">
               Field Inspection Log
             </span>
             <h3 className="font-extrabold text-slate-800 text-lg flex items-center gap-2">
@@ -98,6 +140,7 @@ export const MonitoringForm: React.FC<MonitoringFormProps> = ({
           </div>
           <button
             onClick={onClose}
+            aria-label="Close Monitoring Modal"
             className="w-8 h-8 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center hover:bg-slate-200 transition font-bold"
           >
             <X className="w-4 h-4" />
@@ -116,7 +159,7 @@ export const MonitoringForm: React.FC<MonitoringFormProps> = ({
               required
               value={visitDate}
               onChange={(e) => setVisitDate(e.target.value)}
-              className="w-full border rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-emerald-500 outline-none"
+              className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-emerald-500 outline-none min-h-[44px] transition"
             />
           </div>
 
@@ -127,7 +170,7 @@ export const MonitoringForm: React.FC<MonitoringFormProps> = ({
             <select
               value={waterLevel}
               onChange={(e) => setWaterLevel(e.target.value)}
-              className="w-full border rounded-xl p-2.5 text-sm bg-white focus:ring-2 focus:ring-emerald-500 outline-none font-medium"
+              className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-emerald-500 outline-none min-h-[44px] transition"
             >
               <option value="5">+5 cm (Flooded stage)</option>
               <option value="2">+2 cm (Shallow water)</option>
@@ -144,7 +187,7 @@ export const MonitoringForm: React.FC<MonitoringFormProps> = ({
               <select
                 value={cropStage}
                 onChange={(e) => setCropStage(e.target.value as CropStage)}
-                className="w-full border rounded-xl p-2.5 text-sm bg-white focus:ring-2 focus:ring-emerald-500 outline-none"
+                className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-emerald-500 outline-none min-h-[44px] transition"
               >
                 <option value="Tillering">Tillering</option>
                 <option value="Panicle Initiation">Panicle Initiation</option>
@@ -158,7 +201,7 @@ export const MonitoringForm: React.FC<MonitoringFormProps> = ({
               <select
                 value={awdFollowed}
                 onChange={(e) => setAwdFollowed(e.target.value as AWDFollowed)}
-                className="w-full border rounded-xl p-2.5 text-sm bg-white focus:ring-2 focus:ring-emerald-500 outline-none font-bold text-emerald-800"
+                className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-emerald-500 outline-none min-h-[44px] transition"
               >
                 <option value="Yes">Yes (Compliant)</option>
                 <option value="Partially">Partially</option>
@@ -172,7 +215,7 @@ export const MonitoringForm: React.FC<MonitoringFormProps> = ({
             <select
               value={pipeCondition}
               onChange={(e) => setPipeCondition(e.target.value as PipeCondition)}
-              className="w-full border rounded-xl p-2.5 text-sm bg-white focus:ring-2 focus:ring-emerald-500 outline-none"
+              className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-emerald-500 outline-none min-h-[44px] transition"
             >
               <option value="Good">Good Condition</option>
               <option value="Damaged">Damaged</option>
@@ -191,31 +234,61 @@ export const MonitoringForm: React.FC<MonitoringFormProps> = ({
               value={visitedBy}
               onChange={(e) => setVisitedBy(e.target.value)}
               placeholder="Officer Name"
-              className="w-full border rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-emerald-500 outline-none"
+              className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-emerald-500 outline-none min-h-[44px] transition"
             />
           </div>
 
           {/* GPS Quick Capture in Modal */}
           <div className="space-y-1.5">
-            <div className="bg-slate-50 border border-slate-200 rounded-xl p-2.5 flex items-center justify-between text-xs">
-              <span className="text-slate-600 flex items-center gap-1 font-medium">
-                <MapPin className="w-3.5 h-3.5 text-emerald-600" />
-                {gpsCaptured
-                  ? `✅ GPS Captured: ${gpsCaptured.lat}, ${gpsCaptured.lng}`
-                  : 'Visit GPS (Recommended)'}
-              </span>
-              <button
-                type="button"
-                onClick={handleCaptureGPS}
-                className="bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold px-2.5 py-1 rounded-lg text-[11px] transition"
-              >
-                {gpsCaptured ? 'Recapture' : 'Capture GPS'}
-              </button>
-            </div>
-            {showGpsWarning && !gpsCaptured && (
-              <div className="flex items-start gap-2 bg-amber-50 border border-amber-200 text-amber-800 rounded-xl p-2.5 text-xs">
-                <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-0.5 text-amber-600" />
-                <span><strong>GPS not captured</strong> — visit location will default to last known position. Capture GPS to verify field presence.</span>
+            <button
+              type="button"
+              onClick={handleCaptureGPS}
+              disabled={isLocating}
+              className={`w-full font-bold rounded-xl text-xs py-3 px-3 transition shadow-sm flex items-center justify-center gap-2 active:scale-[0.97] transition-transform ${
+                gpsCaptured
+                  ? 'bg-emerald-100 text-emerald-800 border-2 border-emerald-500'
+                  : 'bg-white border-2 border-slate-300 text-slate-700 hover:border-slate-400 hover:bg-slate-50'
+              }`}
+            >
+              {isLocating ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-slate-400 border-t-slate-700 rounded-full animate-spin"></div>
+                  Capturing...
+                </>
+              ) : gpsError && !gpsCaptured ? (
+                <>
+                  <MapPin className="w-4 h-4" />
+                  Failed - Tap to Retry
+                </>
+              ) : gpsCaptured ? (
+                <>
+                  <MapPin className="w-4 h-4" />
+                  Captured (Tap to Recapture)
+                </>
+              ) : (
+                <>
+                  <MapPin className="w-4 h-4" />
+                  Not captured - Tap to Capture
+                </>
+              )}
+            </button>
+
+            {gpsCaptured && (
+              <div className="bg-emerald-100/80 border border-emerald-300 rounded-lg p-2.5 text-xs text-emerald-900 font-mono space-y-0.5 animate-fadeIn">
+                <div>Lat: {gpsCaptured.lat.toFixed(6)}</div>
+                <div>Lng: {gpsCaptured.lng.toFixed(6)}</div>
+                {gpsCaptured.accuracy !== undefined && (
+                  <div className="text-xs text-emerald-700 font-bold mt-1 inline-block bg-emerald-200/50 px-2 py-0.5 rounded">
+                    Accuracy: ±{gpsCaptured.accuracy}m
+                  </div>
+                )}
+              </div>
+            )}
+
+            {gpsError && (
+              <div role="alert" className="flex items-start gap-2 bg-red-50 border border-red-200 text-red-700 rounded-xl p-3 text-xs font-semibold shadow-sm">
+                <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-red-600" />
+                <span>{gpsError}</span>
               </div>
             )}
           </div>
@@ -235,7 +308,7 @@ export const MonitoringForm: React.FC<MonitoringFormProps> = ({
               value={remarks}
               onChange={(e) => setRemarks(e.target.value)}
               placeholder="Observations on weed growth, water retention, farmer feedback..."
-              className="w-full border rounded-xl p-2 text-sm focus:ring-2 focus:ring-emerald-500 outline-none"
+              className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-emerald-500 outline-none min-h-[44px] transition"
             />
           </div>
 

@@ -1,9 +1,10 @@
 import React, { useMemo } from 'react';
 import { User, Installation, MonitoringRecord, AWDPipe } from '../types';
+import { toAcres } from '../utils/plotUtils';
 import { 
   Sprout, ClipboardCheck, MapPin, BarChart3, Users, 
   Printer, Network, Droplets, Sparkles, CheckSquare, 
-  Leaf, ArrowRight, Clock, Award, ShieldCheck, Zap
+  Leaf, ArrowRight, Clock, Award, ShieldCheck, Zap, CheckCircle2
 } from 'lucide-react';
 
 interface HomeProps {
@@ -58,7 +59,7 @@ export const Home: React.FC<HomeProps> = ({
 
   // Impact Calculations (AWD savings estimates)
   // Assuming 1 Acre under AWD saves ~150,000 Liters of water per wet season/cycle
-  const totalAcres = userInstallations.reduce((sum, i) => sum + (Number(i.Plot_Size) || 0), 0);
+  const totalAcres = userInstallations.reduce((sum, i) => sum + toAcres(Number(i.Plot_Size) || 0, i.Plot_Size_Unit), 0);
   const waterSavedLiters = Math.round(totalAcres * 150000 * (personalComplianceRate / 100));
   
   // Methane reduction: AWD reduces methane emissions by up to ~48%
@@ -204,7 +205,7 @@ export const Home: React.FC<HomeProps> = ({
                   : 'Field Device Operating in Offline Mode'
                 }
               </div>
-              <p className="text-[10px] opacity-80 mt-0.5">
+              <p className="text-xs opacity-80 mt-0.5">
                 {offlineQueueCount > 0 
                   ? 'You registered new farmers or visits while offline. Sync them back to server once connected.' 
                   : 'You can still register farmers and log visits. They will be queued for upload later.'
@@ -215,7 +216,7 @@ export const Home: React.FC<HomeProps> = ({
           
           <button
             onClick={onOpenSyncModal}
-            className={`px-3 py-1.5 rounded-xl text-[10px] font-extrabold shadow-sm active:scale-95 transition-all cursor-pointer ${
+            className={`px-3 py-1.5 rounded-xl text-xs font-extrabold shadow-sm active:scale-95 transition-all cursor-pointer ${
               offlineQueueCount > 0 
                 ? 'bg-amber-600 hover:bg-amber-700 text-white' 
                 : 'bg-rose-600 hover:bg-rose-700 text-white'
@@ -252,11 +253,11 @@ export const Home: React.FC<HomeProps> = ({
           <div className="flex gap-3">
             <div className="bg-white/10 backdrop-blur-md rounded-2xl p-4 border border-white/10 text-center min-w-0 flex-1">
               <div className="text-2xl font-black text-emerald-400">{userInstallations.length}</div>
-              <div className="text-[10px] text-slate-300 font-semibold uppercase tracking-wider mt-0.5">My Pipes</div>
+              <div className="text-xs text-slate-300 font-semibold uppercase tracking-wider mt-0.5">My Pipes</div>
             </div>
             <div className="bg-white/10 backdrop-blur-md rounded-2xl p-4 border border-white/10 text-center min-w-0 flex-1">
               <div className="text-2xl font-black text-emerald-400">{personalComplianceRate}%</div>
-              <div className="text-[10px] text-slate-300 font-semibold uppercase tracking-wider mt-0.5">AWD Rate</div>
+              <div className="text-xs text-slate-300 font-semibold uppercase tracking-wider mt-0.5">AWD Rate</div>
             </div>
           </div>
         </div>
@@ -276,7 +277,7 @@ export const Home: React.FC<HomeProps> = ({
               </div>
               <div>
                 <h3 className="font-extrabold text-slate-800 text-sm">Quick Actions</h3>
-                <p className="text-[10px] text-slate-400">Shortcuts to features matching your role permission level</p>
+                <p className="text-xs text-slate-400">Shortcuts to features matching your role permission level</p>
               </div>
             </div>
 
@@ -297,7 +298,7 @@ export const Home: React.FC<HomeProps> = ({
                         {act.title}
                         <ArrowRight className="w-3 h-3 opacity-0 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all text-emerald-600" />
                       </div>
-                      <p className="text-slate-400 text-[11px] mt-0.5 leading-snug">{act.desc}</p>
+                      <p className="text-slate-400 text-xs mt-0.5 leading-snug">{act.desc}</p>
                     </div>
                   </button>
                 );
@@ -313,14 +314,14 @@ export const Home: React.FC<HomeProps> = ({
               </div>
               <div>
                 <h3 className="font-extrabold text-slate-800 text-sm">Role Directives & Checklist</h3>
-                <p className="text-[10px] text-slate-400">Operational tasks and guidelines for {currentUser.role}s</p>
+                <p className="text-xs text-slate-400">Operational tasks and guidelines for {currentUser.role}s</p>
               </div>
             </div>
 
             <div className="space-y-3">
               {checklist.map((item, idx) => (
                 <div key={idx} className="flex items-start gap-3 p-3 rounded-xl bg-slate-50/60 border border-slate-100 text-xs">
-                  <span className="w-5 h-5 rounded-md bg-emerald-100 text-emerald-700 flex items-center justify-center text-[10px] font-bold shrink-0">
+                  <span className="w-5 h-5 rounded-md bg-emerald-100 text-emerald-700 flex items-center justify-center text-xs font-bold shrink-0">
                     {idx + 1}
                   </span>
                   <p className="text-slate-600 leading-normal font-medium mt-0.5">{item}</p>
@@ -344,32 +345,32 @@ export const Home: React.FC<HomeProps> = ({
               </div>
               <div>
                 <h3 className="font-extrabold text-white text-sm">Sustainability Impact</h3>
-                <p className="text-[10px] text-slate-400">Environmental benefits from your field operations</p>
+                <p className="text-xs text-slate-400">Environmental benefits from your field operations</p>
               </div>
             </div>
 
             {/* Metric widgets */}
             <div className="space-y-4">
               <div className="p-3 bg-white/5 rounded-2xl border border-white/5">
-                <div className="text-[10px] text-emerald-400 font-bold uppercase tracking-wider">Estimated Water Saved</div>
+                <div className="text-xs text-emerald-400 font-bold uppercase tracking-wider">Estimated Water Saved</div>
                 <div className="text-2xl font-black mt-1 font-mono">{waterSavedLiters.toLocaleString('en-IN')} L</div>
-                <p className="text-[10px] text-slate-400 mt-1 leading-relaxed">
+                <p className="text-xs text-slate-400 mt-1 leading-relaxed">
                   Calculated based on {totalAcres.toFixed(1)} active acres managed with a {personalComplianceRate}% AWD follow-through rate.
                 </p>
               </div>
 
               <div className="p-3 bg-white/5 rounded-2xl border border-white/5">
-                <div className="text-[10px] text-teal-400 font-bold uppercase tracking-wider">Methane Emission Reduction</div>
+                <div className="text-xs text-teal-400 font-bold uppercase tracking-wider">Methane Emission Reduction</div>
                 <div className="text-2xl font-black mt-1 font-mono">~48%</div>
-                <p className="text-[10px] text-slate-400 mt-1 leading-relaxed">
+                <p className="text-xs text-slate-400 mt-1 leading-relaxed">
                   AWD practice significantly reduces carbon equivalent methane output of paddy wetlands.
                 </p>
               </div>
 
               <div className="p-3 bg-white/5 rounded-2xl border border-white/5">
-                <div className="text-[10px] text-lime-400 font-bold uppercase tracking-wider">CO₂ Equivalent Offset</div>
+                <div className="text-xs text-lime-400 font-bold uppercase tracking-wider">CO₂ Equivalent Offset</div>
                 <div className="text-2xl font-black mt-1 font-mono">{co2ReducedTons} Tons</div>
-                <p className="text-[10px] text-slate-400 mt-1 leading-relaxed">
+                <p className="text-xs text-slate-400 mt-1 leading-relaxed">
                   Net greenhouse gas mitigation equivalent to planting approx. {Math.round(Number(co2ReducedTons) * 16 || 0)} mature trees!
                 </p>
               </div>
@@ -384,21 +385,21 @@ export const Home: React.FC<HomeProps> = ({
               </div>
               <div>
                 <h3 className="font-extrabold text-slate-800 text-sm">System Guidelines</h3>
-                <p className="text-[10px] text-slate-400">Current release rules & specs</p>
+                <p className="text-xs text-slate-400">Current release rules & specs</p>
               </div>
             </div>
 
             <div className="text-xs text-slate-500 space-y-3 leading-relaxed">
               <div className="flex gap-2.5">
-                <span className="text-emerald-500 font-bold">✔</span>
+                <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
                 <p>Ensure your mobile GPS is enabled before starting pipe registrations.</p>
               </div>
               <div className="flex gap-2.5">
-                <span className="text-emerald-500 font-bold">✔</span>
+                <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
                 <p>If camera output remains blank on desktop browsers, verify camera permission settings for localhost/Render domain name.</p>
               </div>
               <div className="flex gap-2.5">
-                <span className="text-emerald-500 font-bold">✔</span>
+                <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
                 <p>Weekly summaries are exported automatically to Google Sheets at midnight.</p>
               </div>
             </div>

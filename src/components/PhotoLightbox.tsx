@@ -60,7 +60,7 @@ export const PhotoLightbox: React.FC<PhotoLightboxProps> = ({ url, caption, onCl
         {/* Top Action Bar */}
         <div className="w-full flex items-center justify-between px-2 py-1 bg-slate-900/80 backdrop-blur-md rounded-2xl border border-slate-700/60 shadow-xl">
           <div className="flex items-center gap-2 overflow-hidden mr-2">
-            <span className="bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 text-[10px] font-black px-2 py-0.5 rounded-full flex items-center gap-1 uppercase tracking-wider shrink-0">
+            <span className="bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 text-xs font-black px-2 py-0.5 rounded-full flex items-center gap-1 uppercase tracking-wider shrink-0">
               <ShieldCheck className="w-3 h-3" /> Full HD Picture
             </span>
             {caption && (
@@ -168,7 +168,7 @@ export const PhotoLightbox: React.FC<PhotoLightboxProps> = ({ url, caption, onCl
         </div>
 
         {/* Bottom Bar Info */}
-        <div className="w-full flex items-center justify-between text-[11px] text-slate-400 font-medium px-2">
+        <div className="w-full flex items-center justify-between text-xs text-slate-400 font-medium px-2">
           <span>Use zoom controls or scroll to view fine details • Double-click or click ESC to exit</span>
           <span className="font-mono text-emerald-400">High Definition Picture Mode</span>
         </div>

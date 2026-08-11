@@ -188,7 +188,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ users, onLogin }) => {
               </button>
             </form>
 
-            <p className="text-[11px] text-slate-600 text-center mt-5 leading-relaxed">
+            <p className="text-xs text-slate-600 text-center mt-5 leading-relaxed">
               Credentials assigned by your District Manager or Admin.<br />
               Contact your supervisor if you need access.
             </p>
@@ -197,7 +197,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ users, onLogin }) => {
       </div>
 
       {/* Footer */}
-      <div className="relative z-10 border-t border-white/[0.05] py-4 px-8 flex items-center justify-between text-[10px] text-slate-700">
+      <div className="relative z-10 border-t border-white/[0.05] py-4 px-8 flex items-center justify-between text-xs text-slate-700">
         <span>© 2025 AWD Pipe Registry</span>
         <span className="flex items-center gap-1.5">
           {backendStatus === 'checking' && (

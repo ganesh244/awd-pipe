@@ -101,7 +101,7 @@ export const AppsScriptCodeViewer: React.FC = () => {
                 <FileCode className={`w-3.5 h-3.5 ${isActive ? 'text-white' : 'text-emerald-600'}`} />
                 {file.label}
               </span>
-              <span className={`text-[10px] mt-0.5 ${isActive ? 'text-emerald-100' : 'text-slate-400'}`}>
+              <span className={`text-xs mt-0.5 ${isActive ? 'text-emerald-100' : 'text-slate-400'}`}>
                 {file.desc}
               </span>
             </button>
@@ -118,7 +118,7 @@ export const AppsScriptCodeViewer: React.FC = () => {
             <Code2 className="w-4 h-4" />
             <span>{activeFile === 'Guide' ? 'SETUP_GUIDE.md' : activeFile}</span>
           </div>
-          <span className="text-[10px] text-slate-500 font-mono">
+          <span className="text-xs text-slate-500 font-mono">
             {getFileContent().length.toLocaleString()} characters
           </span>
         </div>
