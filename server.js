@@ -663,7 +663,7 @@ app.delete('/api/installations/:pipeId', authenticateToken, async (req, res) => 
       await Pipe.findOneAndUpdate(
         { Pipe_ID: new RegExp(`^${actualPipeId.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&')}$`, 'i') },
         {
-          Status: 'Unregistered',
+          Status: 'Available',
           Farmer_Name: '',
           Village: '',
           District: '',
@@ -686,7 +686,7 @@ app.delete('/api/installations/:pipeId', authenticateToken, async (req, res) => 
         p.Pipe_ID.toLowerCase() === targetId.toLowerCase()
           ? {
             ...p,
-            Status: 'Unregistered',
+            Status: 'Available',
             Farmer_Name: '',
             Village: '',
             District: '',
@@ -710,7 +710,7 @@ app.delete('/api/installations/clear/all', authenticateToken, async (req, res, n
       await Installation.deleteMany({});
       await MonitoringRecord.deleteMany({});
       await Pipe.updateMany({}, {
-        Status: 'Unregistered',
+        Status: 'Available',
         Farmer_Name: '',
         Village: '',
         District: '',
@@ -722,7 +722,7 @@ app.delete('/api/installations/clear/all', authenticateToken, async (req, res, n
       inMemoryData.monitoringList = [];
       inMemoryData.pipes = inMemoryData.pipes.map((p) => ({
         ...p,
-        Status: 'Unregistered',
+        Status: 'Available',
         Farmer_Name: '',
         Village: '',
         District: '',

@@ -646,7 +646,7 @@ export default function App() {
         p.Pipe_ID === pipeId
           ? {
             ...p,
-            Status: 'Unregistered',
+            Status: 'Available',
             Farmer_Name: '',
             Village: '',
             District: '',
