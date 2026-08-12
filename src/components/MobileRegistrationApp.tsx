@@ -33,8 +33,23 @@ export const MobileRegistrationApp: React.FC<MobileRegistrationAppProps> = ({
   const today = new Date().toISOString().substring(0, 10);
 
   // Selected Pipe Object & Status
-  const selectedPipe = pipes.find((p) => p.Pipe_ID === activePipeId);
-  const existingInstallation = installations.find((i) => i.Pipe_ID === selectedPipe?.Pipe_ID);
+  const existingInstallation = installations.find(
+    (i) => i.Pipe_ID.toUpperCase() === activePipeId.toUpperCase()
+  );
+  const selectedPipe =
+    pipes.find((p) => p.Pipe_ID.toUpperCase() === activePipeId.toUpperCase()) ||
+    (existingInstallation
+      ? {
+          Pipe_ID: existingInstallation.Pipe_ID,
+          Batch_No: '',
+          QR_URL: '',
+          Status: 'Installed' as const,
+          Installation_Date: existingInstallation.Installation_Date,
+          Farmer_Name: existingInstallation.Farmer_Name,
+          Village: existingInstallation.Village,
+          District: existingInstallation.District,
+        }
+      : undefined);
 
   // Form State
   const [farmerName, setFarmerName] = useState('');
@@ -478,22 +493,24 @@ export const MobileRegistrationApp: React.FC<MobileRegistrationAppProps> = ({
                       setManualError('Pipe ID must start with AWD- (e.g. AWD-1234)');
                       return;
                     }
-                    const existing = pipes.find((p) => p.Pipe_ID.toUpperCase() === id);
-                    if (!existing) {
+                    const existingPipe = pipes.find((p) => p.Pipe_ID.toUpperCase() === id);
+                    const existingInst = installations.find((i) => i.Pipe_ID.toUpperCase() === id);
+
+                    if (!existingPipe && !existingInst) {
                       setManualError('Pipe ID not found in registry.');
                       return;
                     }
-                    if (existing.Status === 'Installed') {
+                    if (existingInst || (existingPipe && existingPipe.Status === 'Installed')) {
                       // Already installed — open its card for visit logging
-                      setActivePipeId(existing.Pipe_ID);
+                      setActivePipeId(existingInst ? existingInst.Pipe_ID : existingPipe!.Pipe_ID);
                       setManualPipeId('');
                       return;
                     }
-                    if (existing.Status !== 'Available') {
-                      setManualError(`Pipe status is "${existing.Status}". Only Available pipes can be registered.`);
+                    if (existingPipe && existingPipe.Status !== 'Available') {
+                      setManualError(`Pipe status is "${existingPipe.Status}". Only Available pipes can be registered.`);
                       return;
                     }
-                    setActivePipeId(existing.Pipe_ID);
+                    setActivePipeId(existingPipe!.Pipe_ID);
                     setManualPipeId('');
                   }
                 }}
@@ -507,22 +524,24 @@ export const MobileRegistrationApp: React.FC<MobileRegistrationAppProps> = ({
                     setManualError('Pipe ID must start with AWD- (e.g. AWD-1234)');
                     return;
                   }
-                  const existing = pipes.find((p) => p.Pipe_ID.toUpperCase() === id);
-                  if (!existing) {
+                  const existingPipe = pipes.find((p) => p.Pipe_ID.toUpperCase() === id);
+                  const existingInst = installations.find((i) => i.Pipe_ID.toUpperCase() === id);
+
+                  if (!existingPipe && !existingInst) {
                     setManualError('Pipe ID not found in registry.');
                     return;
                   }
-                  if (existing.Status === 'Installed') {
+                  if (existingInst || (existingPipe && existingPipe.Status === 'Installed')) {
                     // Already installed — open its card for visit logging
-                    setActivePipeId(existing.Pipe_ID);
+                    setActivePipeId(existingInst ? existingInst.Pipe_ID : existingPipe!.Pipe_ID);
                     setManualPipeId('');
                     return;
                   }
-                  if (existing.Status !== 'Available') {
-                    setManualError(`Pipe status is "${existing.Status}". Only Available pipes can be registered.`);
+                  if (existingPipe && existingPipe.Status !== 'Available') {
+                    setManualError(`Pipe status is "${existingPipe.Status}". Only Available pipes can be registered.`);
                     return;
                   }
-                  setActivePipeId(existing.Pipe_ID);
+                  setActivePipeId(existingPipe!.Pipe_ID);
                   setManualPipeId('');
                 }}
                 disabled={!manualPipeId.trim()}
@@ -1069,6 +1088,7 @@ export const MobileRegistrationApp: React.FC<MobileRegistrationAppProps> = ({
         isOpen={isQrScannerOpen}
         onClose={() => setIsQrScannerOpen(false)}
         pipes={pipes}
+        installations={installations}
         onSelectPipe={(scannedId) => setActivePipeId(scannedId)}
       />
     </div>

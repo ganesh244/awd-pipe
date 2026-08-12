@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { AWDPipe } from '../types';
+import { AWDPipe, Installation } from '../types';
 import jsQR from 'jsqr';
 import { QrCode, Camera, CheckCircle2, X, Search, Sparkles, Smartphone, ShieldCheck, AlertCircle, RefreshCw, Upload, Image as ImageIcon, Volume2 } from 'lucide-react';
 
@@ -7,6 +7,7 @@ interface QrCodeScannerModalProps {
   isOpen: boolean;
   onClose: () => void;
   pipes: AWDPipe[];
+  installations?: Installation[];
   onSelectPipe: (pipeId: string) => void;
 }
 
@@ -14,6 +15,7 @@ export const QrCodeScannerModal: React.FC<QrCodeScannerModalProps> = ({
   isOpen,
   onClose,
   pipes,
+  installations = [],
   onSelectPipe,
 }) => {
   const [manualCode, setManualCode] = useState('');
@@ -173,6 +175,12 @@ export const QrCodeScannerModal: React.FC<QrCodeScannerModalProps> = ({
       (p) => p.Pipe_ID.toUpperCase() === cleanId || p.Pipe_ID.toUpperCase().includes(cleanId)
     );
 
+    const foundInst = !foundPipe
+      ? installations.find(
+          (i) => i.Pipe_ID.toUpperCase() === cleanId || i.Pipe_ID.toUpperCase().includes(cleanId)
+        )
+      : null;
+
     if (foundPipe) {
       stopCameraStream();
       setScannedPipe(foundPipe);
@@ -181,6 +189,16 @@ export const QrCodeScannerModal: React.FC<QrCodeScannerModalProps> = ({
       // Auto confirm after 900ms
       setTimeout(() => {
         onSelectPipe(foundPipe.Pipe_ID);
+        onClose();
+      }, 900);
+    } else if (foundInst) {
+      stopCameraStream();
+      setScannedPipe({ Pipe_ID: foundInst.Pipe_ID } as AWDPipe);
+      setScanSuccess(true);
+      
+      // Auto confirm after 900ms
+      setTimeout(() => {
+        onSelectPipe(foundInst.Pipe_ID);
         onClose();
       }, 900);
     } else {
