@@ -1264,10 +1264,19 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // Serve static frontend assets built by Vite in production (Render deployment)
-app.use(express.static(path.join(__dirname, 'dist')));
+// Hashed, content-addressed assets (JS/CSS/images in dist/assets) — safe to cache forever,
+// since Vite gives each build's files a unique hash in the filename.
+app.use('/assets', express.static(path.join(__dirname, 'dist', 'assets'), {
+  maxAge: '1y',
+  immutable: true,
+}));
+
+// Everything else in dist/ (manifest.json, icons, etc.) — safe defaults, no aggressive caching.
+app.use(express.static(path.join(__dirname, 'dist'), { index: false }));
 
 app.get('*', (req, res, next) => {
   if (req.path.startsWith('/api')) return next();
+  res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
   const indexPath = path.join(__dirname, 'dist', 'index.html');
   res.sendFile(indexPath, (err) => {
     if (err) {
