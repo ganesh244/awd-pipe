@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { BarChart3, FileDown, Box, Printer } from 'lucide-react';
 import { AWDPipe, Installation, MonitoringRecord, User, StateNode, DistrictNode, AreaNode, OfflineQueueItem } from './types';
 import { INITIAL_PIPES, INITIAL_INSTALLATIONS, INITIAL_MONITORING } from './data/initialData';
@@ -183,6 +183,11 @@ export default function App() {
   // Last-synced timestamp
   const [lastSynced, setLastSynced] = useState<Date | null>(null);
 
+  // Tracks whether a background/manual refresh is in flight (for the Navbar spinner)
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  // Ref-flag to guard against polling races with in-flight hierarchy mutations
+  const isMutatingRef = useRef(false);
+
   const [activeTab, setActiveTab] = useState<string>('home');
   const [analyticsSubTab, setAnalyticsSubTab] = useState<'overview' | 'reports'>('overview');
   const [inventorySubTab, setInventorySubTab] = useState<'inventory' | 'labels'>('inventory');
@@ -363,6 +368,48 @@ export default function App() {
     const interval = setInterval(renew, 30 * 60 * 1000);
     return () => clearInterval(interval);
   }, [currentUser]);
+
+  // ── Background polling: silently refresh data every 45 s while logged in ──
+  // Skip the refresh if a hierarchy mutation is in-flight to avoid clobbering
+  // an optimistic write. No spinner — completely silent.
+  useEffect(() => {
+    if (!currentUser) return;
+    const interval = setInterval(() => {
+      if (isMutatingRef.current) return; // mutation in progress — skip this tick
+      refreshHierarchyFromServer().catch(() => { /* best-effort; silent */ });
+    }, 45 * 1000);
+    return () => clearInterval(interval);
+  }, [currentUser]);
+
+  // ── Refetch on tab/PWA visibility restore ──
+  // Immediately refresh when the user switches back to this tab or reopens the
+  // backgrounded PWA — covers the 'exit and reopen' case without waiting for
+  // the next 45-second poll tick.
+  useEffect(() => {
+    if (!currentUser) return;
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        refreshHierarchyFromServer().catch(() => { /* best-effort; silent */ });
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+    return () => document.removeEventListener('visibilitychange', handleVisibility);
+  }, [currentUser]);
+
+  // ── Manual refresh (called from the Navbar refresh button) ──
+  // Shows a spinner on the button while the request is in flight.
+  const handleManualRefresh = async () => {
+    if (isRefreshing) return; // debounce rapid clicks
+    setIsRefreshing(true);
+    try {
+      await refreshHierarchyFromServer();
+    } catch {
+      // Silently swallow — the existing error-handling inside refreshHierarchyFromServer
+      // already deals with 401s and network failures appropriately.
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
 
   // Fetch initial data from Backend API / MongoDB on mount.
   // If the server reports 'local' (a cold-starting backend can genuinely be
@@ -1241,6 +1288,8 @@ export default function App() {
         onToggleOnline={() => setIsOnline(!isOnline)}
         offlineQueueCount={offlineQueue.length}
         onOpenSyncModal={() => setIsSyncModalOpen(true)}
+        onRefresh={handleManualRefresh}
+        isRefreshing={isRefreshing}
       />
 
       {/* Main Tab Views — bottom padding on mobile clears the fixed bottom nav

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import {
   BarChart3, Box, Code2, Sprout, MapPin,
   Plus, ClipboardCheck, Network, Users,
-  Menu, X, ChevronDown, Home, Wifi, WifiOff, Sparkles, ChevronRight, Layers, ShieldCheck
+  Menu, X, ChevronDown, Home, Wifi, WifiOff, Sparkles, ChevronRight, Layers, ShieldCheck, RefreshCw
 } from 'lucide-react';
 import { User } from '../types';
 import { UserProfileBadge } from './UserProfileBadge';
@@ -18,6 +18,8 @@ interface NavbarProps {
   onToggleOnline: () => void;
   offlineQueueCount: number;
   onOpenSyncModal: () => void;
+  onRefresh: () => void;
+  isRefreshing: boolean;
 }
 
 interface NavItem {
@@ -39,6 +41,8 @@ export const Navbar: React.FC<NavbarProps> = ({
   isOnline,
   offlineQueueCount,
   onOpenSyncModal,
+  onRefresh,
+  isRefreshing,
 }) => {
   const role = currentUser.role;
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -275,7 +279,18 @@ export const Navbar: React.FC<NavbarProps> = ({
 
             {/* ── Right Controls & Badges ── */}
             <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
-              
+
+              {/* Manual Refresh Button */}
+              <button
+                onClick={onRefresh}
+                disabled={isRefreshing}
+                aria-label="Refresh data"
+                title="Refresh data from server"
+                className="flex items-center justify-center w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-white/[0.04] border border-white/10 hover:bg-emerald-950/50 hover:border-emerald-500/30 text-slate-400 hover:text-emerald-400 transition-all duration-200 cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 shrink-0"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? 'animate-spin text-emerald-400' : ''}`} />
+              </button>
+
               {/* Online/Offline Status Indicator */}
               <button
                 onClick={onOpenSyncModal}
