@@ -255,9 +255,17 @@ export const MobileRegistrationApp: React.FC<MobileRegistrationAppProps> = ({
     }
   };
 
-  // GPS Capture Handler — multi-sample weighted average for maximum precision
-  // Collects up to REQUIRED_SAMPLES readings ≤ MAX_ACCEPT_ACCURACY m,
-  // then computes an inverse-square-weighted average of lat/lng.
+  // GPS Capture Handler
+  // ── Strategy ──────────────────────────────────────────────────────────────
+  //  Mobile (GPS chip):   accuracy typically 3–30 m
+  //    → Instant-accept at ≤8 m, or collect 3 readings ≤30 m then average.
+  //    → Quick-accept after 8 s if any reading ≤100 m (avoids long rural wait).
+  //
+  //  Laptop (WiFi/IP):    accuracy typically 100–5000 m
+  //    → Every reading still added to samples (no rejection filter).
+  //    → After 20 s hard timeout, use the weighted average of ALL collected.
+  //    → gpsIsFallback flag set → form shows "⚠ Approximate location" warning.
+  // ──────────────────────────────────────────────────────────────────────────
   const handleCaptureGPS = () => {
     setIsLocating(true);
     setGpsError(null);
@@ -265,9 +273,9 @@ export const MobileRegistrationApp: React.FC<MobileRegistrationAppProps> = ({
     setGpsData(null);
     setGpsLiveAccuracy(null);
     setGpsSampleCount(0);
+    setGpsIsFallback(false);
 
     const useMockGps = import.meta.env.DEV && import.meta.env.VITE_ENABLE_MOCK_GPS === 'true';
-
     if (useMockGps) {
       setTimeout(async () => {
         await processCapturedGPS(17.5812, 78.1084, 4);
@@ -279,107 +287,133 @@ export const MobileRegistrationApp: React.FC<MobileRegistrationAppProps> = ({
     }
 
     if (!navigator.geolocation) {
-      setGpsError('GPS Location is mandatory. Please check your browser/device permissions and try again.');
+      setGpsError('Location services are not supported by this browser. Please use Chrome or Firefox on your device.');
       setIsLocating(false);
       return;
     }
 
-    const REQUIRED_SAMPLES = 5;    // collect this many good samples before averaging
-    const MAX_ACCEPT_ACCURACY = 30; // only accept readings ≤ 30 m
-    const INSTANT_ACCEPT = 8;       // if ≤ 8 m, accept immediately (excellent lock)
-    const HARD_TIMEOUT_MS = 30000;  // 30 s max wait
+    const INSTANT_ACCEPT_M    = 8;     // ≤8 m  → accept immediately (excellent GPS lock)
+    const GOOD_ACCURACY_M     = 30;    // ≤30 m → counts as a "good" sample
+    const REQUIRED_GOOD       = 3;     // need 3 good samples before computing average
+    const QUICK_ACCEPT_M      = 100;   // ≤100 m → acceptable after quick-accept delay
+    const QUICK_ACCEPT_DELAY  = 8000;  // 8 s  → trigger quick-accept check
+    const HARD_TIMEOUT_MS     = 20000; // 20 s → use whatever we have
 
     const samples: { lat: number; lng: number; acc: number }[] = [];
+    let goodSampleCount = 0;
     let watchId: number | null = null;
     let settled = false;
 
-    // Weighted-average the collected samples (weight = 1 / acc²)
-    const computeWeightedAvg = () => {
-      let wLat = 0, wLng = 0, totalWeight = 0;
-      for (const s of samples) {
+    // Weighted average: better (lower acc) readings have higher weight (1/acc²)
+    const computeWeightedAvg = (pool: typeof samples) => {
+      let wLat = 0, wLng = 0, totalW = 0;
+      for (const s of pool) {
         const w = 1 / (s.acc * s.acc);
-        wLat += s.lat * w;
-        wLng += s.lng * w;
-        totalWeight += w;
+        wLat += s.lat * w; wLng += s.lng * w; totalW += w;
       }
       return {
-        lat: Number((wLat / totalWeight).toFixed(6)),
-        lng: Number((wLng / totalWeight).toFixed(6)),
-        acc: Math.round(samples.reduce((mn, s) => Math.min(mn, s.acc), Infinity)),
+        lat: Number((wLat / totalW).toFixed(6)),
+        lng: Number((wLng / totalW).toFixed(6)),
+        acc: Math.round(pool.reduce((mn, s) => Math.min(mn, s.acc), Infinity)),
       };
     };
 
-    const finish = async (lat: number, lng: number, acc: number) => {
-      if (settled) return;
-      settled = true;
-      if (watchId !== null) navigator.geolocation.clearWatch(watchId);
-      clearTimeout(giveUpTimer);
+    const cleanup = () => {
+      if (watchId !== null) { navigator.geolocation.clearWatch(watchId); watchId = null; }
+      clearTimeout(hardTimer);
+      clearTimeout(quickTimer);
       setGpsLiveAccuracy(null);
       setGpsSampleCount(0);
-      await processCapturedGPS(lat, lng, acc);
+    };
+
+    const finish = async (pool: typeof samples, isApproximate: boolean) => {
+      if (settled) return;
+      settled = true;
+      cleanup();
+      const avg = computeWeightedAvg(pool);
+      setGpsIsFallback(isApproximate);
+      await processCapturedGPS(avg.lat, avg.lng, avg.acc);
       setIsLocating(false);
     };
 
-    // Hard timeout — use best weighted average we have
-    const giveUpTimer = setTimeout(() => {
+    // Quick-accept: after 8 s, if we have any reading ≤100 m — use it now
+    const quickTimer = setTimeout(() => {
+      if (settled) return;
+      const quickPool = samples.filter(s => s.acc <= QUICK_ACCEPT_M);
+      if (quickPool.length > 0) {
+        finish(quickPool, quickPool[0].acc > GOOD_ACCURACY_M);
+      }
+      // else: keep waiting for hard timeout
+    }, QUICK_ACCEPT_DELAY);
+
+    // Hard timeout: use ALL collected samples (works for laptop WiFi location)
+    const hardTimer = setTimeout(() => {
       if (settled) return;
       if (samples.length > 0) {
-        const avg = computeWeightedAvg();
-        finish(avg.lat, avg.lng, avg.acc);
+        const isApprox = samples.every(s => s.acc > GOOD_ACCURACY_M);
+        finish(samples, isApprox);
       } else {
-        if (watchId !== null) navigator.geolocation.clearWatch(watchId);
+        cleanup();
         settled = true;
-        setGpsLiveAccuracy(null);
-        setGpsSampleCount(0);
-        setGpsError('GPS Location is mandatory. Please check your browser/device permissions and try again.');
+        setGpsError(
+          'Could not get your location. Please:\n' +
+          '• On laptop: Open browser site settings (🔒 icon in address bar) → Allow Location\n' +
+          '• On phone: Go to Settings → Apps → Browser → Permissions → Allow Location'
+        );
         setIsLocating(false);
       }
     }, HARD_TIMEOUT_MS);
 
     watchId = navigator.geolocation.watchPosition(
-      async (pos) => {
+      (pos) => {
         const lat = pos.coords.latitude;
         const lng = pos.coords.longitude;
         const acc = Math.round(pos.coords.accuracy);
 
-        // Always show live accuracy so user can see it improving
         setGpsLiveAccuracy(acc);
+        samples.push({ lat, lng, acc }); // accept ALL readings — never filter out
+        setGpsSampleCount(samples.length);
 
-        // Ignore very noisy readings
-        if (acc > MAX_ACCEPT_ACCURACY) return;
-
-        // Instant accept for extremely precise readings
-        if (acc <= INSTANT_ACCEPT) {
-          samples.push({ lat, lng, acc });
-          const avg = computeWeightedAvg();
-          setGpsSampleCount(samples.length);
-          await finish(avg.lat, avg.lng, avg.acc);
+        // ① Instant-accept: excellent GPS lock
+        if (acc <= INSTANT_ACCEPT_M) {
+          finish(samples, false);
           return;
         }
 
-        samples.push({ lat, lng, acc });
-        setGpsSampleCount(samples.length);
-
-        // Once we have enough good samples, compute the weighted average
-        if (samples.length >= REQUIRED_SAMPLES) {
-          const avg = computeWeightedAvg();
-          await finish(avg.lat, avg.lng, avg.acc);
+        // ② Good-sample counter: once we have 3 readings ≤30 m, average them
+        if (acc <= GOOD_ACCURACY_M) {
+          goodSampleCount++;
+          if (goodSampleCount >= REQUIRED_GOOD) {
+            const goodPool = samples.filter(s => s.acc <= GOOD_ACCURACY_M);
+            finish(goodPool, false);
+          }
         }
       },
-      (_err) => {
-        clearTimeout(giveUpTimer);
+      (err) => {
+        cleanup();
         if (!settled) {
           settled = true;
-          if (watchId !== null) navigator.geolocation.clearWatch(watchId);
-          setGpsLiveAccuracy(null);
-          setGpsSampleCount(0);
-          setGpsError('GPS Location is mandatory. Please check your browser/device permissions and try again.');
+          // Specific messages per error code
+          if (err.code === err.PERMISSION_DENIED) {
+            setGpsError(
+              '📵 Location permission denied.\n' +
+              'Click the 🔒 lock icon in your browser address bar → Site Settings → Allow Location, then try again.'
+            );
+          } else if (err.code === err.POSITION_UNAVAILABLE) {
+            setGpsError(
+              '📡 Location unavailable. Your device could not determine its position.\n' +
+              'On laptop, make sure Wi-Fi is enabled. On phone, enable GPS in Settings.'
+            );
+          } else {
+            setGpsError('Location timed out. Please try again in an open area with better signal.');
+          }
           setIsLocating(false);
         }
       },
-      { enableHighAccuracy: true, timeout: 30000, maximumAge: 0 }
+      { enableHighAccuracy: true, timeout: 20000, maximumAge: 0 }
     );
   };
+
 
   // Share GPS Location Link via Web Share API or Clipboard Fallback
   const handleShareLocation = async () => {
@@ -745,6 +779,12 @@ export const MobileRegistrationApp: React.FC<MobileRegistrationAppProps> = ({
                             <div><span className="text-slate-500">Lng:</span> {gpsData.longitude.toFixed(6)}</div>
                             <div className="col-span-2 text-slate-500">Accuracy: ±{Math.round(gpsData.accuracy)}m</div>
                           </div>
+                          {gpsIsFallback && (
+                            <div className="flex items-center gap-1.5 text-xs bg-amber-50 border border-amber-200 text-amber-800 rounded-lg p-2">
+                              <AlertTriangle className="w-3.5 h-3.5 shrink-0 text-amber-600" />
+                              <span><strong>Approximate location</strong> — laptop/Wi-Fi GPS detected. Use a phone for precise field coordinates.</span>
+                            </div>
+                          )}
                         </div>
                       ) : (
                         <div className="space-y-3">
@@ -766,7 +806,7 @@ export const MobileRegistrationApp: React.FC<MobileRegistrationAppProps> = ({
                                   </span>
                                   {gpsSampleCount > 0 && (
                                     <span className="text-[10px] font-normal opacity-80">
-                                      Samples: {gpsSampleCount}/5 — averaging for precision
+                                      Samples: {gpsSampleCount}/3 — averaging for precision
                                     </span>
                                   )}
                                 </span>
