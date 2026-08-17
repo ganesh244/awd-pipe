@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useMemo } from 'react';
 import L from 'leaflet';
 import { AWDPipe, Installation, MonitoringRecord } from '../types';
 import {
@@ -33,68 +33,62 @@ export const InteractiveFieldMap: React.FC<InteractiveFieldMapProps> = ({
     lastMonitoring?: MonitoringRecord;
   } | null>(null);
 
-  // Extract unique villages
-  const villages = Array.from(
-    new Set(installations.map((i) => i.Village).filter(Boolean))
+  // useMemo: villages list — only recalc when installations change
+  const villages = useMemo(
+    () => Array.from(new Set(installations.map((i) => i.Village).filter(Boolean))),
+    [installations]
   );
 
-  // Map of coordinate occurrences to prevent identical coordinate stacking
-  const coordCounts = new Map<string, number>();
+  // useMemo: map marker data — only recalc when pipes/installations/monitoring change
+  const mapPipes = useMemo(() => {
+    const coordCounts = new Map<string, number>();
+    return pipes.map((pipe, idx) => {
+      const inst = installations.find((i) => i.Pipe_ID === pipe.Pipe_ID);
+      const lastMon = monitoringList
+        .filter((m) => m.Pipe_ID === pipe.Pipe_ID)
+        .sort((a, b) => new Date(b.Timestamp).getTime() - new Date(a.Timestamp).getTime())[0];
 
-  // Prepare map markers data combining installations & pipes
-  const mapPipes = pipes.map((pipe, idx) => {
-    const inst = installations.find((i) => i.Pipe_ID === pipe.Pipe_ID);
-    const lastMon = monitoringList
-      .filter((m) => m.Pipe_ID === pipe.Pipe_ID)
-      .sort((a, b) => new Date(b.Timestamp).getTime() - new Date(a.Timestamp).getTime())[0];
+      let lat = inst?.Latitude;
+      let lng = inst?.Longitude;
+      const hasValidGps = lat && lng && lat !== 0 && lng !== 0;
 
-    // Base coordinates
-    let lat = inst?.Latitude;
-    let lng = inst?.Longitude;
-
-    const hasValidGps = lat && lng && lat !== 0 && lng !== 0;
-
-    if (!hasValidGps) {
-      // Assign realistic staggered coordinates around Kandi, Sangareddy area
-      // Kandi village actual coords: 17.5812, 78.1084
-      const pipeIndex = parseInt(pipe.Pipe_ID.replace(/\D/g, ''), 10) || (idx + 1);
-      lat = 17.5700 + ((pipeIndex * 0.008) % 0.12);
-      lng = 78.0900 + ((pipeIndex * 0.010) % 0.15);
-    } else {
-      // Check if coordinates overlap with another pipe
-      const coordKey = `${lat.toFixed(4)},${lng.toFixed(4)}`;
-      const count = coordCounts.get(coordKey) || 0;
-      coordCounts.set(coordKey, count + 1);
-
-      if (count > 0) {
-        const angle = count * (Math.PI / 3);
-        const radius = 0.0022 * count;
-        lat = lat + Math.sin(angle) * radius;
-        lng = lng + Math.cos(angle) * radius;
+      if (!hasValidGps) {
+        // Staggered fallback coords around Kandi, Sangareddy (17.5812, 78.1084)
+        const pipeIndex = parseInt(pipe.Pipe_ID.replace(/\D/g, ''), 10) || (idx + 1);
+        lat = 17.5700 + ((pipeIndex * 0.008) % 0.12);
+        lng = 78.0900 + ((pipeIndex * 0.010) % 0.15);
+      } else {
+        // Offset overlapping coordinates
+        const coordKey = `${lat.toFixed(4)},${lng.toFixed(4)}`;
+        const count = coordCounts.get(coordKey) || 0;
+        coordCounts.set(coordKey, count + 1);
+        if (count > 0) {
+          const angle = count * (Math.PI / 3);
+          const radius = 0.0022 * count;
+          lat = lat + Math.sin(angle) * radius;
+          lng = lng + Math.cos(angle) * radius;
+        }
       }
-    }
 
-    return {
-      pipe,
-      installation: inst,
-      lastMonitoring: lastMon,
-      latitude: lat,
-      longitude: lng,
-    };
-  });
+      return { pipe, installation: inst, lastMonitoring: lastMon, latitude: lat, longitude: lng };
+    });
+  }, [pipes, installations, monitoringList]);
 
-  // Filter pipes
-  const filteredPipes = mapPipes.filter((mp) => {
-    const matchesSearch =
-      mp.pipe.Pipe_ID.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (mp.installation?.Farmer_Name || mp.pipe.Farmer_Name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (mp.installation?.Village || mp.pipe.Village || '').toLowerCase().includes(searchTerm.toLowerCase());
-
-    const matchesStatus = statusFilter === 'All' || mp.pipe.Status === statusFilter;
-    const matchesVillage = villageFilter === 'All' || mp.installation?.Village === villageFilter;
-
-    return matchesSearch && matchesStatus && matchesVillage;
-  });
+  // useMemo: filtered list — only recalc when filters/search/mapPipes change
+  // NOT when selectedPipeDetails changes → prevents fitBounds on pin click
+  const filteredPipes = useMemo(
+    () =>
+      mapPipes.filter((mp) => {
+        const matchesSearch =
+          mp.pipe.Pipe_ID.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          (mp.installation?.Farmer_Name || mp.pipe.Farmer_Name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+          (mp.installation?.Village || mp.pipe.Village || '').toLowerCase().includes(searchTerm.toLowerCase());
+        const matchesStatus = statusFilter === 'All' || mp.pipe.Status === statusFilter;
+        const matchesVillage = villageFilter === 'All' || mp.installation?.Village === villageFilter;
+        return matchesSearch && matchesStatus && matchesVillage;
+      }),
+    [mapPipes, searchTerm, statusFilter, villageFilter]
+  );
 
   // Initialize Map
   useEffect(() => {
