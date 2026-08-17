@@ -55,10 +55,11 @@ export const InteractiveFieldMap: React.FC<InteractiveFieldMapProps> = ({
     const hasValidGps = lat && lng && lat !== 0 && lng !== 0;
 
     if (!hasValidGps) {
-      // Assign realistic staggered coordinates around Telangana paddy belt
+      // Assign realistic staggered coordinates around Kandi, Sangareddy area
+      // Kandi village actual coords: 17.5812, 78.1084
       const pipeIndex = parseInt(pipe.Pipe_ID.replace(/\D/g, ''), 10) || (idx + 1);
-      lat = 18.2000 + ((pipeIndex * 0.038) % 0.45);
-      lng = 78.9000 + ((pipeIndex * 0.045) % 0.55);
+      lat = 17.5700 + ((pipeIndex * 0.008) % 0.12);
+      lng = 78.0900 + ((pipeIndex * 0.010) % 0.15);
     } else {
       // Check if coordinates overlap with another pipe
       const coordKey = `${lat.toFixed(4)},${lng.toFixed(4)}`;
@@ -105,8 +106,9 @@ export const InteractiveFieldMap: React.FC<InteractiveFieldMapProps> = ({
     }
 
     const map = L.map(mapContainerRef.current, {
-      center: [18.4386, 79.1288],
-      zoom: 9,
+      // Kandi, Sangareddy — confirmed GPS: 17.5812, 78.1084
+      center: [17.5812, 78.1084],
+      zoom: 12,
       attributionControl: false,
     });
 
@@ -116,7 +118,8 @@ export const InteractiveFieldMap: React.FC<InteractiveFieldMapProps> = ({
     const satelliteUrl = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';
 
     L.tileLayer(tileType === 'satellite' ? satelliteUrl : streetUrl, {
-      maxZoom: 19,
+      maxZoom: 21,
+      maxNativeZoom: 18, // ArcGIS satellite tiles only go to zoom 18 in rural India
     }).addTo(map);
 
     const layerGroup = L.layerGroup().addTo(map);
@@ -149,7 +152,8 @@ export const InteractiveFieldMap: React.FC<InteractiveFieldMapProps> = ({
     const satelliteUrl = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';
 
     L.tileLayer(tileType === 'satellite' ? satelliteUrl : streetUrl, {
-      maxZoom: 19,
+      maxZoom: 21,
+      maxNativeZoom: 18,
     }).addTo(map);
   }, [tileType]);
 

@@ -91,6 +91,8 @@ export const MobileRegistrationApp: React.FC<MobileRegistrationAppProps> = ({
   const [pipeSearch, setPipeSearch] = useState('');
   const [showPipeDropdown, setShowPipeDropdown] = useState(false);
   const [gpsIsFallback, setGpsIsFallback] = useState(false);
+  const [gpsLiveAccuracy, setGpsLiveAccuracy] = useState<number | null>(null); // live accuracy shown during capture
+  const [gpsSampleCount, setGpsSampleCount] = useState(0); // how many samples collected
 
   // Farmer Mode: 'new' or 'existing'
   const [farmerSelectionMode, setFarmerSelectionMode] = useState<'new' | 'existing'>('new');
@@ -253,42 +255,129 @@ export const MobileRegistrationApp: React.FC<MobileRegistrationAppProps> = ({
     }
   };
 
-  // GPS Capture Handler
+  // GPS Capture Handler — multi-sample weighted average for maximum precision
+  // Collects up to REQUIRED_SAMPLES readings ≤ MAX_ACCEPT_ACCURACY m,
+  // then computes an inverse-square-weighted average of lat/lng.
   const handleCaptureGPS = () => {
     setIsLocating(true);
     setGpsError(null);
     setGeoAutoFilledNotice(null);
     setGpsData(null);
+    setGpsLiveAccuracy(null);
+    setGpsSampleCount(0);
 
-    const useMockGps = import.meta.env.DEV && import.meta.env.VITE_ENABLE_MOCK_GPS === "true";
+    const useMockGps = import.meta.env.DEV && import.meta.env.VITE_ENABLE_MOCK_GPS === 'true';
 
     if (useMockGps) {
       setTimeout(async () => {
-        await processCapturedGPS(18.6184, 79.3783, 6);
+        await processCapturedGPS(17.5812, 78.1084, 4);
         setIsLocating(false);
-      }, 600);
+        setGpsLiveAccuracy(null);
+        setGpsSampleCount(0);
+      }, 800);
       return;
     }
 
     if (!navigator.geolocation) {
-      setGpsError("GPS Location is mandatory. Please check your browser/device permissions and try again.");
+      setGpsError('GPS Location is mandatory. Please check your browser/device permissions and try again.');
       setIsLocating(false);
       return;
     }
 
-    navigator.geolocation.getCurrentPosition(
+    const REQUIRED_SAMPLES = 5;    // collect this many good samples before averaging
+    const MAX_ACCEPT_ACCURACY = 30; // only accept readings ≤ 30 m
+    const INSTANT_ACCEPT = 8;       // if ≤ 8 m, accept immediately (excellent lock)
+    const HARD_TIMEOUT_MS = 30000;  // 30 s max wait
+
+    const samples: { lat: number; lng: number; acc: number }[] = [];
+    let watchId: number | null = null;
+    let settled = false;
+
+    // Weighted-average the collected samples (weight = 1 / acc²)
+    const computeWeightedAvg = () => {
+      let wLat = 0, wLng = 0, totalWeight = 0;
+      for (const s of samples) {
+        const w = 1 / (s.acc * s.acc);
+        wLat += s.lat * w;
+        wLng += s.lng * w;
+        totalWeight += w;
+      }
+      return {
+        lat: Number((wLat / totalWeight).toFixed(6)),
+        lng: Number((wLng / totalWeight).toFixed(6)),
+        acc: Math.round(samples.reduce((mn, s) => Math.min(mn, s.acc), Infinity)),
+      };
+    };
+
+    const finish = async (lat: number, lng: number, acc: number) => {
+      if (settled) return;
+      settled = true;
+      if (watchId !== null) navigator.geolocation.clearWatch(watchId);
+      clearTimeout(giveUpTimer);
+      setGpsLiveAccuracy(null);
+      setGpsSampleCount(0);
+      await processCapturedGPS(lat, lng, acc);
+      setIsLocating(false);
+    };
+
+    // Hard timeout — use best weighted average we have
+    const giveUpTimer = setTimeout(() => {
+      if (settled) return;
+      if (samples.length > 0) {
+        const avg = computeWeightedAvg();
+        finish(avg.lat, avg.lng, avg.acc);
+      } else {
+        if (watchId !== null) navigator.geolocation.clearWatch(watchId);
+        settled = true;
+        setGpsLiveAccuracy(null);
+        setGpsSampleCount(0);
+        setGpsError('GPS Location is mandatory. Please check your browser/device permissions and try again.');
+        setIsLocating(false);
+      }
+    }, HARD_TIMEOUT_MS);
+
+    watchId = navigator.geolocation.watchPosition(
       async (pos) => {
-        const lat = Number(pos.coords.latitude.toFixed(6));
-        const lng = Number(pos.coords.longitude.toFixed(6));
+        const lat = pos.coords.latitude;
+        const lng = pos.coords.longitude;
         const acc = Math.round(pos.coords.accuracy);
-        await processCapturedGPS(lat, lng, acc);
-        setIsLocating(false);
+
+        // Always show live accuracy so user can see it improving
+        setGpsLiveAccuracy(acc);
+
+        // Ignore very noisy readings
+        if (acc > MAX_ACCEPT_ACCURACY) return;
+
+        // Instant accept for extremely precise readings
+        if (acc <= INSTANT_ACCEPT) {
+          samples.push({ lat, lng, acc });
+          const avg = computeWeightedAvg();
+          setGpsSampleCount(samples.length);
+          await finish(avg.lat, avg.lng, avg.acc);
+          return;
+        }
+
+        samples.push({ lat, lng, acc });
+        setGpsSampleCount(samples.length);
+
+        // Once we have enough good samples, compute the weighted average
+        if (samples.length >= REQUIRED_SAMPLES) {
+          const avg = computeWeightedAvg();
+          await finish(avg.lat, avg.lng, avg.acc);
+        }
       },
-      async (err) => {
-        setGpsError("GPS Location is mandatory. Please check your browser/device permissions and try again.");
-        setIsLocating(false);
+      (_err) => {
+        clearTimeout(giveUpTimer);
+        if (!settled) {
+          settled = true;
+          if (watchId !== null) navigator.geolocation.clearWatch(watchId);
+          setGpsLiveAccuracy(null);
+          setGpsSampleCount(0);
+          setGpsError('GPS Location is mandatory. Please check your browser/device permissions and try again.');
+          setIsLocating(false);
+        }
       },
-      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+      { enableHighAccuracy: true, timeout: 30000, maximumAge: 0 }
     );
   };
 
@@ -667,7 +756,21 @@ export const MobileRegistrationApp: React.FC<MobileRegistrationAppProps> = ({
                               }`}
                           >
                             {isLocating ? (
-                              <><RefreshCw className="w-4 h-4 animate-spin" /> Locating...</>
+                              <>
+                                <RefreshCw className="w-4 h-4 animate-spin shrink-0" />
+                                <span className="flex flex-col items-start leading-tight text-left">
+                                  <span>
+                                    {gpsLiveAccuracy !== null
+                                      ? `Locking GPS... ±${gpsLiveAccuracy}m`
+                                      : 'Searching for GPS signal...'}
+                                  </span>
+                                  {gpsSampleCount > 0 && (
+                                    <span className="text-[10px] font-normal opacity-80">
+                                      Samples: {gpsSampleCount}/5 — averaging for precision
+                                    </span>
+                                  )}
+                                </span>
+                              </>
                             ) : (
                               <><MapPin className="w-4 h-4" /> Capture Current Location</>
                             )}
@@ -909,6 +1012,36 @@ export const MobileRegistrationApp: React.FC<MobileRegistrationAppProps> = ({
                           <option value="Cents">Cents</option>
                           <option value="Hectares">Hectares</option>
                         </select>
+                      </div>
+                    </div>
+
+                    {/* Crop & Variety */}
+                    <div className="grid grid-cols-2 gap-3 pt-2">
+                      <div className="min-w-0">
+                        <label className="block text-xs font-semibold text-slate-700 mb-1">Crop *</label>
+                        <select
+                          value={crop}
+                          onChange={(e) => setCrop(e.target.value)}
+                          className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-emerald-500 outline-none min-h-[44px] transition"
+                        >
+                          <option value="Paddy">🌾 Paddy</option>
+                          <option value="Maize">🌽 Maize</option>
+                          <option value="Cotton">🌿 Cotton</option>
+                          <option value="Groundnut">🥜 Groundnut</option>
+                          <option value="Soybean">🫘 Soybean</option>
+                          <option value="Sunflower">🌻 Sunflower</option>
+                          <option value="Other">Other</option>
+                        </select>
+                      </div>
+                      <div className="min-w-0">
+                        <label className="block text-xs font-semibold text-slate-700 mb-1">Variety</label>
+                        <input
+                          type="text"
+                          value={variety}
+                          onChange={(e) => setVariety(e.target.value)}
+                          placeholder="e.g. MTU-1010, BPT-5204"
+                          className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-emerald-500 outline-none min-h-[44px] transition"
+                        />
                       </div>
                     </div>
 

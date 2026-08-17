@@ -44,7 +44,8 @@ export const GpsFieldMiniMap: React.FC<GpsFieldMiniMapProps> = ({
     const satelliteUrl = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';
 
     const tileLayer = L.tileLayer(tileType === 'satellite' ? satelliteUrl : streetUrl, {
-      maxZoom: 19,
+      maxZoom: 21,
+      maxNativeZoom: 18, // prevent blank tiles at high zoom in rural areas
     });
 
     tileLayer.addTo(map);
