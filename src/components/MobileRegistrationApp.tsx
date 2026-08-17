@@ -255,17 +255,19 @@ export const MobileRegistrationApp: React.FC<MobileRegistrationAppProps> = ({
     }
   };
 
-  // GPS Capture Handler
-  // ── Strategy ──────────────────────────────────────────────────────────────
-  //  Mobile (GPS chip):   accuracy typically 3–30 m
-  //    → Instant-accept at ≤8 m, or collect 3 readings ≤30 m then average.
-  //    → Quick-accept after 8 s if any reading ≤100 m (avoids long rural wait).
+  // GPS Capture Handler — Dual-phase for laptop + mobile compatibility
+  // ─────────────────────────────────────────────────────────────────
+  // PHASE 1 (always): getCurrentPosition(enableHighAccuracy:false)
+  //   → Works on laptops (WiFi/IP), fast (2-4 s), accuracy 50-2000 m
   //
-  //  Laptop (WiFi/IP):    accuracy typically 100–5000 m
-  //    → Every reading still added to samples (no rejection filter).
-  //    → After 20 s hard timeout, use the weighted average of ALL collected.
-  //    → gpsIsFallback flag set → form shows "⚠ Approximate location" warning.
-  // ──────────────────────────────────────────────────────────────────────────
+  // PHASE 2 (always): watchPosition(enableHighAccuracy:true)
+  //   → Works on phones with GPS chip, accuracy 3-30 m
+  //   → On laptops: may fail immediately with POSITION_UNAVAILABLE — that
+  //     is fine because Phase 1 is already running as fallback.
+  //
+  // Both phases feed readings into the same sample pool.
+  // First to reach accept threshold wins; Phase 2 dominates via weighting.
+  // ─────────────────────────────────────────────────────────────────
   const handleCaptureGPS = () => {
     setIsLocating(true);
     setGpsError(null);
@@ -292,19 +294,20 @@ export const MobileRegistrationApp: React.FC<MobileRegistrationAppProps> = ({
       return;
     }
 
-    const INSTANT_ACCEPT_M    = 8;     // ≤8 m  → accept immediately (excellent GPS lock)
-    const GOOD_ACCURACY_M     = 30;    // ≤30 m → counts as a "good" sample
-    const REQUIRED_GOOD       = 3;     // need 3 good samples before computing average
-    const QUICK_ACCEPT_M      = 100;   // ≤100 m → acceptable after quick-accept delay
-    const QUICK_ACCEPT_DELAY  = 8000;  // 8 s  → trigger quick-accept check
-    const HARD_TIMEOUT_MS     = 20000; // 20 s → use whatever we have
+    const INSTANT_ACCEPT_M   = 8;     // ≤8 m  → accept immediately
+    const GOOD_ACCURACY_M    = 30;    // ≤30 m → "good" GPS sample
+    const REQUIRED_GOOD      = 3;     // need 3 good samples for precise average
+    const QUICK_ACCEPT_M     = 150;   // ≤150 m → accept after 6 s (covers laptop WiFi)
+    const QUICK_ACCEPT_DELAY = 6000;  // 6 s quick-accept window
+    const HARD_TIMEOUT_MS    = 18000; // 18 s absolute max
 
     const samples: { lat: number; lng: number; acc: number }[] = [];
     let goodSampleCount = 0;
     let watchId: number | null = null;
     let settled = false;
+    let phase1Done = false;
+    let phase2Failed = false;
 
-    // Weighted average: better (lower acc) readings have higher weight (1/acc²)
     const computeWeightedAvg = (pool: typeof samples) => {
       let wLat = 0, wLng = 0, totalW = 0;
       for (const s of pool) {
@@ -336,83 +339,101 @@ export const MobileRegistrationApp: React.FC<MobileRegistrationAppProps> = ({
       setIsLocating(false);
     };
 
-    // Quick-accept: after 8 s, if we have any reading ≤100 m — use it now
+    const showPermissionError = () => {
+      if (settled) return;
+      settled = true;
+      cleanup();
+      setGpsError(
+        '📵 Location permission denied.\n' +
+        'Click the 🔒 lock icon in your browser address bar → Site Settings → Allow Location, then try again.'
+      );
+      setIsLocating(false);
+    };
+
+    const showFinalError = () => {
+      if (settled) return;
+      settled = true;
+      cleanup();
+      setGpsError(
+        'Could not get your location.\n' +
+        '• On laptop: Click 🔒 in address bar → Allow Location, and make sure Wi-Fi is ON\n' +
+        '• On phone: Enable GPS in device Settings → Location'
+      );
+      setIsLocating(false);
+    };
+
+    // Shared reading handler — called by both Phase 1 and Phase 2
+    const onReading = (lat: number, lng: number, acc: number) => {
+      if (settled) return;
+      setGpsLiveAccuracy(acc);
+      samples.push({ lat, lng, acc });
+      setGpsSampleCount(samples.length);
+
+      // ① Instant-accept: excellent GPS (phone with clear sky)
+      if (acc <= INSTANT_ACCEPT_M) { finish(samples, false); return; }
+
+      // ② Collect good GPS samples, average when we have enough
+      if (acc <= GOOD_ACCURACY_M) {
+        goodSampleCount++;
+        if (goodSampleCount >= REQUIRED_GOOD) {
+          finish(samples.filter(s => s.acc <= GOOD_ACCURACY_M), false);
+        }
+      }
+    };
+
+    // Quick-accept: after 6 s check if we have any "usable" reading
     const quickTimer = setTimeout(() => {
       if (settled) return;
-      const quickPool = samples.filter(s => s.acc <= QUICK_ACCEPT_M);
-      if (quickPool.length > 0) {
-        finish(quickPool, quickPool[0].acc > GOOD_ACCURACY_M);
+      const usable = samples.filter(s => s.acc <= QUICK_ACCEPT_M);
+      if (usable.length > 0) {
+        finish(usable, usable.every(s => s.acc > GOOD_ACCURACY_M));
       }
-      // else: keep waiting for hard timeout
     }, QUICK_ACCEPT_DELAY);
 
-    // Hard timeout: use ALL collected samples (works for laptop WiFi location)
+    // Hard timeout: accept anything we have, or error
     const hardTimer = setTimeout(() => {
       if (settled) return;
       if (samples.length > 0) {
-        const isApprox = samples.every(s => s.acc > GOOD_ACCURACY_M);
-        finish(samples, isApprox);
+        finish(samples, samples.every(s => s.acc > GOOD_ACCURACY_M));
       } else {
-        cleanup();
-        settled = true;
-        setGpsError(
-          'Could not get your location. Please:\n' +
-          '• On laptop: Open browser site settings (🔒 icon in address bar) → Allow Location\n' +
-          '• On phone: Go to Settings → Apps → Browser → Permissions → Allow Location'
-        );
-        setIsLocating(false);
+        showFinalError();
       }
     }, HARD_TIMEOUT_MS);
 
-    watchId = navigator.geolocation.watchPosition(
+    // ── PHASE 1: Low-accuracy (WiFi/IP) — works on all devices including laptops ──
+    navigator.geolocation.getCurrentPosition(
       (pos) => {
-        const lat = pos.coords.latitude;
-        const lng = pos.coords.longitude;
-        const acc = Math.round(pos.coords.accuracy);
-
-        setGpsLiveAccuracy(acc);
-        samples.push({ lat, lng, acc }); // accept ALL readings — never filter out
-        setGpsSampleCount(samples.length);
-
-        // ① Instant-accept: excellent GPS lock
-        if (acc <= INSTANT_ACCEPT_M) {
-          finish(samples, false);
-          return;
-        }
-
-        // ② Good-sample counter: once we have 3 readings ≤30 m, average them
-        if (acc <= GOOD_ACCURACY_M) {
-          goodSampleCount++;
-          if (goodSampleCount >= REQUIRED_GOOD) {
-            const goodPool = samples.filter(s => s.acc <= GOOD_ACCURACY_M);
-            finish(goodPool, false);
-          }
-        }
+        phase1Done = true;
+        onReading(pos.coords.latitude, pos.coords.longitude, Math.round(pos.coords.accuracy));
       },
       (err) => {
-        cleanup();
-        if (!settled) {
-          settled = true;
-          // Specific messages per error code
-          if (err.code === err.PERMISSION_DENIED) {
-            setGpsError(
-              '📵 Location permission denied.\n' +
-              'Click the 🔒 lock icon in your browser address bar → Site Settings → Allow Location, then try again.'
-            );
-          } else if (err.code === err.POSITION_UNAVAILABLE) {
-            setGpsError(
-              '📡 Location unavailable. Your device could not determine its position.\n' +
-              'On laptop, make sure Wi-Fi is enabled. On phone, enable GPS in Settings.'
-            );
-          } else {
-            setGpsError('Location timed out. Please try again in an open area with better signal.');
-          }
-          setIsLocating(false);
-        }
+        phase1Done = true;
+        // Permission denied — stop everything, no point retrying
+        if (err.code === err.PERMISSION_DENIED) { showPermissionError(); }
+        // else: POSITION_UNAVAILABLE or timeout — Phase 2 may still succeed
       },
-      { enableHighAccuracy: true, timeout: 20000, maximumAge: 0 }
+      { enableHighAccuracy: false, timeout: 10000, maximumAge: 30000 }
+    );
+
+    // ── PHASE 2: High-accuracy (GPS chip) — best on phones, often fails on laptops ──
+    watchId = navigator.geolocation.watchPosition(
+      (pos) => {
+        onReading(pos.coords.latitude, pos.coords.longitude, Math.round(pos.coords.accuracy));
+      },
+      (err) => {
+        phase2Failed = true;
+        if (err.code === err.PERMISSION_DENIED) {
+          showPermissionError();
+          return;
+        }
+        // POSITION_UNAVAILABLE / timeout on laptop — Phase 1 is running as fallback
+        // The quickTimer and hardTimer will pick up Phase 1's readings
+        console.debug('[GPS] High-accuracy failed (expected on laptop):', err.message);
+      },
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
     );
   };
+
 
 
   // Share GPS Location Link via Web Share API or Clipboard Fallback
