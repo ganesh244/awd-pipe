@@ -295,9 +295,9 @@ export const MobileRegistrationApp: React.FC<MobileRegistrationAppProps> = ({
     }
 
     const INSTANT_ACCEPT_M   = 8;     // ≤8 m  → accept immediately
-    const GOOD_ACCURACY_M    = 30;    // ≤30 m → "good" GPS sample
+    const GOOD_ACCURACY_M    = 50;    // ≤50 m → "good" sample (covers WiFi-on-laptop too)
     const REQUIRED_GOOD      = 3;     // need 3 good samples for precise average
-    const QUICK_ACCEPT_M     = 150;   // ≤150 m → accept after 6 s (covers laptop WiFi)
+    const QUICK_ACCEPT_M     = 200;   // ≤200 m → accept after 6 s (covers all WiFi scenarios)
     const QUICK_ACCEPT_DELAY = 6000;  // 6 s quick-accept window
     const HARD_TIMEOUT_MS    = 18000; // 18 s absolute max
 
