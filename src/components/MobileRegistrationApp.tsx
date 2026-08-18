@@ -1076,31 +1076,22 @@ export const MobileRegistrationApp: React.FC<MobileRegistrationAppProps> = ({
                       </div>
                     </div>
 
-                    {/* Crop & Variety */}
-                    <div className="grid grid-cols-2 gap-3 pt-2">
-                      <div className="min-w-0">
-                        <label className="block text-xs font-semibold text-slate-700 mb-1">Crop *</label>
-                        <select
-                          value={crop}
-                          onChange={(e) => setCrop(e.target.value)}
-                          className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-emerald-500 outline-none min-h-[44px] transition"
-                        >
-                          <option value="Paddy">🌾 Paddy</option>
-                          <option value="Maize">🌽 Maize</option>
-                          <option value="Cotton">🌿 Cotton</option>
-                          <option value="Groundnut">🥜 Groundnut</option>
-                          <option value="Soybean">🫘 Soybean</option>
-                          <option value="Sunflower">🌻 Sunflower</option>
-                          <option value="Other">Other</option>
-                        </select>
+                    {/* Crop & Variety — AWD is exclusively for Paddy */}
+                    <div className="space-y-3 pt-2">
+                      <div className="flex items-center gap-2">
+                        <label className="text-xs font-semibold text-slate-700">Crop</label>
+                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-100 text-emerald-800 text-xs font-bold border border-emerald-300">
+                          🌾 Paddy
+                        </span>
+                        <span className="text-[10px] text-slate-400 italic">(AWD is designed exclusively for Paddy)</span>
                       </div>
                       <div className="min-w-0">
-                        <label className="block text-xs font-semibold text-slate-700 mb-1">Variety</label>
+                        <label className="block text-xs font-semibold text-slate-700 mb-1">Paddy Variety</label>
                         <input
                           type="text"
                           value={variety}
                           onChange={(e) => setVariety(e.target.value)}
-                          placeholder="e.g. MTU-1010, BPT-5204"
+                          placeholder="e.g. MTU-1010, BPT-5204, Samba Mahsuri"
                           className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-emerald-500 outline-none min-h-[44px] transition"
                         />
                       </div>
