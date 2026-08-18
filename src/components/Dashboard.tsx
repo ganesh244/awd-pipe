@@ -459,30 +459,44 @@ export const Dashboard: React.FC<DashboardProps> = ({ pipes, installations, moni
           {/* Establishment Method */}
           <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm">
             <SectionTitle icon={PieChart} title="Establishment Methods" sub="By pipe count and acreage" />
-            <div className="space-y-4">
-              {['Dry DSR', 'Wet DSR', 'TPR'].map((method, idx) => {
-                const count = methodStats[method] || 0;
-                const acres = methodAcres[method] || 0;
-                const pct = totalInstalled > 0 ? Math.round((count / totalInstalled) * 100) : 0;
-                const colors = ['bg-emerald-500', 'bg-teal-500', 'bg-blue-500'];
-                return (
-                  <div key={method} className="space-y-1.5">
-                    <div className="flex justify-between items-center text-xs font-semibold text-slate-700">
-                      <div className="flex items-center gap-2">
-                        <span className={`w-2.5 h-2.5 rounded-full ${colors[idx]}`} />
-                        {method}
+            <div className="space-y-3 mt-1">
+              {(() => {
+                const ALL_METHODS = ['Dry DSR', 'Wet DSR', 'Machine Transplanting', 'Manual Transplanting', 'Broadcast', 'TPR'];
+                // Also include any unexpected method values that appear in real data
+                const extraMethods = Object.keys(methodStats).filter(m => !ALL_METHODS.includes(m));
+                const methods = [...ALL_METHODS, ...extraMethods];
+                const COLORS = [
+                  'bg-emerald-500', 'bg-teal-500', 'bg-blue-500',
+                  'bg-indigo-500',  'bg-violet-500', 'bg-amber-500',
+                  'bg-rose-500',    'bg-cyan-500',
+                ];
+                return methods.map((method, idx) => {
+                  const count = methodStats[method] || 0;
+                  const acres = methodAcres[method] || 0;
+                  const pct = totalInstalled > 0 ? Math.round((count / totalInstalled) * 100) : 0;
+                  const color = COLORS[idx % COLORS.length];
+                  return (
+                    <div key={method} className="space-y-1.5">
+                      <div className="flex justify-between items-center text-xs font-semibold text-slate-700">
+                        <div className="flex items-center gap-2">
+                          <span className={`w-2.5 h-2.5 rounded-full ${count === 0 ? 'bg-slate-200' : color}`} />
+                          <span className={count === 0 ? 'text-slate-400' : ''}>{method}</span>
+                        </div>
+                        <span className={count === 0 ? 'text-slate-300' : 'text-slate-500'}>
+                          {count} pipes · {acres.toFixed(1)} Ac · <span className={`font-bold ${count === 0 ? 'text-slate-300' : 'text-slate-800'}`}>{pct}%</span>
+                        </span>
                       </div>
-                      <span className="text-slate-500">{count} pipes · {acres.toFixed(1)} Ac · <span className="font-bold text-slate-800">{pct}%</span></span>
+                      <ProgressBar pct={pct} color={count === 0 ? 'bg-slate-100' : color} />
                     </div>
-                    <ProgressBar pct={pct} color={colors[idx]} />
-                  </div>
-                );
-              })}
-              <div className="mt-3 bg-emerald-50 border border-emerald-100 rounded-xl p-3 text-xs text-emerald-800 leading-relaxed">
-                <Lightbulb className="w-4 h-4 text-emerald-500 inline mr-1 -mt-0.5" /> <strong>DSR methods</strong> reduce water usage by up to 30% vs traditional TPR transplanting.
+                  );
+                });
+              })()}
+              <div className="mt-2 bg-emerald-50 border border-emerald-100 rounded-xl p-3 text-xs text-emerald-800 leading-relaxed">
+                <Lightbulb className="w-4 h-4 text-emerald-500 inline mr-1 -mt-0.5" /> <strong>DSR methods</strong> reduce water usage by up to 30% vs transplanting (TPR / Manual / Machine).
               </div>
             </div>
           </div>
+
 
           {/* Water Level Distribution */}
           <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm">
