@@ -221,40 +221,76 @@ export const Dashboard: React.FC<DashboardProps> = ({ pipes, installations, moni
   }, [filteredMonitoring]);
 
   // ── Trend Data ───────────────────────────────────────────────────────────
-  const getStartOfWeek = (dStr: string) => {
-    const d = new Date(dStr);
-    if (isNaN(d.getTime())) return null;
-    d.setDate(d.getDate() - d.getDay()); // Sunday start
-    return d.toISOString().split('T')[0];
+  // Parse a YYYY-MM-DD string as LOCAL date (avoids UTC-midnight shifting dates by 1 day in IST)
+  const parseLocalDate = (dStr: string): Date | null => {
+    if (!dStr) return null;
+    // Handle both "YYYY-MM-DD" and "YYYY-MM-DD HH:mm:ss" (Timestamp format)
+    const datePart = dStr.split(' ')[0].split('T')[0];
+    const parts = datePart.split('-');
+    if (parts.length !== 3) return null;
+    const d = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+    return isNaN(d.getTime()) ? null : d;
   };
 
   const trendData = useMemo(() => {
-    const weeks: Record<string, { regs: number, visits: number, awdYes: number }> = {};
-    
+    // Collect all unique date strings from installations and monitoring
+    const allDates: Date[] = [
+      ...filteredInstallations.map(i => parseLocalDate(i.Installation_Date)),
+      ...filteredMonitoring.map(m => parseLocalDate(m.Visit_Date)),
+    ].filter((d): d is Date => d !== null);
+
+    if (allDates.length === 0) return [];
+
+    const minTime = Math.min(...allDates.map(d => d.getTime()));
+    const maxTime = Math.max(...allDates.map(d => d.getTime()));
+    const spanDays = (maxTime - minTime) / (1000 * 60 * 60 * 24);
+
+    // Use DAILY grouping when data spans ≤ 30 days, WEEKLY otherwise
+    const getGroupKey = (dStr: string): string | null => {
+      const d = parseLocalDate(dStr);
+      if (!d) return null;
+      if (spanDays <= 30) {
+        // Group by exact day: YYYY-MM-DD
+        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+      } else {
+        // Group by week start (Monday)
+        const day = d.getDay(); // 0=Sun
+        const diff = day === 0 ? -6 : 1 - day; // shift to Monday
+        const monday = new Date(d);
+        monday.setDate(d.getDate() + diff);
+        return `${monday.getFullYear()}-${String(monday.getMonth() + 1).padStart(2, '0')}-${String(monday.getDate()).padStart(2, '0')}`;
+      }
+    };
+
+    const buckets: Record<string, { regs: number; visits: number; awdYes: number }> = {};
+
     filteredInstallations.forEach(i => {
-      const w = getStartOfWeek(i.Installation_Date);
-      if (!w) return;
-      if (!weeks[w]) weeks[w] = { regs: 0, visits: 0, awdYes: 0 };
-      weeks[w].regs++;
+      const key = getGroupKey(i.Installation_Date);
+      if (!key) return;
+      if (!buckets[key]) buckets[key] = { regs: 0, visits: 0, awdYes: 0 };
+      buckets[key].regs++;
     });
-    
+
     filteredMonitoring.forEach(m => {
-      const w = getStartOfWeek(m.Visit_Date);
-      if (!w) return;
-      if (!weeks[w]) weeks[w] = { regs: 0, visits: 0, awdYes: 0 };
-      weeks[w].visits++;
-      if (m.AWD_Followed === 'Yes') weeks[w].awdYes++;
+      const key = getGroupKey(m.Visit_Date);
+      if (!key) return;
+      if (!buckets[key]) buckets[key] = { regs: 0, visits: 0, awdYes: 0 };
+      buckets[key].visits++;
+      if (m.AWD_Followed === 'Yes') buckets[key].awdYes++;
     });
-    
-    return Object.entries(weeks)
+
+    return Object.entries(buckets)
       .sort(([a], [b]) => a.localeCompare(b))
-      .map(([w, data]) => {
-        const dt = new Date(w);
+      .map(([key, data]) => {
+        const d = parseLocalDate(key)!;
+        const label = spanDays <= 30
+          ? d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })   // "17 Aug"
+          : `Wk ${d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })}`; // "Wk 11 Aug"
         return {
-          week: dt.toLocaleDateString('en-IN', { day: '2-digit', month: 'short' }),
-          rawDate: w,
+          week: label,
+          rawDate: key,
           Registrations: data.regs,
-          AWD_Compliance: data.visits > 0 ? Math.round((data.awdYes / data.visits) * 100) : 0
+          AWD_Compliance: data.visits > 0 ? Math.round((data.awdYes / data.visits) * 100) : 0,
         };
       });
   }, [filteredInstallations, filteredMonitoring]);
@@ -357,7 +393,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ pipes, installations, moni
 
         {/* ── Trend Over Time ── */}
         <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm">
-          <SectionTitle icon={TrendingUp} title="Registrations & Compliance Trends" sub="Weekly performance across selected region" />
+          <SectionTitle icon={TrendingUp} title="Registrations & Compliance Trends" sub="Daily activity across selected region" />
           {trendData.length === 0 ? (
             <div className="text-center py-10 text-slate-400 text-sm">No trend data available</div>
           ) : (
