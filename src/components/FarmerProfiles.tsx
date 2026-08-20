@@ -674,9 +674,12 @@ const PipeDetailCard: React.FC<{
                           <span className="text-blue-400 font-extrabold flex items-center gap-0.5"><ZoomIn className="w-3 h-3" /> Uncropped HD</span>
                         </div>
                         <div className="w-full flex items-center justify-center min-h-[120px] max-h-52 overflow-hidden bg-slate-900 rounded-lg p-1">
-                          <img
+                        <img
                             src={v.Photo_URL}
-                            alt="Visit"
+                            alt={`Field visit photo taken on ${formatDate(v.Visit_Date)} for pipe ${inst.Pipe_ID}`}
+                            loading="lazy"
+                            width="400"
+                            height="192"
                             className="max-h-48 max-w-full w-auto object-contain rounded group-hover:scale-[1.02] transition-transform duration-300"
                           />
                         </div>

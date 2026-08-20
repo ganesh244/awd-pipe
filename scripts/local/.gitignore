@@ -1,0 +1,6 @@
+# This entire folder is intentionally excluded from git.
+# Scripts here may contain personal usernames, database operations,
+# or other data that should never be pushed to the remote repository.
+*
+!.gitignore
+!README.md

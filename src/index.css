@@ -1,4 +1,6 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+/* ── Self-hosted Geist Variable Font (replaces Inter — design-taste-frontend rule) ── */
+@import "@fontsource-variable/geist";
+@import "@fontsource-variable/geist-mono";
 @import "tailwindcss";
 @import "leaflet/dist/leaflet.css";
 
@@ -24,11 +26,15 @@
 }
 
 :root {
-  --transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  /* Explicit properties only — "transition: all" is GPU-unsafe (Vercel guideline) */
+  --transition: color 0.2s, background-color 0.2s, border-color 0.2s,
+                opacity 0.2s, transform 0.2s, box-shadow 0.2s
+                cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 html {
-  font-family: 'Inter', system-ui, sans-serif;
+  /* Geist Variable — matches the dark-tech brand, no external request */
+  font-family: 'Geist Variable', 'Geist', system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   scroll-behavior: smooth;
@@ -38,6 +44,17 @@ body {
   background-color: #f8fafc;
   color: #0f172a;
   line-height: 1.5;
+}
+
+/* ── Heading typography — balance prevents widows (Vercel typography rule) ── */
+h1, h2, h3, h4 {
+  text-wrap: balance;
+}
+
+/* ── Tabular numbers — prevents width-jump on live data updates (Vercel rule) ── */
+.tabular-nums,
+[class*="font-mono"] {
+  font-variant-numeric: tabular-nums;
 }
 
 /* ── Scrollbar Hide Utility ── */
@@ -58,18 +75,18 @@ body {
   z-index: 1;
 }
 
-/* ── Animations ── */
+/* ── Animations (compositor-only: transform + opacity) ── */
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(8px); }
-  to   { opacity: 1; }
+  to   { opacity: 1; transform: translateY(0); }
 }
 @keyframes slideUp {
   from { opacity: 0; transform: translateY(16px); }
-  to   { opacity: 1; }
+  to   { opacity: 1; transform: translateY(0); }
 }
 @keyframes scaleIn {
   from { opacity: 0; transform: scale(0.95); }
-  to   { opacity: 1; }
+  to   { opacity: 1; transform: scale(1); }
 }
 @keyframes shimmer {
   0%   { background-position: -200% 0; }
@@ -85,12 +102,13 @@ body {
   50%       { transform: translateY(-6px); }
 }
 
-.animate-fadeIn  { animation: fadeIn  0.35s ease both; }
-.animate-slideUp { animation: slideUp 0.4s ease both; }
-.animate-scaleIn { animation: scaleIn 0.25s ease both; }
+.animate-fadeIn  { animation: fadeIn  0.35s cubic-bezier(0.4, 0, 0.2, 1) both; }
+.animate-slideUp { animation: slideUp 0.4s  cubic-bezier(0.4, 0, 0.2, 1) both; }
+.animate-scaleIn { animation: scaleIn 0.25s cubic-bezier(0.4, 0, 0.2, 1) both; }
 .animate-float   { animation: float 4s ease-in-out infinite; }
 .animate-pulse-ring { animation: pulse-ring 2s cubic-bezier(0.455, 0.03, 0.515, 0.955) infinite; }
 
+/* ── Reduced motion — collapses all animations (Vercel + design-taste rules) ── */
 @media (prefers-reduced-motion: reduce) {
   *, ::before, ::after {
     animation-duration: 0.01ms !important;
@@ -108,7 +126,7 @@ body {
   border-radius: 0.5rem;
 }
 
-/* ── Glassmorphism card ── */
+/* ── Glassmorphism card — ONLY use on fixed/sticky elements (high-end-visual-design rule) ── */
 .glass {
   background: rgba(255, 255, 255, 0.75);
   backdrop-filter: blur(16px);
@@ -122,22 +140,33 @@ body {
   border: 1px solid rgba(255, 255, 255, 0.07);
 }
 
-/* ── Premium card hover ── */
+/* ── Premium card hover — explicit properties only ── */
 .card-hover {
-  transition: var(--transition);
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+              box-shadow 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 .card-hover:hover {
   transform: translateY(-2px);
   box-shadow: 0 12px 32px -8px rgba(0, 0, 0, 0.12);
 }
 
-/* ── Input focus glow ── */
-input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-visible {
+/* ── Global focus ring — replaces outline: none safely (Vercel focus rule) ── */
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+button:focus-visible,
+a:focus-visible {
   outline: 2px solid #16a34a;
   outline-offset: 2px;
+  border-radius: 4px;
 }
-input:focus, select:focus, textarea:focus {
-  outline: none; /* Fallback for non-keyboard focus, managed by focus-visible if supported, or Tailwind rings */
+/* Suppress browser default focus ring on click (keyboard only via :focus-visible) */
+input:focus:not(:focus-visible),
+select:focus:not(:focus-visible),
+textarea:focus:not(:focus-visible),
+button:focus:not(:focus-visible),
+a:focus:not(:focus-visible) {
+  outline: none;
 }
 
 /* ── Button press effect ── */
@@ -162,7 +191,7 @@ input:focus, select:focus, textarea:focus {
 
 /* ── Page transition wrapper ── */
 .page-enter {
-  animation: fadeIn 0.3s ease both;
+  animation: fadeIn 0.3s cubic-bezier(0.4, 0, 0.2, 1) both;
 }
 
 /* ── Section divider ── */
@@ -189,7 +218,8 @@ input:focus, select:focus, textarea:focus {
   border-radius: 0.625rem;
   font-size: 0.8125rem;
   font-weight: 600;
-  transition: var(--transition);
+  transition: background-color 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+              color 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   border: none;
   background: transparent;
   color: #64748b;
@@ -209,7 +239,9 @@ input:focus, select:focus, textarea:focus {
   border: 1px solid #f1f5f9;
   border-radius: 1rem;
   padding: 1.25rem;
-  transition: var(--transition);
+  transition: border-color 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+              box-shadow 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+              transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 .stat-card:hover {
   border-color: #e2e8f0;
@@ -300,4 +332,3 @@ input, select, textarea {
     box-shadow: none;
   }
 }
-

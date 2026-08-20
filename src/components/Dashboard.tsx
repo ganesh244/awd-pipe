@@ -20,9 +20,10 @@ interface DashboardProps {
 }
 
 // ── Tiny bar helpers ────────────────────────────────────────────────────────
+// Monochromatic emerald scale — communicates quantity, not celebration (design-taste rule: max 1 accent)
 const BAR_COLORS = [
-  'bg-emerald-500','bg-teal-500','bg-blue-500','bg-violet-500',
-  'bg-amber-500','bg-rose-500','bg-indigo-500','bg-lime-500',
+  'bg-emerald-600','bg-emerald-500','bg-teal-600','bg-teal-500',
+  'bg-emerald-700','bg-teal-700','bg-emerald-400','bg-teal-400',
 ];
 const ProgressBar: React.FC<{ pct: number; color?: string; thin?: boolean }> = ({
   pct, color = 'bg-emerald-500', thin
@@ -49,8 +50,8 @@ const KPICard: React.FC<{
     <div className={`w-9 h-9 rounded-xl ${color} flex items-center justify-center mb-3`}>
       <Icon className="w-4.5 h-4.5 text-white w-5 h-5" />
     </div>
-    <div className="text-2xl font-black text-slate-800 tabular-nums">{value}</div>
-    <div className="text-xs font-bold text-slate-500 uppercase tracking-wider mt-0.5">{label}</div>
+    <div className="text-2xl font-black text-slate-800 tabular-nums" style={{ fontVariantNumeric: 'tabular-nums' }}>{value}</div>
+    <div className="text-xs font-bold text-slate-500 mt-0.5">{label}</div>
     {sub && <div className="text-xs text-slate-400 mt-0.5">{sub}</div>}
     {trend && (
       <div className={`flex items-center gap-1 mt-1.5 text-xs font-bold ${

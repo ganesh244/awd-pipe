@@ -51,10 +51,17 @@ export const Navbar: React.FC<NavbarProps> = ({
 
   const dropdownRef = useRef<HTMLDivElement>(null);
 
+  // IntersectionObserver sentinel — no setState on every scroll frame (Vercel perf rule)
   useEffect(() => {
-    const handler = () => setScrolled(window.scrollY > 4);
-    window.addEventListener('scroll', handler, { passive: true });
-    return () => window.removeEventListener('scroll', handler);
+    const sentinel = document.createElement('div');
+    sentinel.style.cssText = 'position:absolute;top:1px;left:0;width:1px;height:1px;pointer-events:none;';
+    document.body.prepend(sentinel);
+    const obs = new IntersectionObserver(
+      ([entry]) => setScrolled(!entry.isIntersecting),
+      { threshold: 0 }
+    );
+    obs.observe(sentinel);
+    return () => { obs.disconnect(); sentinel.remove(); };
   }, []);
 
   // Close dropdowns on outside click
@@ -197,7 +204,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                       <Icon className={`w-4 h-4 shrink-0 transition-transform duration-200 ${
                         isActive ? `${theme.text} scale-110` : 'text-slate-400 opacity-80'
                       }`} />
-                      <span>{item.label}</span>
+                      <span className="min-w-0 truncate">{item.label}</span>
                       {item.badge && (
                         <span className={`text-[9px] font-mono font-extrabold px-1.5 py-0.5 rounded-full ${
                           isActive
@@ -331,11 +338,12 @@ export const Navbar: React.FC<NavbarProps> = ({
               {/* Mobile Overflow Menu Toggle */}
               {mobileOverflowItems.length > 0 && (
                 <button
-                  className="lg:hidden p-2 rounded-xl bg-white/[0.04] border border-white/10 hover:bg-white/[0.08] text-slate-300 transition cursor-pointer min-w-[36px] min-h-[36px] flex items-center justify-center shrink-0"
+                  className="lg:hidden p-2 rounded-xl bg-white/[0.04] border border-white/10 hover:bg-white/[0.08] text-slate-300 transition cursor-pointer min-w-[36px] min-h-[36px] flex items-center justify-center shrink-0 focus-visible:outline-2 focus-visible:outline-emerald-500 focus-visible:outline-offset-2"
                   onClick={() => setMobileMenuOpen(v => !v)}
-                  aria-label="More navigation items"
+                  aria-label={mobileMenuOpen ? 'Close navigation menu' : 'Open more navigation items'}
+                  aria-expanded={mobileMenuOpen}
                 >
-                  {mobileMenuOpen ? <X className="w-5 h-5 text-white" /> : <Menu className="w-5 h-5 text-slate-300" />}
+                  {mobileMenuOpen ? <X className="w-5 h-5 text-white" aria-hidden="true" /> : <Menu className="w-5 h-5 text-slate-300" aria-hidden="true" />}
                 </button>
               )}
             </div>
@@ -424,14 +432,16 @@ export const Navbar: React.FC<NavbarProps> = ({
           {mobileOverflowItems.length > 0 && (
             <button
               onClick={() => setMobileMenuOpen(v => !v)}
-              className={`flex-1 flex flex-col items-center justify-center gap-0.5 py-1.5 transition-all cursor-pointer min-h-[54px] min-w-0 ${
+              aria-label={mobileMenuOpen ? 'Close more navigation' : 'Show more navigation'}
+              aria-expanded={mobileMenuOpen}
+              className={`flex-1 flex flex-col items-center justify-center gap-0.5 py-1.5 transition-all cursor-pointer min-h-[54px] min-w-0 focus-visible:outline-2 focus-visible:outline-emerald-500 ${
                 mobileMenuOpen || mobileOverflowItems.some(i => i.id === activeTab) ? 'opacity-100' : 'opacity-70 hover:opacity-100 hover:bg-white/[0.04]'
               }`}
             >
               <div className={`p-1 rounded-xl ${mobileMenuOpen ? 'bg-slate-800 text-white' : 'text-slate-400'}`}>
-                {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+                {mobileMenuOpen ? <X className="w-5 h-5" aria-hidden="true" /> : <Menu className="w-5 h-5" aria-hidden="true" />}
               </div>
-              <span className="text-[10px] font-extrabold tracking-tight text-slate-400 truncate w-full text-center px-0.5">More</span>
+              <span className="text-[10px] font-extrabold tracking-tight text-slate-400 truncate w-full text-center px-0.5" aria-hidden="true">More</span>
             </button>
           )}
         </div>

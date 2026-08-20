@@ -218,7 +218,14 @@ export const PipeInfoCard: React.FC<PipeInfoCardProps> = ({
                       className="w-full group relative overflow-hidden rounded-xl border border-slate-700 bg-slate-950 p-1.5 shadow-inner hover:border-emerald-400 transition-all cursor-pointer"
                     >
                       <div className="w-full flex items-center justify-center min-h-[140px] max-h-48 overflow-hidden bg-slate-900 rounded-lg p-1">
-                        <img src={installation.Photo_URL} alt="AWD Installation Photo" className="max-h-44 max-w-full w-auto object-contain rounded group-hover:scale-102 transition-transform duration-300" />
+                        <img
+                          src={installation.Photo_URL}
+                          alt={`AWD installation field photo for pipe ${pipe.Pipe_ID}`}
+                          loading="lazy"
+                          width="400"
+                          height="176"
+                          className="max-h-44 max-w-full w-auto object-contain rounded group-hover:scale-102 transition-transform duration-300"
+                        />
                       </div>
                       <div className="absolute inset-0 bg-slate-950/0 group-hover:bg-slate-950/30 transition-all flex items-center justify-center">
                         <ZoomIn className="w-7 h-7 text-white opacity-0 group-hover:opacity-100 transition-all drop-shadow-lg" />
@@ -310,7 +317,14 @@ export const PipeInfoCard: React.FC<PipeInfoCardProps> = ({
                       <div className="flex items-center gap-1 text-xs text-slate-400 font-bold uppercase tracking-wider px-2 pt-1.5 pb-1">
                         <Camera className="w-3 h-3" /> Visit Photo <ZoomIn className="w-3 h-3 ml-auto" />
                       </div>
-                      <img src={visit.Photo_URL} alt="Visit Photo" className="w-full h-32 object-cover group-hover:scale-105 transition-transform duration-300" />
+                      <img
+                        src={visit.Photo_URL}
+                        alt={`Monitoring visit photo for pipe ${pipe.Pipe_ID} on ${visit.Visit_Date}`}
+                        loading="lazy"
+                        width="400"
+                        height="128"
+                        className="w-full h-32 object-cover group-hover:scale-105 transition-transform duration-300"
+                      />
                       <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all flex items-center justify-center">
                         <ZoomIn className="w-6 h-6 text-white opacity-0 group-hover:opacity-100 transition-all drop-shadow-lg" />
                       </div>
