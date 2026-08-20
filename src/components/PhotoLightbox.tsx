@@ -1,5 +1,6 @@
 import React, { useEffect, useCallback, useState } from 'react';
-import { X, ZoomIn, ZoomOut, RotateCw, RefreshCw, Maximize2, Download, ExternalLink, ShieldCheck } from 'lucide-react';
+import { createPortal } from 'react-dom';
+import { X, ZoomIn, ZoomOut, RotateCw, RefreshCw, Download, ExternalLink, ShieldCheck } from 'lucide-react';
 
 interface PhotoLightboxProps {
   url: string;
@@ -29,6 +30,7 @@ export const PhotoLightbox: React.FC<PhotoLightboxProps> = ({ url, caption, onCl
 
   useEffect(() => {
     document.addEventListener('keydown', handleKeyDown);
+    // Prevent the page behind from scrolling
     document.body.style.overflow = 'hidden';
     return () => {
       document.removeEventListener('keydown', handleKeyDown);
@@ -44,7 +46,11 @@ export const PhotoLightbox: React.FC<PhotoLightboxProps> = ({ url, caption, onCl
     a.click();
   };
 
-  return (
+  // When zoom > 1 the user needs to pan, so we allow scroll inside the canvas.
+  // At default zoom (1) overflow-hidden prevents any spurious scrollbar.
+  const canvasOverflow = zoom > 1 ? 'overflow-auto' : 'overflow-hidden';
+
+  const modal = (
     <div
       className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-6 bg-slate-950/90 backdrop-blur-md animate-fadeIn"
       onClick={onClose}
@@ -52,13 +58,14 @@ export const PhotoLightbox: React.FC<PhotoLightboxProps> = ({ url, caption, onCl
       aria-modal="true"
       aria-label={caption ?? 'Full Resolution Field Photo'}
     >
-      {/* Lightbox Panel */}
+      {/* Lightbox Panel — stop clicks from closing when interacting with content */}
       <div
-        className="relative max-w-6xl w-full max-h-[92vh] flex flex-col items-center gap-3"
+        className="relative max-w-6xl w-full flex flex-col items-center gap-3"
+        style={{ maxHeight: '92dvh' }}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Top Action Bar */}
-        <div className="w-full flex items-center justify-between px-2 py-1 bg-slate-900/80 backdrop-blur-md rounded-2xl border border-slate-700/60 shadow-xl">
+        <div className="w-full flex items-center justify-between px-2 py-1 bg-slate-900/80 backdrop-blur-md rounded-2xl border border-slate-700/60 shadow-xl shrink-0">
           <div className="flex items-center gap-2 overflow-hidden mr-2">
             <span className="bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 text-xs font-black px-2 py-0.5 rounded-full flex items-center gap-1 uppercase tracking-wider shrink-0">
               <ShieldCheck className="w-3 h-3" /> Full HD Picture
@@ -149,10 +156,13 @@ export const PhotoLightbox: React.FC<PhotoLightboxProps> = ({ url, caption, onCl
           </div>
         </div>
 
-        {/* High Definition Interactive Image Canvas Box */}
-        <div className="w-full h-[78vh] overflow-auto rounded-2xl border border-slate-800 shadow-2xl bg-slate-950 flex items-center justify-center p-4 relative">
+        {/* Image Canvas — fills remaining height, scrollable only when zoomed in */}
+        <div
+          className={`w-full flex-1 min-h-0 rounded-2xl border border-slate-800 shadow-2xl bg-slate-950 flex items-center justify-center p-4 relative ${canvasOverflow}`}
+          style={{ maxHeight: 'calc(92dvh - 80px)' }}
+        >
           <div
-            className="transition-transform duration-200 flex items-center justify-center max-w-full max-h-full"
+            className="transition-transform duration-200 flex items-center justify-center"
             style={{
               transform: `scale(${zoom}) rotate(${rotation}deg)`,
               transformOrigin: 'center center',
@@ -161,18 +171,23 @@ export const PhotoLightbox: React.FC<PhotoLightboxProps> = ({ url, caption, onCl
             <img
               src={url}
               alt={caption ?? 'Full Resolution Field photo'}
-              className="max-w-full max-h-[72vh] object-contain rounded-lg shadow-2xl select-none"
-              style={{ display: 'block' }}
+              className="block max-w-full object-contain rounded-lg shadow-2xl select-none"
+              style={{ maxHeight: 'calc(92dvh - 120px)' }}
+              draggable={false}
             />
           </div>
         </div>
 
         {/* Bottom Bar Info */}
-        <div className="w-full flex items-center justify-between text-xs text-slate-400 font-medium px-2">
-          <span>Use zoom controls or scroll to view fine details • Double-click or click ESC to exit</span>
+        <div className="w-full flex items-center justify-between text-xs text-slate-400 font-medium px-2 shrink-0">
+          <span>Zoom in then scroll to pan • ESC or click outside to close</span>
           <span className="font-mono text-emerald-400">High Definition Picture Mode</span>
         </div>
       </div>
     </div>
   );
+
+  // Render into document.body so `fixed` positioning is never clipped
+  // by a parent overflow or transform context
+  return createPortal(modal, document.body);
 };
