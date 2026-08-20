@@ -6,3 +6,24 @@ coverage/
 *.log
 .env*
 !.env.example
+
+# ─── Database admin & one-off scripts (NEVER commit these) ───────────────────
+# These may contain hardcoded credentials, personal usernames, or
+# destructive operations. Keep them local only.
+fix_*.ts
+fix_*.js
+query_*.ts
+query_*.js
+seed_*.ts
+seed_*.js
+seed-*.js
+test_*.ts
+test_*.js
+*_admin.ts
+*_admin.js
+# Catch-all for any remaining one-off utility scripts at root level
+build_new_form.py
+form_generator*.py
+replace_classes.py
+update_mobile_reg.py
+update_typography.py
