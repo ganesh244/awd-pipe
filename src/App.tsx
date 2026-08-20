@@ -4,18 +4,18 @@ import { AWDPipe, Installation, MonitoringRecord, User, StateNode, DistrictNode,
 import { INITIAL_PIPES, INITIAL_INSTALLATIONS, INITIAL_MONITORING } from './data/initialData';
 import { INITIAL_STATES, INITIAL_DISTRICTS, INITIAL_AREAS, INITIAL_USERS } from './data/hierarchyData';
 import { Navbar } from './components/Navbar';
-import { MobileRegistrationApp } from './components/MobileRegistrationApp';
-import { InteractiveFieldMap } from './components/InteractiveFieldMap';
-import { Dashboard } from './components/Dashboard';
-import { PipeInventory } from './components/PipeInventory';
-import { PrintQRLabels } from './components/PrintQRLabels';
-import { AppsScriptCodeViewer } from './components/AppsScriptCodeViewer';
+const MobileRegistrationApp = React.lazy(() => import('./components/MobileRegistrationApp').then(m => ({ default: m.MobileRegistrationApp })));
+const InteractiveFieldMap = React.lazy(() => import('./components/InteractiveFieldMap').then(m => ({ default: m.InteractiveFieldMap })));
+const Dashboard = React.lazy(() => import('./components/Dashboard').then(m => ({ default: m.Dashboard })));
+const PipeInventory = React.lazy(() => import('./components/PipeInventory').then(m => ({ default: m.PipeInventory })));
+const PrintQRLabels = React.lazy(() => import('./components/PrintQRLabels').then(m => ({ default: m.PrintQRLabels })));
+const AppsScriptCodeViewer = React.lazy(() => import('./components/AppsScriptCodeViewer').then(m => ({ default: m.AppsScriptCodeViewer })));
 import { GenerateBatchModal } from './components/GenerateBatchModal';
-import { HierarchyManager } from './components/HierarchyManager';
+const HierarchyManager = React.lazy(() => import('./components/HierarchyManager').then(m => ({ default: m.HierarchyManager })));
 import { LoginScreen } from './components/auth/LoginScreen';
-import { ReportsExport } from './components/ReportsExport';
-import { FarmerProfiles } from './components/FarmerProfiles';
-import { Home } from './components/Home';
+const ReportsExport = React.lazy(() => import('./components/ReportsExport').then(m => ({ default: m.ReportsExport })));
+const FarmerProfiles = React.lazy(() => import('./components/FarmerProfiles').then(m => ({ default: m.FarmerProfiles })));
+const Home = React.lazy(() => import('./components/Home').then(m => ({ default: m.Home })));
 import { SyncQueueManager } from './components/SyncQueueManager';
 import { AppLoadingScreen } from './components/AppLoadingScreen';
 import { AdminDevToolsModal } from './components/AdminDevToolsModal';
@@ -1296,6 +1296,7 @@ export default function App() {
           (56px min-height) PLUS the iOS safe-area home-indicator inset, so
           content never sits behind it. */}
       <main className="flex-1 pb-[calc(5rem+env(safe-area-inset-bottom,0px))] lg:pb-4">
+        <React.Suspense fallback={<div className="h-[60vh] w-full flex flex-col items-center justify-center animate-pulse gap-3 text-slate-400"><div className="w-8 h-8 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin"></div><span className="text-sm font-medium">Loading module...</span></div>}>
         {activeTab === 'home' && (
           <Home
             currentUser={currentUser}
@@ -1474,6 +1475,7 @@ export default function App() {
         )}
 
         {activeTab === 'code' && <AppsScriptCodeViewer />}
+        </React.Suspense>
       </main>
 
       {/* Generate Authenticated QR Batch Modal */}
