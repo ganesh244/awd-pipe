@@ -1148,14 +1148,6 @@ export const MobileRegistrationApp: React.FC<MobileRegistrationAppProps> = ({
                         />
                       </div>
                       <div className="min-w-0">
-                        <CameraCapture 
-                          label="Installation Photo (Optional)"
-                          photoUrl={photoUrl}
-                          onPhotoCaptured={setPhotoUrl} 
-                          onPhotoRemoved={() => setPhotoUrl(undefined)}
-                        />
-                      </div>
-                      <div className="min-w-0">
                         <label className="block text-xs font-semibold text-slate-700 mb-1">Remarks</label>
                         <textarea
                           value={remarks}
@@ -1202,8 +1194,6 @@ export const MobileRegistrationApp: React.FC<MobileRegistrationAppProps> = ({
                         <div className="col-span-2 text-xs font-bold text-slate-500 uppercase tracking-wider border-b pb-1 mt-4 mb-1">Installation</div>
                         <div className="text-slate-500">Date</div>
                         <div className="font-semibold text-slate-800 text-right">{installationDate}</div>
-                        <div className="text-slate-500">Photo Attached</div>
-                        <div className="font-semibold text-slate-800 text-right">{photoUrl ? 'Yes' : 'No'}</div>
                       </div>
                     </div>
                   </div>
