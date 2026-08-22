@@ -173,9 +173,9 @@ const connectDB = async () => {
       serverSelectionTimeoutMS: 15000,
       connectTimeoutMS: 15000,
       heartbeatFrequencyMS: 10000,
-      maxPoolSize: 1,    // single socket — if it dies, one fresh replacement, no cascade
-      minPoolSize: 0,    // don't pre-create; create only when needed
-      maxIdleTimeMS: 20000,  // drop idle socket after 20s (before Atlas's 30s kill)
+      maxPoolSize: 5,    // 5 sockets — enough for parallel Promise.all queries
+      minPoolSize: 0,
+      maxIdleTimeMS: 20000,  // drop idle socket after 20s (before Atlas 30s kill)
       family: 4,
     });
     console.log('🟢 [MongoDB Atlas] Successfully connected to Cloud Database (Free 512MB Tier)!');
@@ -531,6 +531,13 @@ app.get('/api/admin/db-stats', authenticateToken, async (req, res) => {
 // multiple simultaneous MongoDB connections (which floods the M0 free tier)
 let initInFlight = null;
 
+// Server-side cache for /api/init — avoids re-querying MongoDB on every refresh.
+// Keyed by user role+scope so different users get correct scoped data.
+// Invalidated automatically on any write operation (install/pipe/user changes).
+const initCache = new Map(); // key → { data, expiresAt }
+const INIT_CACHE_TTL = 30 * 1000; // 30 seconds
+const invalidateInitCache = () => initCache.clear();
+
 // 1. GET /api/init -> Load all initial data for frontend
 app.get('/api/init', authenticateToken, async (req, res) => {
   try {
@@ -538,6 +545,13 @@ app.get('/api/init', authenticateToken, async (req, res) => {
       await connectDB();
     }
     const scope = await getScopeFilter(req.user);
+
+    // Serve from cache if fresh (avoids re-querying MongoDB on every UI refresh)
+    const cacheKey = `${req.user.role}|${req.user.id}`;
+    const cached = initCache.get(cacheKey);
+    if (cached && Date.now() < cached.expiresAt) {
+      return res.json(cached.data);
+    }
 
     if (isDbReady()) {
       // Use native driver (same as db-stats which always works)
@@ -567,7 +581,7 @@ app.get('/api/init', authenticateToken, async (req, res) => {
       const cleanDistricts = districts.map(({ _id, __v, ...rest }) => rest);
       const cleanAreas = areas.map(({ _id, __v, ...rest }) => rest);
 
-      return res.json({
+      const payload = {
         dbStatus: 'cloud',
         users: cleanUsers,
         pipes: cleanPipes,
@@ -576,7 +590,12 @@ app.get('/api/init', authenticateToken, async (req, res) => {
         states: cleanStates,
         districts: cleanDistricts,
         areas: cleanAreas,
-      });
+      };
+
+      // Cache the result for 30s
+      initCache.set(cacheKey, { data: payload, expiresAt: Date.now() + INIT_CACHE_TTL });
+
+      return res.json(payload);
     } else {
       // In-memory fallback
       const cleanUsers = inMemoryData.users.map(({ password, passwordHash, ...rest }) => rest);
@@ -614,7 +633,7 @@ app.post('/api/installations', authenticateToken, async (req, res) => {
         p.Pipe_ID === updatedPipe.Pipe_ID ? updatedPipe : p
       );
     }
-    res.json({ success: true, dbStatus: isMongoConnected ? 'cloud' : 'local' });
+    invalidateInitCache(); res.json({ success: true, dbStatus: isMongoConnected ? 'cloud' : 'local' });
   } catch (err) {
     console.error('Error saving installation:', err);
     res.status(500).json({ error: 'Failed to save installation' });
@@ -662,7 +681,7 @@ app.put('/api/installations/:pipeId', authenticateToken, async (req, res) => {
           : p
       );
     }
-    res.json({ success: true, dbStatus: isMongoConnected ? 'cloud' : 'local' });
+    invalidateInitCache(); res.json({ success: true, dbStatus: isMongoConnected ? 'cloud' : 'local' });
   } catch (err) {
     console.error('Error updating installation:', err);
     res.status(500).json({ error: 'Failed to update installation' });
@@ -744,7 +763,7 @@ app.delete('/api/installations/:pipeId', authenticateToken, async (req, res) => 
           : p
       );
     }
-    res.json({ success: true, dbStatus: isMongoConnected ? 'cloud' : 'local' });
+    invalidateInitCache(); res.json({ success: true, dbStatus: isMongoConnected ? 'cloud' : 'local' });
   } catch (err) {
     console.error('Error deleting installation:', err);
     res.status(500).json({ error: 'Failed to delete installation' });
@@ -778,7 +797,7 @@ app.delete('/api/installations/clear/all', authenticateToken, async (req, res, n
         Installation_Date: '',
       }));
     }
-    res.json({ success: true, dbStatus: isMongoConnected ? 'cloud' : 'local' });
+    invalidateInitCache(); res.json({ success: true, dbStatus: isMongoConnected ? 'cloud' : 'local' });
   } catch (err) {
     console.error('Error clearing all installations:', err);
     res.status(500).json({ error: 'Failed to clear test data' });
@@ -804,7 +823,7 @@ app.post('/api/monitoring', authenticateToken, async (req, res) => {
         );
       }
     }
-    res.json({ success: true, dbStatus: isMongoConnected ? 'cloud' : 'local' });
+    invalidateInitCache(); res.json({ success: true, dbStatus: isMongoConnected ? 'cloud' : 'local' });
   } catch (err) {
     console.error('Error saving monitoring record:', err);
     res.status(500).json({ error: 'Failed to save monitoring log' });
@@ -821,7 +840,7 @@ app.post('/api/pipes/batch', authenticateToken, async (req, res) => {
     } else {
       inMemoryData.pipes.unshift(...newPipes);
     }
-    res.json({ success: true, dbStatus: isMongoConnected ? 'cloud' : 'local' });
+    invalidateInitCache(); res.json({ success: true, dbStatus: isMongoConnected ? 'cloud' : 'local' });
   } catch (err) {
     console.error('Error saving batch pipes:', err);
     res.status(500).json({ error: 'Failed to save pipe batch' });
@@ -841,7 +860,7 @@ app.put('/api/pipes/:id', authenticateToken, async (req, res) => {
         p.Pipe_ID === pipeId ? { ...p, ...updates } : p
       );
     }
-    res.json({ success: true, dbStatus: isMongoConnected ? 'cloud' : 'local' });
+    invalidateInitCache(); res.json({ success: true, dbStatus: isMongoConnected ? 'cloud' : 'local' });
   } catch (err) {
     console.error('Error updating pipe:', err);
     res.status(500).json({ error: 'Failed to update pipe' });
@@ -860,7 +879,7 @@ app.put('/api/pipes/batch/rename', authenticateToken, async (req, res) => {
         p.Batch_No === oldBatchNo ? { ...p, Batch_No: newBatchNo } : p
       );
     }
-    res.json({ success: true, dbStatus: isMongoConnected ? 'cloud' : 'local' });
+    invalidateInitCache(); res.json({ success: true, dbStatus: isMongoConnected ? 'cloud' : 'local' });
   } catch (err) {
     console.error('Error renaming batch:', err);
     res.status(500).json({ error: 'Failed to rename batch' });
@@ -877,7 +896,7 @@ app.delete('/api/pipes/batch/:batchNo', authenticateToken, async (req, res) => {
     } else {
       inMemoryData.pipes = inMemoryData.pipes.filter((p) => p.Batch_No !== batchNo);
     }
-    res.json({ success: true, dbStatus: isMongoConnected ? 'cloud' : 'local' });
+    invalidateInitCache(); res.json({ success: true, dbStatus: isMongoConnected ? 'cloud' : 'local' });
   } catch (err) {
     console.error('Error deleting batch:', err);
     res.status(500).json({ error: 'Failed to delete batch' });
@@ -955,7 +974,7 @@ app.post('/api/users', authenticateToken, async (req, res) => {
       if (existingIdx >= 0) inMemoryData.users[existingIdx] = newUser;
       else inMemoryData.users.push(newUser);
     }
-    res.json({ success: true, dbStatus: isMongoConnected ? 'cloud' : 'local' });
+    invalidateInitCache(); res.json({ success: true, dbStatus: isMongoConnected ? 'cloud' : 'local' });
   } catch (err) {
     console.error('Error adding user:', err);
     res.status(500).json({ error: 'Failed to add user' });
@@ -982,7 +1001,7 @@ app.put('/api/users/:id', authenticateToken, async (req, res) => {
     } else {
       inMemoryData.users = inMemoryData.users.map((u) => (u.id === id ? updatedUser : u));
     }
-    res.json({ success: true, dbStatus: isMongoConnected ? 'cloud' : 'local' });
+    invalidateInitCache(); res.json({ success: true, dbStatus: isMongoConnected ? 'cloud' : 'local' });
   } catch (err) {
     console.error('Error updating user:', err);
     res.status(500).json({ error: 'Failed to update user' });
@@ -1004,7 +1023,7 @@ app.delete('/api/users/:id', authenticateToken, async (req, res) => {
       inMemoryData.districts = inMemoryData.districts.map(d => d.managerId === userId ? { ...d, managerId: '', managerName: '' } : d);
       inMemoryData.areas = inMemoryData.areas.map(a => a.managerId === userId ? { ...a, managerId: '', managerName: '' } : a);
     }
-    res.json({ success: true, dbStatus: isMongoConnected ? 'cloud' : 'local' });
+    invalidateInitCache(); res.json({ success: true, dbStatus: isMongoConnected ? 'cloud' : 'local' });
   } catch (err) {
     console.error('Error deleting user:', err);
     res.status(500).json({ error: 'Failed to delete user' });
@@ -1028,7 +1047,7 @@ app.put('/api/hierarchy/state', authenticateToken, async (req, res) => {
         area.stateName === req.body.previousName ? { ...area, stateName: name } : area
       );
     }
-    res.json({ success: true, dbStatus: isMongoConnected ? 'cloud' : 'local' });
+    invalidateInitCache(); res.json({ success: true, dbStatus: isMongoConnected ? 'cloud' : 'local' });
   } catch (err) {
     console.error('Error updating state:', err);
     res.status(500).json({ error: 'Failed to update state' });
@@ -1057,7 +1076,7 @@ app.put('/api/hierarchy/district', authenticateToken, async (req, res) => {
         );
       }
     }
-    res.json({ success: true, dbStatus: isMongoConnected ? 'cloud' : 'local' });
+    invalidateInitCache(); res.json({ success: true, dbStatus: isMongoConnected ? 'cloud' : 'local' });
   } catch (err) {
     console.error('Error updating district:', err);
     res.status(500).json({ error: 'Failed to update district' });
@@ -1083,7 +1102,7 @@ app.put('/api/hierarchy/area', authenticateToken, async (req, res) => {
         );
       }
     }
-    res.json({ success: true, dbStatus: isMongoConnected ? 'cloud' : 'local' });
+    invalidateInitCache(); res.json({ success: true, dbStatus: isMongoConnected ? 'cloud' : 'local' });
   } catch (err) {
     console.error('Error updating area:', err);
     res.status(500).json({ error: 'Failed to update area' });
@@ -1208,7 +1227,7 @@ app.delete('/api/hierarchy/states/:id', authenticateToken, async (req, res) => {
         );
       }
     }
-    res.json({ success: true, dbStatus: isMongoConnected ? 'cloud' : 'local' });
+    invalidateInitCache(); res.json({ success: true, dbStatus: isMongoConnected ? 'cloud' : 'local' });
   } catch (err) {
     console.error('Error deleting state:', err);
     res.status(500).json({ error: 'Failed to delete state' });
@@ -1257,7 +1276,7 @@ app.delete('/api/hierarchy/districts/:id', authenticateToken, async (req, res) =
         );
       }
     }
-    res.json({ success: true, dbStatus: isMongoConnected ? 'cloud' : 'local' });
+    invalidateInitCache(); res.json({ success: true, dbStatus: isMongoConnected ? 'cloud' : 'local' });
   } catch (err) {
     console.error('Error deleting district:', err);
     res.status(500).json({ error: 'Failed to delete district' });
@@ -1296,7 +1315,7 @@ app.delete('/api/hierarchy/areas/:id', authenticateToken, async (req, res) => {
         );
       }
     }
-    res.json({ success: true, dbStatus: isMongoConnected ? 'cloud' : 'local' });
+    invalidateInitCache(); res.json({ success: true, dbStatus: isMongoConnected ? 'cloud' : 'local' });
   } catch (err) {
     console.error('Error deleting area:', err);
     res.status(500).json({ error: 'Failed to delete area' });
