@@ -44,6 +44,11 @@ let inMemoryData = {
 
 let isMongoConnected = false;
 
+// Always check readyState directly — isMongoConnected flag can go stale
+// This mirrors exactly what db-stats does (and it works)
+const isDbReady = () => mongoose.connection.readyState === 1 && !!mongoose.connection.db;
+const getDb = () => mongoose.connection.db;
+
 // Mongoose Schemas & Models
 const UserSchema = new mongoose.Schema({
   id: { type: String, required: true, unique: true },
@@ -165,8 +170,13 @@ const connectDB = async () => {
 
   try {
     await mongoose.connect(mongoUri, {
-      serverSelectionTimeoutMS: 10000,
-      socketTimeoutMS: 45000,
+      serverSelectionTimeoutMS: 15000,
+      connectTimeoutMS: 15000,
+      heartbeatFrequencyMS: 10000,
+      maxPoolSize: 1,    // single socket — if it dies, one fresh replacement, no cascade
+      minPoolSize: 0,    // don't pre-create; create only when needed
+      maxIdleTimeMS: 20000,  // drop idle socket after 20s (before Atlas's 30s kill)
+      family: 4,
     });
     console.log('🟢 [MongoDB Atlas] Successfully connected to Cloud Database (Free 512MB Tier)!');
 
@@ -267,8 +277,13 @@ const getScopeFilter = async (user) => {
   }
 
   let allUsers = [];
-  if (isMongoConnected) {
-    allUsers = await User.find({}).lean();
+  if (isDbReady()) {
+    try {
+      allUsers = await getDb().collection('users').find({}).maxTimeMS(8000).toArray();
+    } catch (scopeErr) {
+      console.warn('[getScopeFilter] User query timed out, using in-memory fallback:', scopeErr.message);
+      allUsers = inMemoryData.users;
+    }
   } else {
     allUsers = inMemoryData.users;
   }
@@ -360,8 +375,11 @@ app.post('/api/login', loginLimiter, async (req, res) => {
   if (!username || !password) return res.status(400).json({ error: 'Required' });
   try {
     let user = null;
-    if (isMongoConnected) user = await User.findOne({ username: username.trim() }).lean();
-    else user = inMemoryData.users.find((u) => u.username === username.trim());
+    if (isDbReady()) {
+      user = await getDb().collection('users').findOne({ username: username.trim() }, { maxTimeMS: 8000 });
+    } else {
+      user = inMemoryData.users.find((u) => u.username === username.trim()) || null;
+    }
 
     if (!user) return res.status(401).json({ error: 'Invalid credentials' });
 
@@ -509,6 +527,10 @@ app.get('/api/admin/db-stats', authenticateToken, async (req, res) => {
   }
 });
 
+// Request coalescing for /api/init — prevent the frontend retry storm from opening
+// multiple simultaneous MongoDB connections (which floods the M0 free tier)
+let initInFlight = null;
+
 // 1. GET /api/init -> Load all initial data for frontend
 app.get('/api/init', authenticateToken, async (req, res) => {
   try {
@@ -517,20 +539,24 @@ app.get('/api/init', authenticateToken, async (req, res) => {
     }
     const scope = await getScopeFilter(req.user);
 
-    if (isMongoConnected) {
-      const users = await User.find({}).lean();
+    if (isDbReady()) {
+      // Use native driver (same as db-stats which always works)
+      // Run all 7 queries IN PARALLEL with Promise.all — saves 4-6s vs sequential
+      const MT = 30000; // 30s per query — accounts for slow India→Atlas latency on M0
+      const db = getDb();
       const pipeQuery = req.user.role === 'Admin' ? {} : {
-        $or: [
-          { Status: 'Available' },
-          scope.mongo
-        ]
+        $or: [{ Status: 'Available' }, scope.mongo]
       };
-      const pipes = await Pipe.find(pipeQuery).sort({ createdAt: -1 }).lean();
-      const installations = await Installation.find(scope.mongo).sort({ createdAt: -1 }).lean();
-      const monitoringList = await MonitoringRecord.find(scope.mongo).sort({ createdAt: -1 }).lean();
-      const states = await StateNode.find({}).lean();
-      const districts = await DistrictNode.find({}).lean();
-      const areas = await AreaNode.find({}).lean();
+
+      const [users, pipes, installations, monitoringList, states, districts, areas] = await Promise.all([
+        db.collection('users').find({}).maxTimeMS(MT).toArray(),
+        db.collection('pipes').find(pipeQuery).maxTimeMS(MT).toArray(),                              // no sort — frontend sorts; avoids full collection scan
+        db.collection('installations').find(scope.mongo, { projection: { Photo_URL: 0 } }).sort({ createdAt: -1 }).maxTimeMS(MT).toArray(),
+        db.collection('monitoringrecords').find(scope.mongo).sort({ createdAt: -1 }).maxTimeMS(MT).toArray(),
+        db.collection('statenodes').find({}).maxTimeMS(MT).toArray(),
+        db.collection('districtnodes').find({}).maxTimeMS(MT).toArray(),
+        db.collection('areanodes').find({}).maxTimeMS(MT).toArray(),
+      ]);
 
       // Clean _id and __v for clean frontend consumption, and REMOVE password hashes
       const cleanUsers = users.map(({ _id, __v, password, passwordHash, ...rest }) => rest);
@@ -640,6 +666,28 @@ app.put('/api/installations/:pipeId', authenticateToken, async (req, res) => {
   } catch (err) {
     console.error('Error updating installation:', err);
     res.status(500).json({ error: 'Failed to update installation' });
+  }
+});
+
+// 2b-photo. GET /api/installations/:pipeId/photo -> Fetch ONLY the Photo_URL for a specific installation
+// Photo_URL is a ~400KB base64 string — excluded from /api/init to keep startup fast.
+// The frontend fetches it lazily when the user opens a specific installation detail.
+app.get('/api/installations/:pipeId/photo', authenticateToken, async (req, res) => {
+  const targetId = decodeURIComponent(req.params.pipeId).trim();
+  try {
+    if (isDbReady()) {
+      const doc = await getDb().collection('installations').findOne(
+        { Pipe_ID: new RegExp(`^${targetId.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&')}$`, 'i') },
+        { projection: { Photo_URL: 1, _id: 0 } }
+      );
+      return res.json({ Photo_URL: doc?.Photo_URL || null });
+    } else {
+      const inst = inMemoryData.installations.find(i => i.Pipe_ID?.toLowerCase() === targetId.toLowerCase());
+      return res.json({ Photo_URL: inst?.Photo_URL || null });
+    }
+  } catch (err) {
+    console.error('Error fetching installation photo:', err);
+    res.status(500).json({ error: 'Failed to fetch photo' });
   }
 });
 

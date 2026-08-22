@@ -1,7 +1,14 @@
 import React, { useState } from 'react';
 import { AWDPipe, Installation, MonitoringRecord } from '../types';
-import { MapPin, Plus, CheckCircle2, UserCheck, ShieldAlert, History, Calendar, Sprout, Phone, ZoomIn, Camera, X } from 'lucide-react';
+import { MapPin, Plus, CheckCircle2, UserCheck, ShieldAlert, History, Calendar, Sprout, Phone, ZoomIn, Camera, X, Loader2 } from 'lucide-react';
 import { PhotoLightbox } from './PhotoLightbox';
+
+const apiFetch = (url: RequestInfo | URL, options?: RequestInit) => {
+  const token = localStorage.getItem('awd_auth_token');
+  const headers = new Headers(options?.headers);
+  if (token) headers.set('Authorization', `Bearer ${token}`);
+  return fetch(url, { ...options, headers });
+};
 
 interface PipeInfoCardProps {
   pipe: AWDPipe;
@@ -22,6 +29,29 @@ export const PipeInfoCard: React.FC<PipeInfoCardProps> = ({
 }) => {
   const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
   const [lightboxCaption, setLightboxCaption] = useState<string>('');
+  const [photoUrl, setPhotoUrl] = useState<string | null | undefined>(undefined); // undefined=not fetched, null=no photo
+  const [photoLoading, setPhotoLoading] = useState(false);
+
+  const handlePhotoClick = async () => {
+    // If already fetched or loading, open lightbox directly
+    if (photoLoading) return;
+    if (photoUrl !== undefined) {
+      if (photoUrl) openLightbox(photoUrl, `Installation Photo — ${pipe.Pipe_ID}`);
+      return;
+    }
+    // Lazy-fetch the photo on first click
+    setPhotoLoading(true);
+    try {
+      const res = await apiFetch(`/api/installations/${encodeURIComponent(installation.Pipe_ID)}/photo`);
+      const data = await res.json();
+      setPhotoUrl(data.Photo_URL || null);
+      if (data.Photo_URL) openLightbox(data.Photo_URL, `Installation Photo — ${pipe.Pipe_ID}`);
+    } catch {
+      setPhotoUrl(null);
+    } finally {
+      setPhotoLoading(false);
+    }
+  };
 
   const openLightbox = (url: string, caption: string) => {
     setLightboxUrl(url);
@@ -204,7 +234,8 @@ export const PipeInfoCard: React.FC<PipeInfoCardProps> = ({
                   <span className="text-slate-500">Irrigation Source</span>
                   <span className="font-semibold text-slate-800">{installation.Irrigation_Source}</span>
                 </div>
-                {installation.Photo_URL && (
+                {/* Photo section — lazy-loaded on first click to avoid sending 400KB on startup */}
+                {(installation.Photo_URL !== undefined || photoUrl !== null) && (
                   <div className="pt-2">
                     <div className="text-slate-400 text-xs mb-1.5 font-bold uppercase flex items-center gap-1">
                       <Camera className="w-3 h-3" /> Installation Field Photo
@@ -214,18 +245,39 @@ export const PipeInfoCard: React.FC<PipeInfoCardProps> = ({
                     </div>
                     <button
                       type="button"
-                      onClick={() => openLightbox(installation.Photo_URL!, `Installation Photo — ${pipe.Pipe_ID}`)}
+                      onClick={handlePhotoClick}
                       className="w-full group relative overflow-hidden rounded-xl border border-slate-700 bg-slate-950 p-1.5 shadow-inner hover:border-emerald-400 transition-all cursor-pointer"
                     >
                       <div className="w-full flex items-center justify-center min-h-[140px] max-h-48 overflow-hidden bg-slate-900 rounded-lg p-1">
-                        <img
-                          src={installation.Photo_URL}
-                          alt={`AWD installation field photo for pipe ${pipe.Pipe_ID}`}
-                          loading="lazy"
-                          width="400"
-                          height="176"
-                          className="max-h-44 max-w-full w-auto object-contain rounded group-hover:scale-102 transition-transform duration-300"
-                        />
+                        {photoLoading ? (
+                          <div className="flex flex-col items-center gap-2 text-slate-400">
+                            <Loader2 className="w-6 h-6 animate-spin" />
+                            <span className="text-xs">Loading photo...</span>
+                          </div>
+                        ) : photoUrl ? (
+                          <img
+                            src={photoUrl}
+                            alt={`AWD installation field photo for pipe ${pipe.Pipe_ID}`}
+                            loading="lazy"
+                            width="400"
+                            height="176"
+                            className="max-h-44 max-w-full w-auto object-contain rounded group-hover:scale-102 transition-transform duration-300"
+                          />
+                        ) : installation.Photo_URL ? (
+                          <img
+                            src={installation.Photo_URL}
+                            alt={`AWD installation field photo for pipe ${pipe.Pipe_ID}`}
+                            loading="lazy"
+                            width="400"
+                            height="176"
+                            className="max-h-44 max-w-full w-auto object-contain rounded group-hover:scale-102 transition-transform duration-300"
+                          />
+                        ) : (
+                          <div className="flex flex-col items-center gap-2 text-slate-500">
+                            <Camera className="w-6 h-6" />
+                            <span className="text-xs">Tap to load photo</span>
+                          </div>
+                        )}
                       </div>
                       <div className="absolute inset-0 bg-slate-950/0 group-hover:bg-slate-950/30 transition-all flex items-center justify-center">
                         <ZoomIn className="w-7 h-7 text-white opacity-0 group-hover:opacity-100 transition-all drop-shadow-lg" />

@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: awd-pipe-qr-system
+    runtime: node
+    region: singapore   # closest to India for low latency
+    plan: free
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: MONGODB_URI
+        sync: false   # set this manually in Render dashboard (secret)
+      - key: JWT_SECRET
+        sync: false   # set this manually in Render dashboard (secret)

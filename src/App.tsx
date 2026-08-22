@@ -419,14 +419,17 @@ export default function App() {
   useEffect(() => {
     let cancelled = false;
     let attempt = 0;
+    let isInFlight = false; // guard: only one /api/init in-flight at a time
 
     const attemptRefresh = () => {
+      if (isInFlight) return; // don't pile up parallel requests — wait for current one
+      isInFlight = true;
       refreshHierarchyFromServer()
         .then((data) => {
           if (cancelled) return;
           if (data?.dbStatus === 'local' && attempt < 5) {
             attempt += 1;
-            setTimeout(attemptRefresh, attempt * 3000); // 3s, 6s, 9s, 12s, 15s
+            setTimeout(attemptRefresh, attempt * 4000); // 4s, 8s, 12s, 16s, 20s
           }
         })
         .catch((err) => {
@@ -443,7 +446,7 @@ export default function App() {
           setDbStatus('local');
           if (attempt < 5) {
             attempt += 1;
-            setTimeout(attemptRefresh, attempt * 3000);
+            setTimeout(attemptRefresh, attempt * 4000);
           } else {
             // Fix #5: all retries exhausted — warn the user that they're seeing
             // cached data which may be out of date (e.g. newly added users won't appear)
@@ -452,7 +455,10 @@ export default function App() {
             }
           }
         })
-        .finally(() => setIsAppReady(true));
+        .finally(() => {
+          isInFlight = false;
+          setIsAppReady(true);
+        });
     };
 
     attemptRefresh();
