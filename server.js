@@ -8,13 +8,14 @@ import rateLimit from 'express-rate-limit';
 import crypto from 'crypto';
 import dns from 'dns';
 
-// Fix querySrv ETIMEOUT on local/macOS networks by setting public DNS servers in development
-if (process.env.NODE_ENV !== 'production') {
-  try {
-    dns.setServers(['8.8.8.8', '1.1.1.1']);
-  } catch (e) {
-    // Fail silently if environment doesn't allow custom DNS
-  }
+// Fix querySrv ETIMEOUT issues by setting public DNS servers.
+// Originally only applied in development, but the same SRV-lookup timeouts can
+// happen in production too (flaky ISP/network DNS resolvers) — so this now
+// always runs, everywhere, to remove DNS as a variable entirely.
+try {
+  dns.setServers(['8.8.8.8', '1.1.1.1']);
+} catch (e) {
+  // Fail silently if environment doesn't allow custom DNS
 }
 
 import { INITIAL_PIPES, INITIAL_INSTALLATIONS, INITIAL_MONITORING } from './src/data/initialData.ts';
