@@ -1,7 +1,6 @@
-/* ── Self-hosted Geist Variable Font — latin-only subset for this Indian-English app ── */
-/* Loading only latin prevents ~100 KB of Cyrillic/Vietnamese/Latin-Ext woff2 downloads */
-@import "@fontsource-variable/geist/index.css";
-@import "@fontsource-variable/geist-mono/index.css";
+/* ── Google Fonts: Outfit ── */
+/* @import "@fontsource-variable/geist/index.css"; */
+/* @import "@fontsource-variable/geist-mono/index.css"; */
 @import "tailwindcss";
 @import "leaflet/dist/leaflet.css";
 
@@ -15,14 +14,14 @@
   --color-primary-dark: #14532D;
   --color-secondary: #0F766E;
   --color-warning: #B45309;
-  --color-background: #F1F5F9;
+  --color-background: #F8F9FA; /* Softer, slightly warmer neutral */
   --color-surface: #FFFFFF;
-  --color-surface-alt: #F8FAFC;
-  --color-text-primary: #0F172A;
-  --color-text-secondary: #475569;
-  --color-text-muted: #94A3B8;
-  --color-border-light: #E2E8F0;
-  --color-border-strong: #CBD5E1;
+  --color-surface-alt: #F1F3F5; /* Subtle off-white for depth */
+  --color-text-primary: #111827; /* Richer charcoal, avoiding pure black */
+  --color-text-secondary: #4B5563;
+  --color-text-muted: #9CA3AF;
+  --color-border-light: #E5E7EB;
+  --color-border-strong: #D1D5DB;
   --color-focus-ring: #15803D;
 }
 
@@ -34,17 +33,17 @@
 }
 
 html {
-  /* Geist Variable — matches the dark-tech brand, no external request */
-  font-family: 'Geist Variable', 'Geist', system-ui, sans-serif;
+  font-family: 'Outfit', system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   scroll-behavior: smooth;
 }
 
 body {
-  background-color: #f8fafc;
-  color: #0f172a;
-  line-height: 1.5;
+  background-color: var(--color-background);
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.03'/%3E%3C/svg%3E");
+  color: var(--color-text-primary);
+  line-height: 1.6;
 }
 
 /* ── Heading typography — balance prevents widows (Vercel typography rule) ── */
@@ -133,26 +132,30 @@ h1, h2, h3, h4 {
 
 /* ── Glassmorphism card — ONLY use on fixed/sticky elements (high-end-visual-design rule) ── */
 .glass {
-  background: rgba(255, 255, 255, 0.75);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.5);
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6),
+              0 4px 6px -1px rgba(0, 0, 0, 0.05);
 }
 .glass-dark {
-  background: rgba(17, 24, 22, 0.85);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.07);
+  background: rgba(17, 24, 39, 0.75);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05),
+              0 4px 6px -1px rgba(0, 0, 0, 0.2);
 }
 
 /* ── Premium card hover — explicit properties only ── */
 .card-hover {
-  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1),
-              box-shadow 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1),
+              box-shadow 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 .card-hover:hover {
   transform: translateY(-2px);
-  box-shadow: 0 12px 32px -8px rgba(0, 0, 0, 0.12);
+  box-shadow: 0 12px 32px -8px rgba(30, 41, 59, 0.15); /* Tinted shadow instead of pure black */
 }
 
 /* ── Global focus ring — replaces outline: none safely (Vercel focus rule) ── */
@@ -175,7 +178,12 @@ a:focus:not(:focus-visible) {
 }
 
 /* ── Button press effect ── */
-.btn-press:active { transform: scale(0.97); }
+.btn-press {
+  transition: transform 0.15s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.btn-press:active { 
+  transform: scale(0.96); 
+}
 
 /* ── Gradient text ── */
 .gradient-text {

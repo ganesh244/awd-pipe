@@ -795,7 +795,7 @@ export const MobileRegistrationApp: React.FC<MobileRegistrationAppProps> = ({
                               Retake
                             </button>
                           </div>
-                          <div className="grid grid-cols-2 gap-2 text-xs font-mono bg-emerald-50 p-2 rounded-lg border border-emerald-100">
+                          <div className="grid grid-cols-2 gap-2 text-xs font-mono tabular-nums bg-emerald-50 p-2 rounded-lg border border-emerald-100">
                             <div><span className="text-slate-500">Lat:</span> {gpsData.latitude.toFixed(6)}</div>
                             <div><span className="text-slate-500">Lng:</span> {gpsData.longitude.toFixed(6)}</div>
                             <div className="col-span-2 text-slate-500">Accuracy: ±{Math.round(gpsData.accuracy)}m</div>
@@ -813,7 +813,7 @@ export const MobileRegistrationApp: React.FC<MobileRegistrationAppProps> = ({
                             type="button"
                             onClick={handleCaptureGPS}
                             disabled={isLocating}
-                            className={`w-full py-3 px-4 rounded-xl font-bold flex items-center justify-center gap-2 shadow-sm transition active:scale-[0.98] min-h-[44px] ${isLocating ? 'bg-slate-100 text-slate-500 cursor-not-allowed' : 'bg-slate-800 text-white hover:bg-slate-700'
+                            className={`btn-press w-full py-3 px-4 rounded-xl font-bold flex items-center justify-center gap-2 shadow-sm transition min-h-[44px] ${isLocating ? 'bg-slate-100 text-slate-500 cursor-not-allowed' : 'bg-slate-800 text-white hover:bg-slate-700'
                               }`}
                           >
                             {isLocating ? (
@@ -864,7 +864,7 @@ export const MobileRegistrationApp: React.FC<MobileRegistrationAppProps> = ({
                             value={village}
                             onChange={(e) => setVillage(e.target.value)}
                             placeholder="Village Name"
-                            className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-emerald-500 outline-none min-h-[44px] transition"
+                            className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none min-h-[44px] transition"
                           />
                         </div>
                         <div className="min-w-0">
@@ -876,7 +876,7 @@ export const MobileRegistrationApp: React.FC<MobileRegistrationAppProps> = ({
                             value={mandal}
                             onChange={(e) => setMandal(e.target.value)}
                             placeholder="Mandal Name"
-                            className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-emerald-500 outline-none min-h-[44px] transition"
+                            className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none min-h-[44px] transition"
                           />
                         </div>
                         <div className="col-span-2">
@@ -888,7 +888,7 @@ export const MobileRegistrationApp: React.FC<MobileRegistrationAppProps> = ({
                             value={district}
                             onChange={(e) => setDistrict(e.target.value)}
                             placeholder="District Name"
-                            className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-emerald-500 outline-none min-h-[44px] transition"
+                            className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none min-h-[44px] transition"
                           />
                         </div>
                       </div>
@@ -1002,7 +1002,7 @@ export const MobileRegistrationApp: React.FC<MobileRegistrationAppProps> = ({
                           onChange={(e) => setFarmerName(e.target.value)}
                           placeholder="Full Name"
                           disabled={farmerSelectionMode === 'existing'}
-                          className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-emerald-500 outline-none disabled:bg-slate-100 min-h-[44px] transition"
+                          className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none disabled:bg-slate-100 min-h-[44px] transition"
                         />
                       </div>
                       <div className="min-w-0">
@@ -1013,7 +1013,7 @@ export const MobileRegistrationApp: React.FC<MobileRegistrationAppProps> = ({
                           onChange={(e) => setMobile(e.target.value.replace(/\D/g, '').substring(0, 10))}
                           placeholder="10-digit mobile"
                           disabled={farmerSelectionMode === 'existing'}
-                          className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-emerald-500 outline-none disabled:bg-slate-100 min-h-[44px] transition"
+                          className="tabular-nums w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none disabled:bg-slate-100 min-h-[44px] transition"
                         />
                       </div>
                       <div className="min-w-0">
@@ -1024,7 +1024,7 @@ export const MobileRegistrationApp: React.FC<MobileRegistrationAppProps> = ({
                           onChange={(e) => setFarmerId(e.target.value)}
                           placeholder="State Farmer ID"
                           disabled={farmerSelectionMode === 'existing'}
-                          className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-emerald-500 outline-none disabled:bg-slate-100 min-h-[44px] transition"
+                          className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none disabled:bg-slate-100 min-h-[44px] transition"
                         />
                       </div>
                     </div>
@@ -1047,7 +1047,7 @@ export const MobileRegistrationApp: React.FC<MobileRegistrationAppProps> = ({
                           value={surveyNo}
                           onChange={(e) => setSurveyNo(e.target.value)}
                           placeholder="Survey number"
-                          className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-emerald-500 outline-none min-h-[44px] transition"
+                          className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none min-h-[44px] transition"
                         />
                       </div>
                       <div className="min-w-0">
@@ -1058,7 +1058,7 @@ export const MobileRegistrationApp: React.FC<MobileRegistrationAppProps> = ({
                           onChange={(e) => setPlotSize(e.target.value)}
                           min="0.1"
                           step="0.1"
-                          className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-emerald-500 outline-none min-h-[44px] transition"
+                          className="tabular-nums w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none min-h-[44px] transition"
                         />
                       </div>
                       <div className="min-w-0">
@@ -1066,7 +1066,7 @@ export const MobileRegistrationApp: React.FC<MobileRegistrationAppProps> = ({
                         <select
                           value={plotSizeUnit}
                           onChange={(e) => setPlotSizeUnit(e.target.value as PlotUnit)}
-                          className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-emerald-500 outline-none min-h-[44px] transition"
+                          className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none min-h-[44px] transition"
                         >
                           <option value="Acres">Acres</option>
                           <option value="Guntas">Guntas (గుంటలు)</option>
@@ -1092,7 +1092,7 @@ export const MobileRegistrationApp: React.FC<MobileRegistrationAppProps> = ({
                           value={variety}
                           onChange={(e) => setVariety(e.target.value)}
                           placeholder="e.g. MTU-1010, BPT-5204, Samba Mahsuri"
-                          className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-emerald-500 outline-none min-h-[44px] transition"
+                          className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none min-h-[44px] transition"
                         />
                       </div>
                     </div>
@@ -1103,7 +1103,7 @@ export const MobileRegistrationApp: React.FC<MobileRegistrationAppProps> = ({
                         <select
                           value={establishmentMethod}
                           onChange={(e) => setEstablishmentMethod(e.target.value as EstablishmentMethod)}
-                          className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-emerald-500 outline-none min-h-[44px] transition"
+                          className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none min-h-[44px] transition"
                         >
                           <option value="Dry DSR">Dry DSR</option>
                           <option value="Wet DSR">Wet DSR</option>
@@ -1118,7 +1118,7 @@ export const MobileRegistrationApp: React.FC<MobileRegistrationAppProps> = ({
                           type="date"
                           value={sowingDate}
                           onChange={(e) => setSowingDate(e.target.value)}
-                          className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-emerald-500 outline-none min-h-[44px] transition"
+                          className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none min-h-[44px] transition"
                         />
                       </div>
                       <div className="min-w-0">
@@ -1126,7 +1126,7 @@ export const MobileRegistrationApp: React.FC<MobileRegistrationAppProps> = ({
                         <select
                           value={irrigationSource}
                           onChange={(e) => setIrrigationSource(e.target.value as IrrigationSource)}
-                          className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-emerald-500 outline-none min-h-[44px] transition"
+                          className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none min-h-[44px] transition"
                         >
                           <option value="Borewell">Borewell</option>
                           <option value="Canal">Canal</option>
@@ -1144,7 +1144,7 @@ export const MobileRegistrationApp: React.FC<MobileRegistrationAppProps> = ({
                           type="date"
                           value={installationDate}
                           onChange={(e) => setInstallationDate(e.target.value)}
-                          className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-emerald-500 outline-none min-h-[44px] transition"
+                          className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none min-h-[44px] transition"
                         />
                       </div>
                       <div className="min-w-0">
@@ -1154,7 +1154,7 @@ export const MobileRegistrationApp: React.FC<MobileRegistrationAppProps> = ({
                           onChange={(e) => setRemarks(e.target.value)}
                           placeholder="Notes about the plot or installation..."
                           rows={2}
-                          className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-emerald-500 outline-none transition resize-none"
+                          className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition resize-none"
                         />
                       </div>
                     </div>
@@ -1208,7 +1208,7 @@ export const MobileRegistrationApp: React.FC<MobileRegistrationAppProps> = ({
                   <button
                     type="button"
                     onClick={handlePrevStep}
-                    className="w-1/3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-3 rounded-lg text-sm transition shadow-sm flex items-center justify-center min-h-[44px]"
+                    className="btn-press w-1/3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-3 rounded-lg text-sm transition shadow-sm flex items-center justify-center min-h-[44px]"
                   >
                     Back
                   </button>
@@ -1218,7 +1218,7 @@ export const MobileRegistrationApp: React.FC<MobileRegistrationAppProps> = ({
                   <button
                     type="button"
                     onClick={handleNextStep}
-                    className={`${currentStep > 1 ? 'w-2/3' : 'w-full'} bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-lg text-sm transition shadow-sm flex items-center justify-center gap-2 min-h-[44px]`}
+                    className={`btn-press ${currentStep > 1 ? 'w-2/3' : 'w-full'} bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-lg text-sm transition shadow-sm flex items-center justify-center gap-2 min-h-[44px]`}
                   >
                     {currentStep === 3 ? 'Review' : 'Next'} <ArrowRight className="w-4 h-4" />
                   </button>
@@ -1226,9 +1226,9 @@ export const MobileRegistrationApp: React.FC<MobileRegistrationAppProps> = ({
                   <button
                     type="submit"
                     disabled={isSubmitting}
-                    className={`w-2/3 font-extrabold rounded-lg text-sm py-3 transition shadow-md flex items-center justify-center gap-2 min-h-[44px] ${isSubmitting
+                    className={`btn-press w-2/3 font-extrabold rounded-lg text-sm py-3 transition shadow-md flex items-center justify-center gap-2 min-h-[44px] ${isSubmitting
                       ? 'bg-slate-400 text-white cursor-not-allowed'
-                      : 'bg-emerald-600 hover:bg-emerald-700 text-white active:scale-[0.98]'
+                      : 'bg-emerald-600 hover:bg-emerald-700 text-white'
                       }`}
                   >
                     {isSubmitting ? (

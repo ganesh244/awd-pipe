@@ -309,7 +309,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ pipes, installations, moni
 
   return (
     <div className="bg-slate-50 min-h-screen">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+      <div className="max-w-7xl mx-auto px-5 sm:px-8 lg:px-12 py-8 space-y-8">
 
         {/* ── Header ── */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
@@ -396,7 +396,11 @@ export const Dashboard: React.FC<DashboardProps> = ({ pipes, installations, moni
         <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm">
           <SectionTitle icon={TrendingUp} title="Registrations & Compliance Trends" sub="Daily activity across selected region" />
           {trendData.length === 0 ? (
-            <div className="text-center py-10 text-slate-400 text-sm">No trend data available</div>
+            <div className="flex flex-col items-center justify-center py-12 text-slate-400 bg-slate-50/30 rounded-xl mt-4 border border-slate-100 border-dashed">
+              <TrendingUp className="w-10 h-10 mb-3 text-slate-300" />
+              <div className="text-sm font-semibold">No trend data available</div>
+              <div className="text-xs mt-1 text-slate-400">Check back once registrations begin</div>
+            </div>
           ) : (
             <div className="h-64 w-full mt-4">
               <ResponsiveContainer width="100%" height="100%">
@@ -535,7 +539,10 @@ export const Dashboard: React.FC<DashboardProps> = ({ pipes, installations, moni
             <SectionTitle icon={MapPin} title="District Performance" sub="Installations, acres & visits" />
             <div className="space-y-2 text-xs">
               {districtStats.length === 0 ? (
-                <div className="text-center py-6 text-slate-400">No district data</div>
+                <div className="flex flex-col items-center justify-center py-10 text-slate-400 bg-slate-50/50 rounded-xl border border-slate-100 border-dashed">
+                  <MapPin className="w-8 h-8 mb-2 text-slate-300" />
+                  <div className="font-semibold text-sm">No district data</div>
+                </div>
               ) : districtStats.map(({ name, pipes, acres, farmers, visits }, idx) => (
                 <button 
                   key={name} 
