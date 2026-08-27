@@ -40,15 +40,15 @@ export const MobileRegistrationApp: React.FC<MobileRegistrationAppProps> = ({
     pipes.find((p) => p.Pipe_ID.toUpperCase() === activePipeId.toUpperCase()) ||
     (existingInstallation
       ? {
-          Pipe_ID: existingInstallation.Pipe_ID,
-          Batch_No: '',
-          QR_URL: '',
-          Status: 'Installed' as const,
-          Installation_Date: existingInstallation.Installation_Date,
-          Farmer_Name: existingInstallation.Farmer_Name,
-          Village: existingInstallation.Village,
-          District: existingInstallation.District,
-        }
+        Pipe_ID: existingInstallation.Pipe_ID,
+        Batch_No: '',
+        QR_URL: '',
+        Status: 'Installed' as const,
+        Installation_Date: existingInstallation.Installation_Date,
+        Farmer_Name: existingInstallation.Farmer_Name,
+        Village: existingInstallation.Village,
+        District: existingInstallation.District,
+      }
       : undefined);
 
   // Form State
@@ -124,13 +124,13 @@ export const MobileRegistrationApp: React.FC<MobileRegistrationAppProps> = ({
   const resetRegistrationSession = () => {
     // NOTE: Does NOT clear successRecord — that is managed explicitly by user action only
     setFormError(null);
-    
+
     // GPS State
     setGpsData(null);
     setGpsError(null);
     setGpsIsFallback(false);
     setGeoAutoFilledNotice(null);
-    
+
     // Farmer State
     setFarmerSelectionMode('new');
     setFarmerName('');
@@ -139,7 +139,7 @@ export const MobileRegistrationApp: React.FC<MobileRegistrationAppProps> = ({
     setVillage('');
     setMandal('');
     setDistrict('');
-    
+
     // Plot State
     setSurveyNo('');
     setPlotSize('');
@@ -147,14 +147,14 @@ export const MobileRegistrationApp: React.FC<MobileRegistrationAppProps> = ({
     setCrop('Paddy');
     setVariety('');
     setEstablishmentMethod('Dry DSR');
-    
+
     // Installation State
     setIrrigationSource('Borewell');
     setIrrigationSourceOther('');
     setInstallationDate(new Date().toISOString().split('T')[0]);
     setPhotoUrl(undefined);
     setRemarks('');
-    
+
     // Form control
     setCurrentStep(1);
     setPipeSearch('');
@@ -294,12 +294,12 @@ export const MobileRegistrationApp: React.FC<MobileRegistrationAppProps> = ({
       return;
     }
 
-    const INSTANT_ACCEPT_M   = 8;     // ≤8 m  → accept immediately
-    const GOOD_ACCURACY_M    = 50;    // ≤50 m → "good" sample (covers WiFi-on-laptop too)
-    const REQUIRED_GOOD      = 3;     // need 3 good samples for precise average
-    const QUICK_ACCEPT_M     = 200;   // ≤200 m → accept after 6 s (covers all WiFi scenarios)
+    const INSTANT_ACCEPT_M = 8;     // ≤8 m  → accept immediately
+    const GOOD_ACCURACY_M = 50;    // ≤50 m → "good" sample (covers WiFi-on-laptop too)
+    const REQUIRED_GOOD = 3;     // need 3 good samples for precise average
+    const QUICK_ACCEPT_M = 200;   // ≤200 m → accept after 6 s (covers all WiFi scenarios)
     const QUICK_ACCEPT_DELAY = 6000;  // 6 s quick-accept window
-    const HARD_TIMEOUT_MS    = 18000; // 18 s absolute max
+    const HARD_TIMEOUT_MS = 18000; // 18 s absolute max
 
     const samples: { lat: number; lng: number; acc: number }[] = [];
     let goodSampleCount = 0;
@@ -617,11 +617,11 @@ export const MobileRegistrationApp: React.FC<MobileRegistrationAppProps> = ({
           >
             <QrCode className="w-6 h-6" /> Scan Now
           </button>
-          
+
           <div className="pt-6 border-t border-slate-100">
             <p className="text-sm text-slate-500 mb-3 text-left">Can't scan the QR? Enter Pipe ID manually</p>
             <div className="flex gap-2">
-              <input 
+              <input
                 type="text"
                 placeholder="AWD-XXXX"
                 value={manualPipeId}
@@ -746,14 +746,14 @@ export const MobileRegistrationApp: React.FC<MobileRegistrationAppProps> = ({
               ].map((step, idx) => (
                 <div key={step.num} className="flex flex-col items-center gap-1 flex-1 relative">
                   <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold z-10 transition-colors ${currentStep === step.num ? 'bg-emerald-600 text-white ring-4 ring-emerald-100' :
-                      currentStep > step.num ? 'bg-emerald-200 text-emerald-800' :
-                        'bg-slate-100 text-slate-400'
+                    currentStep > step.num ? 'bg-emerald-200 text-emerald-800' :
+                      'bg-slate-100 text-slate-400'
                     }`}>
                     {currentStep > step.num ? <CheckCircle2 className="w-4 h-4" /> : step.num}
                   </div>
                   <span className={`text-[10px] font-bold ${currentStep === step.num ? 'text-emerald-700' :
-                      currentStep > step.num ? 'text-emerald-600' :
-                        'text-slate-400'
+                    currentStep > step.num ? 'text-emerald-600' :
+                      'text-slate-400'
                     }`}>{step.label}</span>
                   {idx < 3 && (
                     <div className={`absolute top-3.5 left-1/2 w-full h-0.5 -z-0 ${currentStep > step.num ? 'bg-emerald-200' : 'bg-slate-100'
@@ -916,8 +916,8 @@ export const MobileRegistrationApp: React.FC<MobileRegistrationAppProps> = ({
                           setFarmerId('');
                         }}
                         className={`py-2 px-2 rounded-lg flex items-center justify-center gap-1 active:scale-[0.97] transition-all ${farmerSelectionMode === 'new'
-                            ? 'bg-emerald-700 text-white shadow-xs'
-                            : 'text-slate-600 hover:text-slate-900'
+                          ? 'bg-emerald-700 text-white shadow-xs'
+                          : 'text-slate-600 hover:text-slate-900'
                           }`}
                       >
                         <Plus className="w-3.5 h-3.5" />
@@ -928,8 +928,8 @@ export const MobileRegistrationApp: React.FC<MobileRegistrationAppProps> = ({
                         type="button"
                         onClick={() => setFarmerSelectionMode('existing')}
                         className={`py-2 px-2 rounded-lg flex items-center justify-center gap-1 active:scale-[0.97] transition-all ${farmerSelectionMode === 'existing'
-                            ? 'bg-emerald-700 text-white shadow-xs'
-                            : 'text-slate-600 hover:text-slate-900'
+                          ? 'bg-emerald-700 text-white shadow-xs'
+                          : 'text-slate-600 hover:text-slate-900'
                           }`}
                       >
                         <Users className="w-3.5 h-3.5" />
@@ -1227,8 +1227,8 @@ export const MobileRegistrationApp: React.FC<MobileRegistrationAppProps> = ({
                     type="submit"
                     disabled={isSubmitting}
                     className={`w-2/3 font-extrabold rounded-lg text-sm py-3 transition shadow-md flex items-center justify-center gap-2 min-h-[44px] ${isSubmitting
-                        ? 'bg-slate-400 text-white cursor-not-allowed'
-                        : 'bg-emerald-600 hover:bg-emerald-700 text-white active:scale-[0.98]'
+                      ? 'bg-slate-400 text-white cursor-not-allowed'
+                      : 'bg-emerald-600 hover:bg-emerald-700 text-white active:scale-[0.98]'
                       }`}
                   >
                     {isSubmitting ? (

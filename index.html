@@ -3,12 +3,32 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link rel="manifest" href="/manifest.json" />
-    <link rel="apple-touch-icon" href="/icon-192.png" />
+    <meta name="description" content="AWD Pipe QR Registration & Monitoring System — Field registration and monitoring for Alternate Wetting and Drying irrigation pipes." />
     <meta name="theme-color" content="#059669" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <title>AWD Pipe — QR Registration & Monitoring System</title>
+    <meta name="mobile-web-app-capable" content="yes" />
+    <link rel="manifest" href="/manifest.json" />
+    <link rel="apple-touch-icon" href="/icon-192.png" />
+    <!-- DNS prefetch for API calls & reverse geocoding -->
+    <link rel="dns-prefetch" href="//nominatim.openstreetmap.org" />
+    <link rel="dns-prefetch" href="//tile.openstreetmap.org" />
+    <title>AWD Pipe — QR Registration &amp; Monitoring System</title>
+    <!--
+      Critical inline CSS: renders the loading background + app shell instantly,
+      before the external CSS file is downloaded. Prevents white flash / blank screen
+      on slow 3G mobile connections (the most common failure mode on low-end devices).
+    -->
+    <style>
+      *,*::before,*::after{box-sizing:border-box}
+      html,body{margin:0;padding:0;background:#060d09;height:100%;overflow-x:hidden;max-width:100vw}
+      #root{min-height:100vh;display:flex;flex-direction:column}
+      /* Prevent invisible content while JS parses — show a neutral dark bg */
+      body{background-color:#060d09;color:#f8fafc}
+      /* Critical spinner used by AppLoadingScreen before CSS loads */
+      @keyframes _spin{to{transform:rotate(360deg)}}
+      @keyframes _pulse{0%,100%{opacity:1}50%{opacity:.5}}
+    </style>
     <script>
       (function() {
         try {

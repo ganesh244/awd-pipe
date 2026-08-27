@@ -1,6 +1,7 @@
-/* ── Self-hosted Geist Variable Font (replaces Inter — design-taste-frontend rule) ── */
-@import "@fontsource-variable/geist";
-@import "@fontsource-variable/geist-mono";
+/* ── Self-hosted Geist Variable Font — latin-only subset for this Indian-English app ── */
+/* Loading only latin prevents ~100 KB of Cyrillic/Vietnamese/Latin-Ext woff2 downloads */
+@import "@fontsource-variable/geist/index.css";
+@import "@fontsource-variable/geist-mono/index.css";
 @import "tailwindcss";
 @import "leaflet/dist/leaflet.css";
 
@@ -105,8 +106,12 @@ h1, h2, h3, h4 {
 .animate-fadeIn  { animation: fadeIn  0.35s cubic-bezier(0.4, 0, 0.2, 1) both; }
 .animate-slideUp { animation: slideUp 0.4s  cubic-bezier(0.4, 0, 0.2, 1) both; }
 .animate-scaleIn { animation: scaleIn 0.25s cubic-bezier(0.4, 0, 0.2, 1) both; }
-.animate-float   { animation: float 4s ease-in-out infinite; }
-.animate-pulse-ring { animation: pulse-ring 2s cubic-bezier(0.455, 0.03, 0.515, 0.955) infinite; }
+.animate-float   { animation: float 4s ease-in-out infinite; will-change: transform; }
+.animate-pulse-ring { animation: pulse-ring 2s cubic-bezier(0.455, 0.03, 0.515, 0.955) infinite; will-change: transform, box-shadow; }
+
+/* ── content-visibility: auto — skip layout/paint of off-screen card groups ── */
+/* Applied per-section via utility class; keeps initial render fast on low-end devices */
+.cv-auto { content-visibility: auto; contain-intrinsic-size: 0 400px; }
 
 /* ── Reduced motion — collapses all animations (Vercel + design-taste rules) ── */
 @media (prefers-reduced-motion: reduce) {
