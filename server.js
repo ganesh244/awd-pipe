@@ -1,5 +1,6 @@
 import express from 'express';
 import cors from 'cors';
+import compression from 'compression';
 import dotenv from 'dotenv';
 import mongoose from 'mongoose';
 import jwt from 'jsonwebtoken';
@@ -20,6 +21,7 @@ try {
 
 import { INITIAL_PIPES, INITIAL_INSTALLATIONS, INITIAL_MONITORING } from './src/data/initialData.ts';
 import { INITIAL_STATES, INITIAL_DISTRICTS, INITIAL_AREAS, INITIAL_USERS } from './src/data/hierarchyData.ts';
+import { reconcileHierarchy } from './src/utils/hierarchyChain.ts';
 
 dotenv.config();
 
@@ -29,6 +31,12 @@ const PORT = process.env.PORT || 3001;
 
 // Middlewares
 app.use(cors());
+// Gzip every response above 1KB. /api/init ships a large JSON payload (pipes,
+// installations, monitoring records) to field devices on rural 2G/3G links —
+// JSON compresses ~85-90%, so this is the single biggest transfer-time win.
+// level 6 is zlib's default: near-max ratio at a fraction of the CPU of level 9,
+// which matters on Render's free tier (shared CPU, 512MB).
+app.use(compression({ threshold: 1024, level: 6 }));
 // 10MB limit to handle compressed Base64 images and batch QR generations cleanly
 app.use(express.json({ limit: '10mb' }));
 
@@ -162,6 +170,63 @@ const Installation = mongoose.model('Installation', InstallationSchema);
 const MonitoringRecord = mongoose.model('MonitoringRecord', MonitoringSchema);
 
 // Connect to MongoDB Atlas
+// ─── Index management ────────────────────────────────────────────────────────
+// Every /api/init query previously ran as a full collection scan (which is why
+// they needed maxTimeMS(30000) and a 30s response cache to stay usable). These
+// indexes mirror the exact filter and sort shapes used by getScopeFilter() and
+// the /api/init handler, so those queries become index seeks instead.
+//
+// createIndex is idempotent — an existing identical index is a no-op — so this
+// is safe to run on every boot. Each index is created independently so that one
+// failure (e.g. an options conflict with an index mongoose already built, or
+// duplicate keys blocking a unique index) never prevents the others.
+const INDEX_PLAN = [
+  // Scope filters are $or over these fields; createdAt backs the descending sort.
+  ['installations', { Pipe_ID: 1 }],
+  ['installations', { State: 1 }],
+  ['installations', { District: 1, State: 1 }],
+  ['installations', { Registered_By_User_ID: 1 }],
+  ['installations', { createdAt: -1 }],
+
+  // MonitoringSchema has no State/District fields, so scope narrowing for
+  // monitoring records happens entirely via Visited_By_User_ID.
+  ['monitoringrecords', { Pipe_ID: 1 }],
+  ['monitoringrecords', { Visited_By_User_ID: 1 }],
+  ['monitoringrecords', { createdAt: -1 }],
+
+  // Pipes are filtered by Status on init and by Batch_No for batch rename/delete.
+  ['pipes', { Pipe_ID: 1 }],
+  ['pipes', { Status: 1 }],
+  ['pipes', { Batch_No: 1 }],
+
+  // Login looks users up by username; the hierarchy walk keys off id.
+  ['users', { id: 1 }],
+  ['users', { username: 1 }],
+
+  ['statenodes', { id: 1 }],
+  ['districtnodes', { id: 1 }],
+  ['areanodes', { id: 1 }],
+];
+
+const ensureIndexes = async () => {
+  if (!isDbReady()) return;
+  const db = getDb();
+  let created = 0;
+  let skipped = 0;
+  for (const [collection, keys] of INDEX_PLAN) {
+    try {
+      await db.collection(collection).createIndex(keys);
+      created++;
+    } catch (err) {
+      // IndexOptionsConflict / IndexKeySpecsConflict just mean an equivalent
+      // index already exists under different options — not a problem.
+      skipped++;
+      console.warn(`🟡 [Indexes] Skipped ${collection} ${JSON.stringify(keys)}: ${err?.message || err}`);
+    }
+  }
+  console.log(`🟢 [Indexes] Ready — ${created} ensured, ${skipped} skipped.`);
+};
+
 const connectDB = async () => {
   const mongoUri = process.env.MONGODB_URI;
   if (!mongoUri) {
@@ -198,6 +263,10 @@ const connectDB = async () => {
       await DistrictNode.insertMany(INITIAL_DISTRICTS);
       await AreaNode.insertMany(INITIAL_AREAS);
     }
+
+    // Build indexes after any seeding, so a first-boot seed is indexed too.
+    // Not awaited: index creation must never delay the server accepting traffic.
+    ensureIndexes().catch(err => console.warn('🟡 [Indexes] Setup failed:', err?.message || err));
   } catch (error) {
     console.error('🔴 [MongoDB Atlas] Connection Error:', error?.message || error);
     console.log('🟡 [MongoDB Atlas] Falling back to Local Demo Mode.');
@@ -270,11 +339,63 @@ const authenticateToken = (req, res, next) => {
   });
 };
 
+// A user record is only renderable by the client if it has both an id (used as
+// the React key and for every hierarchy lookup) and a name (the display label).
+// The deployed database contains at least one leftover test record missing both,
+// which otherwise surfaces as a blank row in the hierarchy view. Filtering here
+// hides such records from API responses WITHOUT deleting anything — the document
+// stays in the collection untouched.
+const isDisplayableUser = (u) => !!(u && u.id && u.name);
+
+// Districts and areas whose parent node no longer exists cannot be rendered in
+// the hierarchy tree — they have nothing to hang from. Rather than deleting the
+// documents, they are withheld from API responses so the records stay in the
+// collection and remain recoverable.
+//
+// The non-empty guard matters: if the parent collection ever came back empty
+// (a failed or timed-out query), every child would look dangling and the whole
+// hierarchy would vanish from the UI. In that case nothing is filtered.
+const dropDangling = (children, parents, foreignKey) => {
+  if (!Array.isArray(parents) || parents.length === 0) return children;
+  const parentIds = new Set(parents.map((p) => p.id).filter(Boolean));
+  return children.filter((c) => !c[foreignKey] || parentIds.has(c[foreignKey]));
+};
+
+// Recompute and persist the chain. Called after any user mutation so that
+// adding, moving, or deactivating a manager re-settles everyone beneath them.
+// Failures are logged and swallowed: a reconciliation problem must never turn
+// an otherwise successful user save into an error for the field device.
+const applyHierarchyReconciliation = async () => {
+  try {
+    if (!isDbReady()) {
+      const changes = reconcileHierarchy(inMemoryData.users);
+      changes.forEach((c) => {
+        const target = inMemoryData.users.find((u) => u.id === c.id);
+        if (target) target.reportsToId = c.to;
+      });
+      return changes;
+    }
+    const db = getDb();
+    const users = await db.collection('users').find({}).maxTimeMS(8000).toArray();
+    const changes = reconcileHierarchy(users);
+    for (const c of changes) {
+      await db.collection('users').updateOne({ id: c.id }, { $set: { reportsToId: c.to } });
+      console.log(`🔗 [Hierarchy] ${c.role} ${c.name}: reportsTo ${c.from || '(none)'} -> ${c.to}`);
+    }
+    return changes;
+  } catch (err) {
+    console.warn('🟡 [Hierarchy] Reconciliation skipped:', err?.message || err);
+    return [];
+  }
+};
+
+
 const getScopeFilter = async (user) => {
   if (!user) return { mongo: { _id: null }, memory: () => false };
 
   if (user.role === 'Admin') {
-    return { mongo: {}, memory: () => true };
+    // visibleUserIds === null means "no restriction" (see /api/init).
+    return { mongo: {}, memory: () => true, allUsers: null, visibleUserIds: null };
   }
 
   let allUsers = [];
@@ -304,6 +425,21 @@ const getScopeFilter = async (user) => {
     }
   }
 
+  // A user may see their own subtree plus their chain of superiors. The
+  // ancestors are needed so the client can still resolve "reports to" names and
+  // so the hierarchy view isn't rooted at an unknown parent.
+  const usersById = new Map(allUsers.map(u => [u.id, u]));
+  const visibleUserIds = new Set(subUserIds);
+  let cursor = usersById.get(user.id);
+  const guard = new Set();
+  while (cursor && !guard.has(cursor.id)) {
+    guard.add(cursor.id);
+    const parentId = cursor.reportsToId || cursor.createdById;
+    if (!parentId) break;
+    visibleUserIds.add(parentId);
+    cursor = usersById.get(parentId);
+  }
+
   const subIdsArray = Array.from(subUserIds);
   const subNames = allUsers.filter(u => subUserIds.has(u.id)).map(u => (u.name || '').toLowerCase().replace(/[^a-z0-9]/g, '')).filter(Boolean);
   const nameRegexes = subNames.map(n => new RegExp(n.split('').join('.*'), 'i'));
@@ -321,7 +457,9 @@ const getScopeFilter = async (user) => {
       memory: (item) =>
         (item.State || '').toLowerCase() === s.toLowerCase() ||
         (item.Registered_By_User_ID && subUserIds.has(item.Registered_By_User_ID)) ||
-        (item.Visited_By_User_ID && subUserIds.has(item.Visited_By_User_ID))
+        (item.Visited_By_User_ID && subUserIds.has(item.Visited_By_User_ID)),
+      allUsers,
+      visibleUserIds
     };
   }
 
@@ -339,7 +477,9 @@ const getScopeFilter = async (user) => {
       memory: (item) =>
         ((item.District || '').toLowerCase() === d.toLowerCase() && (item.State || '').toLowerCase() === s.toLowerCase()) ||
         (item.Registered_By_User_ID && subUserIds.has(item.Registered_By_User_ID)) ||
-        (item.Visited_By_User_ID && subUserIds.has(item.Visited_By_User_ID))
+        (item.Visited_By_User_ID && subUserIds.has(item.Visited_By_User_ID)),
+      allUsers,
+      visibleUserIds
     };
   }
 
@@ -361,7 +501,9 @@ const getScopeFilter = async (user) => {
         if (subNames.some(sName => sName.length >= 2 && (iNorm.includes(sName) || sName.includes(iNorm)))) return true;
       }
       return false;
-    }
+    },
+    allUsers,
+    visibleUserIds
   };
 };
 
@@ -563,8 +705,17 @@ app.get('/api/init', authenticateToken, async (req, res) => {
         $or: [{ Status: 'Available' }, scope.mongo]
       };
 
+      // Non-admins get the user list that getScopeFilter already loaded for the
+      // hierarchy walk, narrowed to their subtree plus their own chain of
+      // superiors. This does two things: it stops every field worker from
+      // downloading the entire staff directory, and it avoids a second full
+      // scan of the users collection on every init.
+      const usersQuery = scope.visibleUserIds === null
+        ? db.collection('users').find({}).maxTimeMS(MT).toArray()
+        : Promise.resolve((scope.allUsers || []).filter(u => scope.visibleUserIds.has(u.id)));
+
       const [users, pipes, installations, monitoringList, states, districts, areas] = await Promise.all([
-        db.collection('users').find({}).maxTimeMS(MT).toArray(),
+        usersQuery,
         db.collection('pipes').find(pipeQuery).maxTimeMS(MT).toArray(),                              // no sort — frontend sorts; avoids full collection scan
         db.collection('installations').find(scope.mongo, { projection: { Photo_URL: 0 } }).sort({ createdAt: -1 }).maxTimeMS(MT).toArray(),
         db.collection('monitoringrecords').find(scope.mongo).sort({ createdAt: -1 }).maxTimeMS(MT).toArray(),
@@ -574,13 +725,16 @@ app.get('/api/init', authenticateToken, async (req, res) => {
       ]);
 
       // Clean _id and __v for clean frontend consumption, and REMOVE password hashes
-      const cleanUsers = users.map(({ _id, __v, password, passwordHash, ...rest }) => rest);
+      const cleanUsers = users.filter(isDisplayableUser).map(({ _id, __v, password, passwordHash, ...rest }) => rest);
       const cleanPipes = pipes.map(({ _id, __v, ...rest }) => rest);
       const cleanInstallations = installations.map(({ _id, __v, ...rest }) => rest);
       const cleanMonitoringList = monitoringList.map(({ _id, __v, ...rest }) => rest);
       const cleanStates = states.map(({ _id, __v, ...rest }) => rest);
       const cleanDistricts = districts.map(({ _id, __v, ...rest }) => rest);
       const cleanAreas = areas.map(({ _id, __v, ...rest }) => rest);
+
+      const visibleDistricts = dropDangling(cleanDistricts, cleanStates, 'stateId');
+      const visibleAreas = dropDangling(cleanAreas, visibleDistricts, 'districtId');
 
       const payload = {
         dbStatus: 'cloud',
@@ -589,8 +743,8 @@ app.get('/api/init', authenticateToken, async (req, res) => {
         installations: cleanInstallations,
         monitoringList: cleanMonitoringList,
         states: cleanStates,
-        districts: cleanDistricts,
-        areas: cleanAreas,
+        districts: visibleDistricts,
+        areas: visibleAreas,
       };
 
       // Cache the result for 30s
@@ -599,7 +753,10 @@ app.get('/api/init', authenticateToken, async (req, res) => {
       return res.json(payload);
     } else {
       // In-memory fallback
-      const cleanUsers = inMemoryData.users.map(({ password, passwordHash, ...rest }) => rest);
+      const visibleMemoryUsers = scope.visibleUserIds === null
+        ? inMemoryData.users
+        : inMemoryData.users.filter(u => scope.visibleUserIds.has(u.id));
+      const cleanUsers = visibleMemoryUsers.filter(isDisplayableUser).map(({ password, passwordHash, ...rest }) => rest);
       const filteredPipes = req.user.role === 'Admin' ? inMemoryData.pipes : inMemoryData.pipes.filter(p => p.Status === 'Available' || scope.memory(p));
 
       return res.json({
@@ -975,6 +1132,8 @@ app.post('/api/users', authenticateToken, async (req, res) => {
       if (existingIdx >= 0) inMemoryData.users[existingIdx] = newUser;
       else inMemoryData.users.push(newUser);
     }
+    // Adding a manager can re-parent people who previously fell back a tier.
+    await applyHierarchyReconciliation();
     invalidateInitCache(); res.json({ success: true, dbStatus: isMongoConnected ? 'cloud' : 'local' });
   } catch (err) {
     console.error('Error adding user:', err);
@@ -1002,6 +1161,9 @@ app.put('/api/users/:id', authenticateToken, async (req, res) => {
     } else {
       inMemoryData.users = inMemoryData.users.map((u) => (u.id === id ? updatedUser : u));
     }
+    // A changed role, district or area moves this user — and possibly their
+    // subordinates — to a different place in the chain.
+    await applyHierarchyReconciliation();
     invalidateInitCache(); res.json({ success: true, dbStatus: isMongoConnected ? 'cloud' : 'local' });
   } catch (err) {
     console.error('Error updating user:', err);
@@ -1024,6 +1186,9 @@ app.delete('/api/users/:id', authenticateToken, async (req, res) => {
       inMemoryData.districts = inMemoryData.districts.map(d => d.managerId === userId ? { ...d, managerId: '', managerName: '' } : d);
       inMemoryData.areas = inMemoryData.areas.map(a => a.managerId === userId ? { ...a, managerId: '', managerName: '' } : a);
     }
+    // Removing a manager would otherwise leave their subordinates pointing at a
+    // parent that no longer exists; this lifts them to the next tier up.
+    await applyHierarchyReconciliation();
     invalidateInitCache(); res.json({ success: true, dbStatus: isMongoConnected ? 'cloud' : 'local' });
   } catch (err) {
     console.error('Error deleting user:', err);
