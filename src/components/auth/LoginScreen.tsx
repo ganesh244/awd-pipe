@@ -194,7 +194,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ users, onLogin }) => {
 
       {/* Footer */}
       <div className="relative z-10 border-t border-white/[0.05] py-4 px-8 flex items-center justify-between text-xs text-slate-700">
-        <span>© 2025 AWD Pipe Registry</span>
+        <span>© {new Date().getFullYear()} AWD Pipe Registry</span>
         <span className="flex items-center gap-1.5">
           {backendStatus === 'checking' && (
             <>
