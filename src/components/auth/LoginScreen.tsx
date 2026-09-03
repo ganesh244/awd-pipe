@@ -128,6 +128,11 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ users, onLogin }) => {
                 </label>
                 <div className="relative">
                   <AtSign className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                  {/*
+                    Usernames are stored lowercase and matched exactly, so a phone
+                    keyboard capitalising the first letter — or autocorrecting a
+                    name like "sm_ap" — would silently fail the login.
+                  */}
                   <input
                     type="text"
                     value={username}
@@ -135,6 +140,9 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ users, onLogin }) => {
                     placeholder="Enter your username"
                     required
                     autoComplete="username"
+                    autoCapitalize="none"
+                    autoCorrect="off"
+                    spellCheck={false}
                     className="w-full bg-white/[0.06] border border-white/[0.12] text-white rounded-xl pl-10 pr-4 py-3 text-sm focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 placeholder-slate-600 transition"
                   />
                 </div>
@@ -184,7 +192,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ users, onLogin }) => {
               </button>
             </form>
 
-            <p className="text-xs text-slate-600 text-center mt-5 leading-relaxed">
+            <p className="text-xs text-slate-400 text-center mt-5 leading-relaxed">
               Credentials assigned by your District Manager or Admin.<br />
               Contact your supervisor if you need access.
             </p>
@@ -193,7 +201,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ users, onLogin }) => {
       </div>
 
       {/* Footer */}
-      <div className="relative z-10 border-t border-white/[0.05] py-4 px-8 flex items-center justify-between text-xs text-slate-700">
+      <div className="relative z-10 border-t border-white/[0.05] py-4 px-8 flex items-center justify-between text-xs text-slate-400">
         <span>© {new Date().getFullYear()} AWD Pipe Registry</span>
         <span className="flex items-center gap-1.5">
           {backendStatus === 'checking' && (

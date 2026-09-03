@@ -517,11 +517,24 @@ app.post('/api/login', loginLimiter, async (req, res) => {
   const { username, password } = req.body;
   if (!username || !password) return res.status(400).json({ error: 'Required' });
   try {
+    // Exact match first, then a case-insensitive retry. Usernames are stored
+    // lowercase, but a mobile keyboard can still capitalise or autocorrect what
+    // the field worker typed; failing them over a leading capital is pure
+    // friction, not security. The exact match stays first so an existing login
+    // never changes which account it resolves to.
+    const typed = username.trim();
     let user = null;
     if (isDbReady()) {
-      user = await getDb().collection('users').findOne({ username: username.trim() }, { maxTimeMS: 8000 });
+      const users = getDb().collection('users');
+      user = await users.findOne({ username: typed }, { maxTimeMS: 8000 });
+      if (!user) {
+        const exact = new RegExp(`^${typed.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&')}$`, 'i');
+        user = await users.findOne({ username: exact }, { maxTimeMS: 8000 });
+      }
     } else {
-      user = inMemoryData.users.find((u) => u.username === username.trim()) || null;
+      user = inMemoryData.users.find((u) => u.username === typed)
+        || inMemoryData.users.find((u) => (u.username || '').toLowerCase() === typed.toLowerCase())
+        || null;
     }
 
     if (!user) return res.status(401).json({ error: 'Invalid credentials' });
