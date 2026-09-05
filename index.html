@@ -9,6 +9,10 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="mobile-web-app-capable" content="yes" />
     <link rel="manifest" href="/manifest.json" />
+    <!-- Browser-tab icon. SVG first so it stays sharp at any size; the PNG is a
+         fallback for browsers without SVG favicon support (older Safari). -->
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="alternate icon" type="image/png" sizes="192x192" href="/icon-192.png" />
     <link rel="apple-touch-icon" href="/icon-192.png" />
     <!-- DNS prefetch for API calls & reverse geocoding -->
     <link rel="dns-prefetch" href="//nominatim.openstreetmap.org" />

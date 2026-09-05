@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" role="img" aria-label="AWD Pipe Registry">
+  <!--
+    Browser-tab icon. Mirrors the in-app logo mark (rounded square, emerald ->
+    teal -> lime gradient, white sprout) so the tab matches the header and login
+    screen rather than the flatter PWA leaf in icon-192.png.
+
+    SVG rather than PNG so it stays sharp at 16px, on retina, and in the large
+    icons that tab-search and bookmark UIs render.
+  -->
+  <defs>
+    <linearGradient id="g" x1="0" y1="32" x2="32" y2="0" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#059669"/>
+      <stop offset="0.55" stop-color="#14b8a6"/>
+      <stop offset="1" stop-color="#a3e635"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="32" height="32" rx="7.5" fill="url(#g)"/>
+
+  <!--
+    Lucide "sprout", scaled to ~66% and centred. Stroke is thickened relative to
+    the source icon: at a 16px tab size the default 2px weight thins out to a
+    smudge, so it is drawn heavier to stay legible.
+  -->
+  <g transform="translate(5.6 5.6) scale(0.7833)"
+     fill="none" stroke="#ffffff" stroke-width="2.6"
+     stroke-linecap="round" stroke-linejoin="round">
+    <path d="M7 20h10"/>
+    <path d="M10 20c5.5-2.5.8-6.4 3-10"/>
+    <path d="M9.5 9.4c1.1.8 1.8 2.2 2.3 3.7-2 .4-3.5.4-4.8-.3-1.2-.6-2.3-1.9-3-4.2 2.8-.5 4.4 0 5.5.8z"/>
+    <path d="M14.1 6a7 7 0 0 0-1.1 4c1.9-.1 3.3-.6 4.3-1.4 1-1 1.6-2.3 1.7-4.6-2.7.1-4 1-4.9 2z"/>
+  </g>
+</svg>
