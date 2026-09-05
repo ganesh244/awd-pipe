@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Database, HardDrive, Cpu, RefreshCw, X, Server, Layers, AlertTriangle, ShieldCheck, Clock } from 'lucide-react';
+import { useDialog } from '../hooks/useDialog';
 
 const apiFetch = (url: RequestInfo | URL, options?: RequestInit) => {
   const token = localStorage.getItem("awd_auth_token");
@@ -43,6 +44,8 @@ interface AdminDevToolsModalProps {
 }
 
 export const AdminDevToolsModal: React.FC<AdminDevToolsModalProps> = ({ isOpen, onClose }) => {
+  // Escape-to-close, focus trap, focus restore and scroll lock.
+  const { dialogProps } = useDialog({ open: isOpen, onClose, label: 'Admin developer tools and database metrics' });
   const [stats, setStats] = useState<DBStatsResponse | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
@@ -97,7 +100,7 @@ export const AdminDevToolsModal: React.FC<AdminDevToolsModalProps> = ({ isOpen, 
   const storagePercent = Math.min(100, Math.max(0.1, (storageUsedBytes / ATLAS_FREE_TIER_BYTES) * 100));
 
   return (
-    <div className="fixed inset-0 bg-slate-950/70 backdrop-blur-md z-[9999] flex items-center justify-center p-4 animate-fadeIn">
+    <div className="fixed inset-0 bg-slate-950/70 backdrop-blur-md z-[9999] flex items-center justify-center p-4 animate-fadeIn" {...dialogProps}>
       <div className="bg-slate-900 text-white rounded-3xl w-full max-w-4xl max-h-[90vh] overflow-hidden border border-slate-800 shadow-2xl flex flex-col">
         
         {/* Header */}

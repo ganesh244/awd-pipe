@@ -5,6 +5,7 @@ import { Search, Filter, Plus, Box, CheckCircle2, AlertTriangle, X } from 'lucid
 import QRCode from 'qrcode';
 import { StatusBadge } from './ui/StatusBadge';
 import { Button } from './ui/Button';
+import { useDialog } from '../hooks/useDialog';
 
 interface PipeInventoryProps {
   pipes: AWDPipe[];
@@ -71,10 +72,24 @@ export const PipeInventory: React.FC<PipeInventoryProps> = ({
     }
   };
 
+  // Escape-to-close, focus trap, focus restore and scroll lock. modalOverlay is
+  // a plain helper rather than a component, so the hooks live here and their
+  // props are handed to it per call.
+  const qrDialog = useDialog({ open: !!selectedQrPipe, onClose: () => setSelectedQrPipe(null), label: 'Pipe QR code' });
+  const editDialog = useDialog({ open: !!editingPipe, onClose: () => setEditingPipe(null), label: 'Edit pipe' });
+  const batchDialog = useDialog({
+    open: !!isBatchModalOpen,
+    onClose: () => { setIsBatchModalOpen(false); setEditingBatchNo(null); setBatchToDelete(null); },
+    label: 'Manage pipe batch',
+  });
+
   // ── Shared backdrop overlay rendered via Portal ────────────────────────────
-  const modalOverlay = (content: React.ReactNode) =>
+  const modalOverlay = (
+    content: React.ReactNode,
+    dialogProps: React.HTMLAttributes<HTMLDivElement> & { ref: React.Ref<HTMLDivElement> },
+  ) =>
     ReactDOM.createPortal(
-      <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-4">
+      <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-4" {...dialogProps}>
         {content}
       </div>,
       document.body
@@ -209,7 +224,7 @@ export const PipeInventory: React.FC<PipeInventoryProps> = ({
                       <StatusBadge status={p.Status} />
                     </td>
                     <td className="px-4 py-3 font-semibold text-slate-800">
-                      {p.Farmer_Name || <span className="text-slate-300 italic">Unassigned</span>}
+                      {p.Farmer_Name || <span className="text-slate-500 italic">Unassigned</span>}
                     </td>
                     <td className="px-4 py-3">{p.Village || '--'}</td>
                     <td className="px-4 py-3">{p.Installation_Date || '--'}</td>
@@ -279,7 +294,7 @@ export const PipeInventory: React.FC<PipeInventoryProps> = ({
             Load in Mobile Registration View
           </Button>
         </div>
-      )}
+      , qrDialog.dialogProps)}
 
       {/* EDIT PIPE MODAL */}
       {editingPipe && modalOverlay(
@@ -326,7 +341,7 @@ export const PipeInventory: React.FC<PipeInventoryProps> = ({
             </button>
           </div>
         </div>
-      )}
+      , editDialog.dialogProps)}
 
       {/* MANAGE BATCHES MODAL */}
       {isBatchModalOpen && modalOverlay(
@@ -418,7 +433,7 @@ export const PipeInventory: React.FC<PipeInventoryProps> = ({
             )}
           </div>
         </div>
-      )}
+      , batchDialog.dialogProps)}
     </div>
   );
 };

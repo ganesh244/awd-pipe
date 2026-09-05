@@ -5,6 +5,7 @@ import {
   ClipboardList, ArrowDownToLine, Eye, X
 } from 'lucide-react';
 import { User, Installation, MonitoringRecord } from '../types';
+import { useDialog } from '../hooks/useDialog';
 
 interface ReportsExportProps {
   currentUser: User;
@@ -311,6 +312,9 @@ export const ReportsExport: React.FC<ReportsExportProps> = ({
     </div>
   );
 
+  // Escape-to-close, focus trap, focus restore and scroll lock.
+  const dossierDialog = useDialog({ open: !!showDossierModal, onClose: () => setShowDossierModal(null), label: 'Farmer dossier preview' });
+
   return (
     <div className="min-h-screen bg-slate-50 py-6 px-4">
       <div className="max-w-7xl mx-auto space-y-6">
@@ -528,6 +532,7 @@ export const ReportsExport: React.FC<ReportsExportProps> = ({
           <div
             className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
             onClick={() => setShowDossierModal(null)}
+            {...dossierDialog.dialogProps}
           >
             <div
               className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto"

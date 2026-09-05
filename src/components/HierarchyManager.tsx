@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import ReactDOM from 'react-dom';
 import { User, StateNode, DistrictNode, AreaNode, UserRole } from '../types';
 import { Building2, MapPin, Map, Users, Plus, Trash2, Edit2, Shield, UserPlus, Key, CheckCircle2, XCircle, Eye, EyeOff, AlertTriangle, Database } from 'lucide-react';
+import { useDialog } from '../hooks/useDialog';
 
 interface HierarchyManagerProps {
   states: StateNode[];
@@ -483,6 +484,13 @@ export const HierarchyManager: React.FC<HierarchyManagerProps> = ({
   };
 
 
+
+  // Escape-to-close, focus trap, focus restore and scroll lock for each dialog.
+  const addUserDialog = useDialog({ open: isAddUserOpen, onClose: () => setIsAddUserOpen(false), label: 'Add team member' });
+  const editUserDialog = useDialog({ open: !!editingUser, onClose: () => setEditingUser(null), label: 'Edit roles and responsibilities' });
+  const editNodeDialog = useDialog({ open: !!editingHierarchyItem, onClose: () => setEditingHierarchyItem(null), label: 'Edit hierarchy node' });
+  const addNodeDialog = useDialog({ open: !!(isAddingHierarchy && addingHierarchyType), onClose: () => setIsAddingHierarchy(false), label: 'Add hierarchy node' });
+  const confirmDialog = useDialog({ open: !!(confirmDeleteModal && confirmDeleteModal.isOpen), onClose: () => setConfirmDeleteModal(null), label: 'Confirm deletion' });
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6 animate-fadeIn">
@@ -1040,7 +1048,7 @@ export const HierarchyManager: React.FC<HierarchyManagerProps> = ({
 
       {/* MODAL: ADD TEAM MEMBER */}
       {isAddUserOpen && ReactDOM.createPortal(
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-4 overflow-y-auto">
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-4 overflow-y-auto" {...addUserDialog.dialogProps}>
           <div className="bg-white rounded-3xl max-w-lg w-full p-6 space-y-5 shadow-2xl border border-slate-200">
             <div className="flex items-center justify-between border-b pb-3">
               <div className="flex items-center gap-2">
@@ -1375,7 +1383,7 @@ export const HierarchyManager: React.FC<HierarchyManagerProps> = ({
 
       {/* MODAL: EDIT ROLES & RESPONSIBILITIES */}
       {editingUser && ReactDOM.createPortal(
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-4 overflow-y-auto">
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-4 overflow-y-auto" {...editUserDialog.dialogProps}>
           <div className="bg-white rounded-3xl max-w-lg w-full p-6 space-y-5 shadow-2xl border border-slate-200">
             <div className="flex items-center justify-between border-b pb-3">
               <div className="flex items-center gap-2">
@@ -1625,7 +1633,7 @@ export const HierarchyManager: React.FC<HierarchyManagerProps> = ({
 
     {/* MODAL: EDIT HIERARCHY */}
       {editingHierarchyItem && ReactDOM.createPortal(
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-4 overflow-y-auto">
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-4 overflow-y-auto" {...editNodeDialog.dialogProps}>
           <div className="bg-white rounded-3xl max-w-sm w-full p-6 space-y-5 shadow-2xl border border-slate-200">
             <div className="flex items-center justify-between border-b pb-3">
               <div className="flex items-center gap-2">
@@ -1691,7 +1699,7 @@ export const HierarchyManager: React.FC<HierarchyManagerProps> = ({
 
       {/* Add Hierarchy Modal */}
       {isAddingHierarchy && addingHierarchyType && ReactDOM.createPortal(
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fadeIn">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fadeIn" {...addNodeDialog.dialogProps}>
           <div className="bg-white rounded-3xl shadow-2xl border border-slate-200 w-full max-w-sm overflow-hidden flex flex-col max-h-[90vh]">
             <div className="flex items-center justify-between p-5 border-b border-slate-100 bg-slate-50/50">
               <div className="flex items-center gap-2 text-slate-800">
@@ -1744,7 +1752,7 @@ export const HierarchyManager: React.FC<HierarchyManagerProps> = ({
 
       {/* CUSTOM CONFIRM DELETE MODAL */}
       {confirmDeleteModal && confirmDeleteModal.isOpen && ReactDOM.createPortal(
-        <div className="fixed inset-0 bg-slate-900/65 backdrop-blur-md z-[10000] flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-slate-900/65 backdrop-blur-md z-[10000] flex items-center justify-center p-4" {...confirmDialog.dialogProps}>
           <div className="bg-white rounded-3xl max-w-md w-full p-6 space-y-5 shadow-2xl border border-slate-200 animate-in fade-in zoom-in duration-150">
             <div className="flex items-center gap-3">
               <div className="p-3 bg-red-100 text-red-600 rounded-2xl">

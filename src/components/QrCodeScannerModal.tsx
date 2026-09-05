@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { AWDPipe, Installation } from '../types';
 import jsQR from 'jsqr';
 import { QrCode, Camera, CheckCircle2, X, Search, Sparkles, Smartphone, ShieldCheck, AlertCircle, RefreshCw, Upload, Image as ImageIcon, Volume2 } from 'lucide-react';
+import { useDialog } from '../hooks/useDialog';
 
 interface QrCodeScannerModalProps {
   isOpen: boolean;
@@ -18,6 +19,9 @@ export const QrCodeScannerModal: React.FC<QrCodeScannerModalProps> = ({
   installations = [],
   onSelectPipe,
 }) => {
+  // Escape-to-close, focus trap, focus restore and scroll lock.
+  const { dialogProps } = useDialog({ open: isOpen, onClose, label: 'Scan a pipe QR code' });
+
   const [manualCode, setManualCode] = useState('');
   const [scannedPipe, setScannedPipe] = useState<AWDPipe | null>(null);
   const [scanSuccess, setScanSuccess] = useState(false);
@@ -253,7 +257,7 @@ export const QrCodeScannerModal: React.FC<QrCodeScannerModalProps> = ({
   const registeredPipes = pipes.filter((p) => p.Status === 'Installed').slice(0, 3);
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-950/85 backdrop-blur-md animate-fadeIn">
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-950/85 backdrop-blur-md animate-fadeIn" {...dialogProps}>
       <div className="flex min-h-full items-start justify-center p-4 pt-4 sm:items-center sm:pt-4">
       <div className="bg-slate-900 border-2 border-emerald-600 text-white rounded-3xl max-w-lg w-full shadow-2xl space-y-0 relative">
         
