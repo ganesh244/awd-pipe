@@ -3,7 +3,7 @@ import L from 'leaflet';
 import { AWDPipe, Installation, MonitoringRecord } from '../types';
 import {
   MapPin, Search, Layers, ShieldCheck, Filter, Smartphone, ExternalLink,
-  Calendar, Sprout, UserCheck, Eye, Compass, RefreshCw, Sparkles, Navigation, CheckCircle2, AlertTriangle, Droplet
+  Calendar, Sprout, UserCheck, Eye, Compass, RefreshCw, Sparkles, Navigation, CheckCircle2, AlertTriangle, Droplet, Hexagon
 } from 'lucide-react';
 
 interface InteractiveFieldMapProps {
@@ -22,11 +22,13 @@ export const InteractiveFieldMap: React.FC<InteractiveFieldMapProps> = ({
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
   const markersGroupRef = useRef<L.LayerGroup | null>(null);
+  const polygonsGroupRef = useRef<L.LayerGroup | null>(null);
 
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<'All' | 'Installed' | 'Available' | 'Damaged'>('Installed');
   const [villageFilter, setVillageFilter] = useState<string>('All');
   const [tileType, setTileType] = useState<'satellite' | 'streets'>('satellite');
+  const [showBoundaries, setShowBoundaries] = useState(true);
   const [selectedPipeDetails, setSelectedPipeDetails] = useState<{
     pipe: AWDPipe;
     installation?: Installation;
@@ -119,6 +121,9 @@ export const InteractiveFieldMap: React.FC<InteractiveFieldMapProps> = ({
     const layerGroup = L.layerGroup().addTo(map);
     markersGroupRef.current = layerGroup;
 
+    const polygonsGroup = L.layerGroup().addTo(map);
+    polygonsGroupRef.current = polygonsGroup;
+
     setTimeout(() => {
       map.invalidateSize();
     }, 200);
@@ -158,6 +163,7 @@ export const InteractiveFieldMap: React.FC<InteractiveFieldMapProps> = ({
     const map = mapInstanceRef.current;
     const layerGroup = markersGroupRef.current;
     layerGroup.clearLayers();
+    polygonsGroupRef.current?.clearLayers();
 
     const bounds = L.latLngBounds([]);
 
@@ -215,12 +221,39 @@ export const InteractiveFieldMap: React.FC<InteractiveFieldMapProps> = ({
 
       marker.addTo(layerGroup);
       bounds.extend([latitude, longitude]);
+
+      // ── PLOT BOUNDARY POLYGON ──
+      if (showBoundaries && installation?.Plot_Boundary && installation.Plot_Boundary.length >= 3) {
+        let fillColor = '#10b981';
+        let strokeColor = '#059669';
+        if (pipe.Status === 'Available') {
+          fillColor = '#f59e0b'; strokeColor = '#d97706';
+        } else if (pipe.Status === 'Damaged') {
+          fillColor = '#ef4444'; strokeColor = '#dc2626';
+        }
+        const polygon = L.polygon(installation.Plot_Boundary as L.LatLngExpression[], {
+          color: strokeColor,
+          weight: 2,
+          fillColor: fillColor,
+          fillOpacity: 0.15,
+          opacity: 0.7,
+        });
+        polygon.on('click', () => {
+          setSelectedPipeDetails({ pipe, installation, lastMonitoring });
+        });
+        polygon.bindTooltip(`
+          <div style="font-family: inherit; padding: 4px 6px; font-size: 10px; font-weight: 700; color: #1e293b;">
+            🗺️ ${farmerName}'s Plot — ${pipe.Pipe_ID}
+          </div>
+        `, { direction: 'center', sticky: true });
+        polygon.addTo(polygonsGroupRef.current!);
+      }
     });
 
     if (filteredPipes.length > 0 && bounds.isValid()) {
       map.fitBounds(bounds, { padding: [50, 50], maxZoom: 13 });
     }
-  }, [filteredPipes]);
+  }, [filteredPipes, showBoundaries]);
 
   const handleResetBounds = () => {
     if (!mapInstanceRef.current || filteredPipes.length === 0) return;
@@ -375,6 +408,20 @@ export const InteractiveFieldMap: React.FC<InteractiveFieldMapProps> = ({
             >
               <RefreshCw className="w-4 h-4" />
             </button>
+
+            <button
+              type="button"
+              onClick={() => setShowBoundaries(v => !v)}
+              title={showBoundaries ? 'Hide plot boundaries' : 'Show plot boundaries'}
+              className={`font-bold text-xs p-2 rounded-xl transition border cursor-pointer flex items-center gap-1.5 ${
+                showBoundaries
+                  ? 'bg-teal-50 text-teal-700 border-teal-300 hover:bg-teal-100'
+                  : 'bg-slate-100 text-slate-500 border-slate-300 hover:bg-slate-200'
+              }`}
+            >
+              <Hexagon className="w-4 h-4" />
+              <span className="hidden sm:inline">Plots</span>
+            </button>
           </div>
         </div>
       </div>
@@ -386,10 +433,15 @@ export const InteractiveFieldMap: React.FC<InteractiveFieldMapProps> = ({
         <div ref={mapContainerRef} className="w-full h-full z-10" />
 
         {/* Map Legend Overlay */}
-        <div className="absolute bottom-4 left-4 z-20 bg-white/95 backdrop-blur-md border border-slate-200 rounded-xl px-3.5 py-2 text-xs font-bold text-slate-800 shadow-md flex items-center gap-3">
+        <div className="absolute bottom-4 left-4 z-20 bg-white/95 backdrop-blur-md border border-slate-200 rounded-xl px-3.5 py-2 text-xs font-bold text-slate-800 shadow-md flex items-center gap-3 flex-wrap">
           <span className="flex items-center gap-1.5 text-emerald-700"><span className="w-2.5 h-2.5 rounded-full bg-emerald-500" /> Installed</span>
           <span className="flex items-center gap-1.5 text-amber-700"><span className="w-2.5 h-2.5 rounded-full bg-amber-500" /> Available</span>
           <span className="flex items-center gap-1.5 text-rose-700"><span className="w-2.5 h-2.5 rounded-full bg-rose-500" /> Damaged</span>
+          {showBoundaries && (
+            <span className="flex items-center gap-1.5 text-teal-700 border-l border-slate-200 pl-3">
+              <Hexagon className="w-3 h-3 text-teal-500" /> Plot Boundary
+            </span>
+          )}
         </div>
 
         {/* ── FLOATING INSPECTION CARD (Appears when clicking a field pin) ── */}
@@ -450,9 +502,16 @@ export const InteractiveFieldMap: React.FC<InteractiveFieldMapProps> = ({
                     </div>
                     <div className="flex justify-between items-center border-t border-slate-200 pt-1.5 mt-1">
                       <span className="text-slate-500 font-semibold">Plot Size:</span>
-                      <strong className="text-emerald-800 font-black">
-                        {selectedPipeDetails.installation.Plot_Size} {selectedPipeDetails.installation.Plot_Size_Unit}
-                      </strong>
+                      <div className="flex items-center gap-1.5">
+                        <strong className="text-emerald-800 font-black">
+                          {selectedPipeDetails.installation.Plot_Size} {selectedPipeDetails.installation.Plot_Size_Unit}
+                        </strong>
+                        {selectedPipeDetails.installation.Plot_Boundary && selectedPipeDetails.installation.Plot_Boundary.length >= 3 && (
+                          <span className="text-[9px] font-bold bg-teal-100 text-teal-800 px-1.5 py-0.5 rounded-full border border-teal-200 flex items-center gap-0.5">
+                            <Hexagon className="w-2.5 h-2.5" /> Mapped
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </div>
 

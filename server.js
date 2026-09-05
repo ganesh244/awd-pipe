@@ -143,6 +143,7 @@ const InstallationSchema = new mongoose.Schema({
   Area_Manager_User_ID: { type: String },
   Photo_URL: { type: String },
   Remarks: { type: String },
+  Plot_Boundary: { type: [[Number]], default: undefined },
 }, { timestamps: true });
 
 const MonitoringSchema = new mongoose.Schema({
@@ -345,6 +346,37 @@ const authenticateToken = (req, res, next) => {
 // which otherwise surfaces as a blank row in the hierarchy view. Filtering here
 // hides such records from API responses WITHOUT deleting anything — the document
 // stays in the collection untouched.
+// Plot boundaries arrive from the field app as an array of [lat, lng] pairs.
+// They are stored verbatim otherwise, so validate rather than trust: a
+// malformed or very large polygon would either break the map that renders it or
+// quietly eat the 512MB free tier. Anything that is not a usable polygon is
+// dropped to undefined — the field is optional, so discarding a bad value is
+// always safe and never blocks the registration itself.
+const MAX_BOUNDARY_POINTS = 500;
+
+const sanitizePlotBoundary = (raw) => {
+  if (!Array.isArray(raw) || raw.length < 3) return undefined;
+  if (raw.length > MAX_BOUNDARY_POINTS) return undefined;
+  // Number(null), Number('') and Number([]) are all 0, which would silently
+  // place a vertex at 0,0 instead of rejecting bad input. Only a real number or
+  // a non-empty numeric string counts.
+  const num = (v) => {
+    if (typeof v === 'number') return v;
+    if (typeof v === 'string' && v.trim() !== '') return Number(v);
+    return NaN;
+  };
+  const cleaned = [];
+  for (const point of raw) {
+    if (!Array.isArray(point) || point.length !== 2) return undefined;
+    const lat = num(point[0]);
+    const lng = num(point[1]);
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) return undefined;
+    if (lat < -90 || lat > 90 || lng < -180 || lng > 180) return undefined;
+    cleaned.push([lat, lng]);
+  }
+  return cleaned;
+};
+
 const isDisplayableUser = (u) => !!(u && u.id && u.name);
 
 // Districts and areas whose parent node no longer exists cannot be rendered in
@@ -795,6 +827,9 @@ app.post('/api/installations', authenticateToken, async (req, res) => {
   if (req.body.installation && !scope.memory(req.body.installation)) return res.status(403).json({ error: 'Out of scope' });
   const { installation, updatedPipe } = req.body;
   try {
+    if (installation && 'Plot_Boundary' in installation) {
+      installation.Plot_Boundary = sanitizePlotBoundary(installation.Plot_Boundary);
+    }
     if (isMongoConnected) {
       await new Installation(installation).save();
       await Pipe.findOneAndUpdate({ Pipe_ID: updatedPipe.Pipe_ID }, updatedPipe, { upsert: true });
@@ -818,6 +853,9 @@ app.put('/api/installations/:pipeId', authenticateToken, async (req, res) => {
   const targetId = decodeURIComponent(pipeId).trim();
   const updated = req.body;
   try {
+    if (updated && 'Plot_Boundary' in updated) {
+      updated.Plot_Boundary = sanitizePlotBoundary(updated.Plot_Boundary);
+    }
     if (isMongoConnected) {
       const isObjId = mongoose.Types.ObjectId.isValid(targetId);
       const query = isObjId

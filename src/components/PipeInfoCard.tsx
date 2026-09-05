@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { AWDPipe, Installation, MonitoringRecord } from '../types';
-import { MapPin, Plus, CheckCircle2, UserCheck, ShieldAlert, History, Calendar, Sprout, Phone, ZoomIn, Camera, X, Loader2 } from 'lucide-react';
+import { MapPin, Plus, CheckCircle2, UserCheck, ShieldAlert, History, Calendar, Sprout, Phone, ZoomIn, Camera, X, Loader2, Hexagon } from 'lucide-react';
 import { PhotoLightbox } from './PhotoLightbox';
 
 const apiFetch = (url: RequestInfo | URL, options?: RequestInit) => {
@@ -206,7 +206,14 @@ export const PipeInfoCard: React.FC<PipeInfoCardProps> = ({
               <div className="space-y-2 text-xs">
                 <div className="flex justify-between py-1.5 border-b border-slate-100">
                   <span className="text-slate-500">Plot Size & Unit</span>
-                  <span className="font-bold text-slate-800">{installation.Plot_Size} {installation.Plot_Size_Unit} (Survey: {installation.Survey_No || 'N/A'})</span>
+                  <div className="flex items-center gap-1.5">
+                    <span className="font-bold text-slate-800">{installation.Plot_Size} {installation.Plot_Size_Unit} (Survey: {installation.Survey_No || 'N/A'})</span>
+                    {installation.Plot_Boundary && installation.Plot_Boundary.length >= 3 && (
+                      <span className="text-[9px] font-bold bg-teal-100 text-teal-800 px-1.5 py-0.5 rounded-full border border-teal-200 flex items-center gap-0.5 shrink-0">
+                        <Hexagon className="w-2.5 h-2.5" /> Mapped
+                      </span>
+                    )}
+                  </div>
                 </div>
                 <div className="flex justify-between py-1.5 border-b border-slate-100">
                   <span className="text-slate-500">Establishment Method</span>
