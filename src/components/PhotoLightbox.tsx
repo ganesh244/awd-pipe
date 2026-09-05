@@ -1,6 +1,7 @@
 import React, { useEffect, useCallback, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { X, ZoomIn, ZoomOut, RotateCw, RefreshCw, Download, ExternalLink, ShieldCheck } from 'lucide-react';
+import { useDialog } from '../hooks/useDialog';
 
 interface PhotoLightboxProps {
   url: string;
@@ -20,23 +21,9 @@ export const PhotoLightbox: React.FC<PhotoLightboxProps> = ({ url, caption, onCl
     setRotation(0);
   };
 
-  // Close on ESC key
-  const handleKeyDown = useCallback(
-    (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
-    },
-    [onClose]
-  );
-
-  useEffect(() => {
-    document.addEventListener('keydown', handleKeyDown);
-    // Prevent the page behind from scrolling
-    document.body.style.overflow = 'hidden';
-    return () => {
-      document.removeEventListener('keydown', handleKeyDown);
-      document.body.style.overflow = '';
-    };
-  }, [handleKeyDown]);
+  // Escape-to-close and scroll lock now come from the shared dialog hook, which
+  // also adds the focus trap and focus restore this lightbox was missing.
+  const { dialogProps } = useDialog({ onClose, label: caption ?? 'Full resolution field photo' });
 
   const handleDownload = () => {
     const a = document.createElement('a');
@@ -54,9 +41,7 @@ export const PhotoLightbox: React.FC<PhotoLightboxProps> = ({ url, caption, onCl
     <div
       className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-6 bg-slate-950/90 backdrop-blur-md animate-fadeIn"
       onClick={onClose}
-      role="dialog"
-      aria-modal="true"
-      aria-label={caption ?? 'Full Resolution Field Photo'}
+      {...dialogProps}
     >
       {/* Lightbox Panel — stop clicks from closing when interacting with content */}
       <div

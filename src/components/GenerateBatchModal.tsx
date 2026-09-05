@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { AWDPipe } from '../types';
 import { QrCode, ShieldCheck, CheckCircle2, Sparkles, X, Plus, Printer, MapPin, Building2, Calendar } from 'lucide-react';
+import { useDialog } from '../hooks/useDialog';
 
 interface GenerateBatchModalProps {
   isOpen: boolean;
@@ -84,6 +85,9 @@ export const GenerateBatchModal: React.FC<GenerateBatchModalProps> = ({
   onNavigateToLabels,
   existingPipeCount,
 }) => {
+  // Escape-to-close, focus trap, focus restore and scroll lock.
+  const { dialogProps } = useDialog({ open: isOpen, onClose, label: 'Generate a QR pipe batch' });
+
   const [stateCode, setStateCode] = useState('TS');
   const [year, setYear] = useState('2026');
   const [districtCode, setDistrictCode] = useState('KRM');
@@ -144,7 +148,7 @@ export const GenerateBatchModal: React.FC<GenerateBatchModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 overflow-y-auto">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 overflow-y-auto" {...dialogProps}>
       <div className="bg-white rounded-2xl max-w-xl w-full shadow-2xl border border-[#d1dbd1] overflow-hidden my-8 animate-scaleIn">
 
         {/* Modal Header */}

@@ -1,0 +1,115 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>useDialog behaviour test</title>
+<!--
+  Exercises the dialog hook's behaviour in a real browser: focus trap, Escape,
+  focus restore, scroll lock, and nesting. Run by loading this page through the
+  Vite dev server (it imports the hook as a module) and reading window.__results.
+-->
+<body>
+  <button id="trigger">Open</button>
+  <div id="root"></div>
+  <pre id="out"></pre>
+
+<script type="module">
+// Bare specifiers so Vite resolves these to the SAME React instance the hook
+// uses — importing React from a CDN here would give two copies and every hook
+// call would fail.
+import React from 'react';
+import { createRoot } from 'react-dom/client';
+import { useDialog, __dialogState } from '/src/hooks/useDialog.ts';
+
+const h = React.createElement;
+const results = [];
+const check = (name, got, want) => results.push({ name, got, want, pass: JSON.stringify(got) === JSON.stringify(want) });
+
+let closeCalls = 0;
+
+function Dialog({ open, onClose, label }) {
+  const { dialogProps } = useDialog({ open, onClose, label });
+  if (!open) return null;
+  return h('div', { ...dialogProps, id: 'dlg' },
+    h('button', { id: 'b1' }, 'one'),
+    h('button', { id: 'b2' }, 'two'),
+    h('button', { id: 'b3' }, 'three'),
+  );
+}
+
+const root = createRoot(document.getElementById('root'));
+const trigger = document.getElementById('trigger');
+
+const press = (key, shiftKey = false) =>
+  document.dispatchEvent(new KeyboardEvent('keydown', { key, shiftKey, bubbles: true }));
+const tick = () => new Promise(r => setTimeout(r, 30));
+
+(async () => {
+  // Focus the trigger first so we can assert focus is restored to it later.
+  trigger.focus();
+  check('scroll unlocked before open', document.body.style.overflow, '');
+
+  root.render(h(Dialog, { open: true, onClose: () => { closeCalls++; }, label: 'Test dialog' }));
+  await tick();
+
+  const dlg = document.getElementById('dlg');
+  check('role is dialog', dlg.getAttribute('role'), 'dialog');
+  check('aria-modal set', dlg.getAttribute('aria-modal'), 'true');
+  check('accessible name set', dlg.getAttribute('aria-label'), 'Test dialog');
+  check('scroll locked while open', document.body.style.overflow, 'hidden');
+  check('focus moved into dialog', document.activeElement.id, 'b1');
+  check('one dialog on the stack', __dialogState().depth, 1);
+
+  // Tab from the last focusable should wrap to the first, not escape the dialog.
+  document.getElementById('b3').focus();
+  press('Tab');
+  await tick();
+  check('Tab wraps last -> first', document.activeElement.id, 'b1');
+
+  // Shift+Tab from the first should wrap to the last.
+  press('Tab', true);
+  await tick();
+  check('Shift+Tab wraps first -> last', document.activeElement.id, 'b3');
+
+  // Escape invokes onClose.
+  press('Escape');
+  await tick();
+  check('Escape calls onClose once', closeCalls, 1);
+
+  // Unmount: scroll unlocks, stack empties, focus returns to the trigger.
+  root.render(h(Dialog, { open: false, onClose: () => {}, label: 'Test dialog' }));
+  await tick();
+  check('scroll unlocked after close', document.body.style.overflow, '');
+  check('stack empty after close', __dialogState().depth, 0);
+  check('focus restored to trigger', document.activeElement.id, 'trigger');
+
+  // Nesting: closing the inner dialog must not unlock scroll while the outer
+  // one is still open.
+  function Nested({ innerOpen }) {
+    const outer = useDialog({ open: true, label: 'outer' });
+    const inner = useDialog({ open: innerOpen, label: 'inner' });
+    return h('div', { ...outer.dialogProps, id: 'outer' },
+      h('button', { id: 'ob' }, 'outer btn'),
+      innerOpen ? h('div', { ...inner.dialogProps, id: 'inner' }, h('button', { id: 'ib' }, 'inner btn')) : null,
+    );
+  }
+  root.render(h(Nested, { innerOpen: true }));
+  await tick();
+  check('two dialogs stacked', __dialogState().depth, 2);
+  check('scroll locked with nesting', document.body.style.overflow, 'hidden');
+
+  root.render(h(Nested, { innerOpen: false }));
+  await tick();
+  check('inner closed leaves one', __dialogState().depth, 1);
+  check('scroll still locked for outer', document.body.style.overflow, 'hidden');
+
+  root.render(h('div'));
+  await tick();
+  check('all closed unlocks scroll', document.body.style.overflow, '');
+  check('stack fully empty', __dialogState().depth, 0);
+
+  window.__results = results;
+  document.getElementById('out').textContent =
+    results.map(r => `${r.pass ? 'PASS' : 'FAIL'}  ${r.name}` + (r.pass ? '' : `  (got ${JSON.stringify(r.got)}, want ${JSON.stringify(r.want)})`)).join('\n')
+    + `\n\n${results.filter(r => r.pass).length}/${results.length} passed`;
+})();
+</script>
+</body>

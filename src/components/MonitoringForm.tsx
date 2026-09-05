@@ -3,6 +3,7 @@ import { MonitoringRecord, CropStage, AWDFollowed, PipeCondition, User } from '.
 import { CameraCapture } from './CameraCapture';
 import { playSuccessSound } from '../utils/soundUtils';
 import { X, Calendar, Droplet, UserCheck, AlertCircle, MapPin } from 'lucide-react';
+import { useDialog } from '../hooks/useDialog';
 
 interface MonitoringFormProps {
   pipeId: string;
@@ -19,6 +20,9 @@ export const MonitoringForm: React.FC<MonitoringFormProps> = ({
   onSubmit,
   currentUser,
 }) => {
+  // Escape-to-close, focus trap, focus restore and scroll lock.
+  const { dialogProps } = useDialog({ open: isOpen, onClose, label: 'Log a field monitoring visit' });
+
   // Stable: only computed once (or when the component mounts), NOT on every render
   const today = useMemo(() => new Date().toISOString().substring(0, 10), []);
 
@@ -126,7 +130,7 @@ export const MonitoringForm: React.FC<MonitoringFormProps> = ({
 
 
   return (
-    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fadeIn">
+    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fadeIn" {...dialogProps}>
       <div className="bg-white rounded-2xl max-w-xl w-full p-6 space-y-5 shadow-2xl max-h-[90vh] overflow-y-auto border border-slate-200">
         
         {/* Modal Header */}

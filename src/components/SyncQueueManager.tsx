@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { OfflineQueueItem } from '../types';
 import { Wifi, WifiOff, Trash2, RefreshCw, CheckCircle2, AlertCircle, X, ChevronRight, Database, UserCheck, Activity } from 'lucide-react';
+import { useDialog } from '../hooks/useDialog';
 
 interface SyncQueueManagerProps {
   isOpen: boolean;
@@ -21,6 +22,9 @@ export const SyncQueueManager: React.FC<SyncQueueManagerProps> = ({
   onSyncAll,
   onDeleteItem
 }) => {
+  // Escape-to-close, focus trap, focus restore and scroll lock.
+  const { dialogProps } = useDialog({ open: isOpen, onClose, label: 'Offline sync queue' });
+
   const [syncing, setSyncing] = useState(false);
   const [syncMessage, setSyncMessage] = useState<{ type: 'success' | 'error' | 'partial'; text: string } | null>(null);
 
@@ -49,7 +53,7 @@ export const SyncQueueManager: React.FC<SyncQueueManagerProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fadeIn">
+    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fadeIn" {...dialogProps}>
       <div className="bg-white rounded-3xl w-full max-w-2xl overflow-hidden border border-slate-100 shadow-2xl flex flex-col max-h-[85vh]">
         
         {/* Header */}

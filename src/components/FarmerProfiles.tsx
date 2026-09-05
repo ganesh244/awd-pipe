@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { PhotoLightbox } from './PhotoLightbox';
 import { Installation, MonitoringRecord, User as UserType, AWDPipe } from '../types';
+import { useDialog } from '../hooks/useDialog';
 
 // ── Download Helpers ──────────────────────────────────────────────────────────
 
@@ -242,6 +243,8 @@ const EditFarmerModal: React.FC<{
   onClose: () => void;
 }> = ({ inst, onSave, onClose }) => {
   const [form, setForm] = useState<Installation>({ ...inst });
+  // Escape-to-close, focus trap, focus restore and scroll lock.
+  const { dialogProps } = useDialog({ onClose, label: 'Edit farmer registration' });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -250,7 +253,7 @@ const EditFarmerModal: React.FC<{
   };
 
   return ReactDOM.createPortal(
-    <div className="fixed inset-0 bg-slate-900/65 backdrop-blur-md z-[9999] flex items-center justify-center p-4 overflow-y-auto">
+    <div className="fixed inset-0 bg-slate-900/65 backdrop-blur-md z-[9999] flex items-center justify-center p-4 overflow-y-auto" {...dialogProps}>
       <div className="bg-white rounded-3xl max-w-2xl w-full p-6 space-y-5 shadow-2xl border border-slate-200 my-8">
         <div className="flex items-center justify-between border-b pb-3">
           <div className="flex items-center gap-2">
@@ -669,7 +672,7 @@ const PipeDetailCard: React.FC<{
                         className="w-full group relative overflow-hidden rounded-xl border border-slate-700 bg-slate-950 p-1.5 shadow-inner hover:border-blue-400 transition-all ml-10 mt-1 cursor-pointer"
                         style={{ maxWidth: 'calc(100% - 2.5rem)' }}
                       >
-                        <div className="flex items-center justify-between text-xs text-slate-300 font-bold uppercase tracking-wider px-2 pt-1 pb-1">
+                        <div className="flex items-center justify-between text-xs text-slate-600 font-bold uppercase tracking-wider px-2 pt-1 pb-1">
                           <span className="flex items-center gap-1"><Camera className="w-3 h-3 text-blue-400" /> Visit Photo</span>
                           <span className="text-blue-400 font-extrabold flex items-center gap-0.5"><ZoomIn className="w-3 h-3" /> Uncropped HD</span>
                         </div>
@@ -989,6 +992,9 @@ export const FarmerProfiles: React.FC<FarmerProfilesProps> = ({
 
   const selectedFarmerInsts = selectedFarmer ? farmerMap.get(selectedFarmer) : null;
 
+  // Escape-to-close, focus trap, focus restore and scroll lock.
+  const deleteDialog = useDialog({ open: !!deleteConfirmTarget, onClose: () => setDeleteConfirmTarget(null), label: 'Confirm deletion' });
+
   return (
     <div className="space-y-6">
       {/* Edit Farmer Modal */}
@@ -1005,7 +1011,7 @@ export const FarmerProfiles: React.FC<FarmerProfilesProps> = ({
 
       {/* Delete Confirmation Modal */}
       {deleteConfirmTarget && ReactDOM.createPortal(
-        <div className="fixed inset-0 bg-slate-900/65 backdrop-blur-md z-[10000] flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-slate-900/65 backdrop-blur-md z-[10000] flex items-center justify-center p-4" {...deleteDialog.dialogProps}>
           <div className="bg-white rounded-3xl max-w-md w-full p-6 space-y-5 shadow-2xl border border-slate-200 animate-in fade-in zoom-in duration-150">
             <div className="flex items-center gap-3">
               <div className="p-3 bg-red-100 text-red-600 rounded-2xl">
