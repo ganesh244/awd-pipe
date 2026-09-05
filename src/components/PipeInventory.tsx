@@ -145,7 +145,7 @@ export const PipeInventory: React.FC<PipeInventoryProps> = ({
                 type="button"
                 onClick={() => setSearchTerm('')}
                 aria-label="Clear search"
-                className="absolute right-3 top-2.5 text-slate-400 hover:text-slate-600 p-0.5 rounded-full hover:bg-slate-200"
+                className="absolute right-3 top-2.5 text-slate-500 hover:text-slate-600 p-0.5 rounded-full hover:bg-slate-200"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -211,7 +211,7 @@ export const PipeInventory: React.FC<PipeInventoryProps> = ({
             <tbody className="divide-y divide-slate-100 text-slate-700">
               {filteredPipes.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-4 py-8 text-center text-slate-400">
+                  <td colSpan={7} className="px-4 py-8 text-center text-slate-500">
                     No AWD pipes matched your search parameters.
                   </td>
                 </tr>
@@ -269,7 +269,7 @@ export const PipeInventory: React.FC<PipeInventoryProps> = ({
               <div className="text-xs font-black text-emerald-700 uppercase tracking-widest">DR. REDDY'S FOUNDATION</div>
               <span className="font-mono font-black text-base text-slate-900">{selectedQrPipe.Pipe_ID}</span>
             </div>
-            <button onClick={() => setSelectedQrPipe(null)} aria-label="Close QR Modal" className="text-slate-400 hover:text-slate-600">
+            <button onClick={() => setSelectedQrPipe(null)} aria-label="Close QR Modal" className="text-slate-500 hover:text-slate-600">
               <X className="w-5 h-5" />
             </button>
           </div>
@@ -277,7 +277,7 @@ export const PipeInventory: React.FC<PipeInventoryProps> = ({
             {qrCanvasUrl ? (
               <img src={qrCanvasUrl} alt={`QR Code for ${selectedQrPipe.Pipe_ID}`} className="w-48 h-48 mx-auto" />
             ) : (
-              <div className="w-48 h-48 bg-slate-100 flex items-center justify-center text-slate-400 text-xs">
+              <div className="w-48 h-48 bg-slate-100 flex items-center justify-center text-slate-600 text-xs">
                 Generating QR...
               </div>
             )}
@@ -301,14 +301,14 @@ export const PipeInventory: React.FC<PipeInventoryProps> = ({
         <div className="bg-white rounded-2xl max-w-sm w-full p-6 space-y-4 shadow-2xl border border-slate-200 text-left">
           <div className="flex justify-between items-center border-b pb-2">
             <h3 className="font-bold text-lg text-emerald-900">Edit Pipe</h3>
-            <button onClick={() => setEditingPipe(null)} aria-label="Close Edit Modal" className="text-slate-400 hover:text-slate-600">
+            <button onClick={() => setEditingPipe(null)} aria-label="Close Edit Modal" className="text-slate-500 hover:text-slate-600">
               <X className="w-5 h-5" />
             </button>
           </div>
           <div className="space-y-4 pt-2">
             <div>
               <label className="block text-xs font-bold text-slate-700 mb-1">Pipe ID</label>
-              <div className="w-full bg-slate-100 p-2.5 rounded-xl border-2 border-slate-200 text-sm font-mono text-slate-500 cursor-not-allowed">
+              <div className="w-full bg-slate-100 p-2.5 rounded-xl border-2 border-slate-200 text-sm font-mono text-slate-600 cursor-not-allowed">
                 {editingPipe.Pipe_ID}
               </div>
             </div>
@@ -351,7 +351,7 @@ export const PipeInventory: React.FC<PipeInventoryProps> = ({
             <button
               onClick={() => { setIsBatchModalOpen(false); setEditingBatchNo(null); setBatchToDelete(null); }}
               aria-label="Close Manage Batches Modal"
-              className="text-slate-400 hover:text-slate-600"
+              className="text-slate-500 hover:text-slate-600"
             >
               <X className="w-5 h-5" />
             </button>
@@ -410,7 +410,7 @@ export const PipeInventory: React.FC<PipeInventoryProps> = ({
                   ) : (
                     <>
                       <div className="font-mono text-sm font-bold text-slate-700 flex-1 break-all">
-                        {batch} <span className="text-xs text-slate-400 font-sans ml-1">({pipes.filter(p => p.Batch_No === batch).length} pipes)</span>
+                        {batch} <span className="text-xs text-slate-500 font-sans ml-1">({pipes.filter(p => p.Batch_No === batch).length} pipes)</span>
                       </div>
                       <div className="flex gap-2 shrink-0">
                         <button

@@ -594,7 +594,7 @@ export const HierarchyManager: React.FC<HierarchyManagerProps> = ({
                               setEditingHierarchyType('state');
                               setEditingHierarchyItem(st);
                             }}
-                            className="p-2 text-slate-400 hover:text-amber-600 rounded-md hover:bg-amber-100 transition cursor-pointer"
+                            className="p-2 text-slate-500 hover:text-amber-600 rounded-md hover:bg-amber-100 transition cursor-pointer"
                             title="Edit State"
                           >
                             <Edit2 className="w-3.5 h-3.5" />
@@ -605,7 +605,7 @@ export const HierarchyManager: React.FC<HierarchyManagerProps> = ({
                                 e.stopPropagation();
                                 handleInlineHierarchyDelete('state', st);
                               }}
-                              className="p-2 text-slate-400 hover:text-red-600 rounded-md hover:bg-red-100 transition cursor-pointer"
+                              className="p-2 text-slate-500 hover:text-red-600 rounded-md hover:bg-red-100 transition cursor-pointer"
                               title="Delete State"
                             >
                               <Trash2 className="w-3.5 h-3.5" />
@@ -621,7 +621,7 @@ export const HierarchyManager: React.FC<HierarchyManagerProps> = ({
                           <button
                             onClick={(e) => { e.stopPropagation(); setEditingUser(stateUser); }}
                             title="Edit State Manager"
-                            className="p-2 text-slate-400 hover:text-blue-600 rounded hover:bg-blue-50 transition cursor-pointer"
+                            className="p-2 text-slate-500 hover:text-blue-600 rounded hover:bg-blue-50 transition cursor-pointer"
                           >
                             <Edit2 className="w-3.5 h-3.5" />
                           </button>
@@ -629,7 +629,7 @@ export const HierarchyManager: React.FC<HierarchyManagerProps> = ({
                             <button
                               onClick={(e) => { e.stopPropagation(); confirmAndDeleteUser(stateUser.id, stateUser.name); }}
                               title="Remove State Manager"
-                              className="p-2 text-slate-400 hover:text-red-600 rounded hover:bg-red-50 transition cursor-pointer"
+                              className="p-2 text-slate-500 hover:text-red-600 rounded hover:bg-red-50 transition cursor-pointer"
                             >
                               <Trash2 className="w-3.5 h-3.5" />
                             </button>
@@ -643,7 +643,7 @@ export const HierarchyManager: React.FC<HierarchyManagerProps> = ({
                             clearNodeManager('state', st);
                           }}
                           title="Clear State Manager Label"
-                          className="p-2 text-slate-400 hover:text-red-600 rounded hover:bg-red-50 transition cursor-pointer ml-2"
+                          className="p-2 text-slate-500 hover:text-red-600 rounded hover:bg-red-50 transition cursor-pointer ml-2"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
@@ -683,7 +683,7 @@ export const HierarchyManager: React.FC<HierarchyManagerProps> = ({
 
           <div className="space-y-2 max-h-[600px] overflow-y-auto pr-1">
             {visibleDistricts.length === 0 ? (
-              <p className="text-xs text-slate-400 text-center py-6 bg-slate-50 rounded-xl border border-dashed">
+              <p className="text-xs text-slate-500 text-center py-6 bg-slate-50 rounded-xl border border-dashed">
                 No districts available in your scope.
               </p>
             ) : (
@@ -712,7 +712,7 @@ export const HierarchyManager: React.FC<HierarchyManagerProps> = ({
                                 setEditingHierarchyType('district');
                                 setEditingHierarchyItem(dt);
                               }}
-                              className="p-2 text-slate-400 hover:text-blue-600 rounded-md hover:bg-blue-100 transition cursor-pointer"
+                              className="p-2 text-slate-500 hover:text-blue-600 rounded-md hover:bg-blue-100 transition cursor-pointer"
                               title="Edit District"
                             >
                               <Edit2 className="w-3.5 h-3.5" />
@@ -723,7 +723,7 @@ export const HierarchyManager: React.FC<HierarchyManagerProps> = ({
                                   e.stopPropagation();
                                   handleInlineHierarchyDelete('district', dt);
                                 }}
-                                className="p-2 text-slate-400 hover:text-red-600 rounded-md hover:bg-red-100 transition cursor-pointer"
+                                className="p-2 text-slate-500 hover:text-red-600 rounded-md hover:bg-red-100 transition cursor-pointer"
                                 title="Delete District"
                               >
                                 <Trash2 className="w-3.5 h-3.5" />
@@ -739,7 +739,7 @@ export const HierarchyManager: React.FC<HierarchyManagerProps> = ({
                             <button
                               onClick={(e) => { e.stopPropagation(); setEditingUser(distUser); }}
                               title="Edit District Manager"
-                              className="p-2 text-slate-400 hover:text-blue-600 rounded hover:bg-blue-50 transition cursor-pointer"
+                              className="p-2 text-slate-500 hover:text-blue-600 rounded hover:bg-blue-50 transition cursor-pointer"
                             >
                               <Edit2 className="w-3.5 h-3.5" />
                             </button>
@@ -747,7 +747,7 @@ export const HierarchyManager: React.FC<HierarchyManagerProps> = ({
                               <button
                                 onClick={(e) => { e.stopPropagation(); confirmAndDeleteUser(distUser.id, distUser.name); }}
                                 title="Remove District Manager"
-                                className="p-2 text-slate-400 hover:text-red-600 rounded hover:bg-red-50 transition cursor-pointer"
+                                className="p-2 text-slate-500 hover:text-red-600 rounded hover:bg-red-50 transition cursor-pointer"
                               >
                                 <Trash2 className="w-3.5 h-3.5" />
                               </button>
@@ -761,7 +761,7 @@ export const HierarchyManager: React.FC<HierarchyManagerProps> = ({
                               clearNodeManager('district', dt);
                             }}
                             title="Clear District Manager Label"
-                            className="p-2 text-slate-400 hover:text-red-600 rounded hover:bg-red-50 transition cursor-pointer ml-2"
+                            className="p-2 text-slate-500 hover:text-red-600 rounded hover:bg-red-50 transition cursor-pointer ml-2"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
                           </button>
@@ -802,7 +802,7 @@ export const HierarchyManager: React.FC<HierarchyManagerProps> = ({
 
           <div className="space-y-4 max-h-[600px] overflow-y-auto pr-1">
             {visibleAreas.length === 0 ? (
-              <p className="text-xs text-slate-400 text-center py-6 bg-slate-50 rounded-xl border border-dashed">
+              <p className="text-xs text-slate-500 text-center py-6 bg-slate-50 rounded-xl border border-dashed">
                 No area managers configured under selected district.
               </p>
             ) : (
@@ -825,7 +825,7 @@ export const HierarchyManager: React.FC<HierarchyManagerProps> = ({
                                   setEditingHierarchyType('area');
                                   setEditingHierarchyItem(ar);
                                 }}
-                                className="p-2 text-slate-400 hover:text-teal-600 rounded-md hover:bg-teal-100 transition cursor-pointer"
+                                className="p-2 text-slate-500 hover:text-teal-600 rounded-md hover:bg-teal-100 transition cursor-pointer"
                                 title="Edit Area"
                               >
                                 <Edit2 className="w-3.5 h-3.5" />
@@ -836,7 +836,7 @@ export const HierarchyManager: React.FC<HierarchyManagerProps> = ({
                                     e.stopPropagation();
                                     handleInlineHierarchyDelete('area', ar);
                                   }}
-                                  className="p-2 text-slate-400 hover:text-red-600 rounded-md hover:bg-red-100 transition cursor-pointer"
+                                  className="p-2 text-slate-500 hover:text-red-600 rounded-md hover:bg-red-100 transition cursor-pointer"
                                   title="Delete Area"
                                 >
                                   <Trash2 className="w-3.5 h-3.5" />
@@ -896,14 +896,14 @@ export const HierarchyManager: React.FC<HierarchyManagerProps> = ({
                     {/* CF / JCF Field Staff List */}
                     <div className="space-y-2 pl-2 border-l-2 border-teal-500/60 max-h-[400px] overflow-y-auto pr-1">
                       <div className="flex items-center justify-between">
-                        <span className="text-xs font-black uppercase tracking-wider text-slate-400">
+                        <span className="text-xs font-black uppercase tracking-wider text-slate-500">
                           Assigned Facilitators ({fieldStaff.length})
                         </span>
-                        <span className="text-[9px] text-slate-400 italic">Strict data scoping enabled</span>
+                        <span className="text-[9px] text-slate-500 italic">Strict data scoping enabled</span>
                       </div>
 
                       {fieldStaff.length === 0 ? (
-                        <p className="text-xs text-slate-400 italic py-1">No CF/JCF assigned to this area yet.</p>
+                        <p className="text-xs text-slate-500 italic py-1">No CF/JCF assigned to this area yet.</p>
                       ) : (
                         fieldStaff.map((staff) => {
                           const isJCF = staff.role === 'JCF';
@@ -931,7 +931,7 @@ export const HierarchyManager: React.FC<HierarchyManagerProps> = ({
                                     <button
                                       onClick={() => setEditingUser(staff)}
                                       title="Edit Roles & Responsibilities"
-                                      className="p-2 text-slate-400 hover:text-blue-600 rounded-lg hover:bg-blue-50 transition cursor-pointer"
+                                      className="p-2 text-slate-500 hover:text-blue-600 rounded-lg hover:bg-blue-50 transition cursor-pointer"
                                     >
                                       <Edit2 className="w-3.5 h-3.5" />
                                     </button>
@@ -940,7 +940,7 @@ export const HierarchyManager: React.FC<HierarchyManagerProps> = ({
                                     <button
                                       onClick={() => confirmAndDeleteUser(staff.id, staff.name)}
                                       title="Remove User"
-                                      className="p-2 text-slate-400 hover:text-red-600 rounded-lg hover:bg-red-50 transition cursor-pointer"
+                                      className="p-2 text-slate-500 hover:text-red-600 rounded-lg hover:bg-red-50 transition cursor-pointer"
                                     >
                                       <Trash2 className="w-3.5 h-3.5" />
                                     </button>
@@ -951,7 +951,7 @@ export const HierarchyManager: React.FC<HierarchyManagerProps> = ({
                               {/* Credentials preview for supervisors */}
                               <div className="flex items-center justify-between text-xs bg-slate-50 px-2 py-1 rounded-lg font-mono border border-slate-100">
                                 <span className="text-slate-600">ID: <strong>@{staff.username}</strong></span>
-                                <span className="text-slate-400">Pwd: <span className="italic">Hidden for Security</span></span>
+                                <span className="text-slate-500">Pwd: <span className="italic">Hidden for Security</span></span>
                               </div>
                             </div>
                           );
@@ -1059,7 +1059,7 @@ export const HierarchyManager: React.FC<HierarchyManagerProps> = ({
               </div>
               <button
                 onClick={() => setIsAddUserOpen(false)}
-                className="text-slate-400 hover:text-slate-600 font-bold p-1 cursor-pointer"
+                className="text-slate-500 hover:text-slate-600 font-bold p-1 cursor-pointer"
               >
                 ✕
               </button>
@@ -1394,7 +1394,7 @@ export const HierarchyManager: React.FC<HierarchyManagerProps> = ({
               </div>
               <button
                 onClick={() => setEditingUser(null)}
-                className="text-slate-400 hover:text-slate-600 font-bold p-1 cursor-pointer"
+                className="text-slate-500 hover:text-slate-600 font-bold p-1 cursor-pointer"
               >
                 ✕
               </button>
@@ -1647,7 +1647,7 @@ export const HierarchyManager: React.FC<HierarchyManagerProps> = ({
                   setEditingHierarchyType(null);
                   setEditingHierarchyItem(null);
                 }}
-                className="text-slate-400 hover:text-slate-600 font-bold p-1 cursor-pointer"
+                className="text-slate-500 hover:text-slate-600 font-bold p-1 cursor-pointer"
               >
                 ✕
               </button>

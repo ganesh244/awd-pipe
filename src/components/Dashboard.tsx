@@ -72,7 +72,7 @@ const SectionTitle: React.FC<{ icon: React.FC<any>; title: string; sub?: string 
     </div>
     <div>
       <div className="font-extrabold text-slate-800 text-sm">{title}</div>
-      {sub && <div className="text-xs text-slate-400">{sub}</div>}
+      {sub && <div className="text-xs text-slate-500">{sub}</div>}
     </div>
   </div>
 );
@@ -363,7 +363,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ pipes, installations, moni
               <Target className="w-5 h-5 text-slate-500" />
             </div>
             <div>
-              <div className="text-xs font-bold text-slate-500 uppercase tracking-wider">Phase Registration Target</div>
+              <div className="text-xs font-bold text-slate-600 uppercase tracking-wider">Phase Registration Target</div>
               <div className="text-lg font-black text-slate-800">{totalInstalled} <span className="text-sm font-bold text-slate-400">/ {REGISTRATION_TARGET} pipes</span></div>
             </div>
           </div>
@@ -527,7 +527,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ pipes, installations, moni
                 );
               })}
             </div>
-            <div className="mt-3 text-xs text-slate-400 text-center">Avg water level: <strong className="text-slate-600">{avgWaterLevel} cm</strong> across {totalVisits} readings</div>
+            <div className="mt-3 text-xs text-slate-500 text-center">Avg water level: <strong className="text-slate-600">{avgWaterLevel} cm</strong> across {totalVisits} readings</div>
           </div>
         </div>
 
@@ -582,7 +582,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ pipes, installations, moni
                 </div>
                 <div>
                   <div className="font-extrabold text-slate-800 text-sm">Top Villages</div>
-                  <div className="text-xs text-slate-400">By pipe installations</div>
+                  <div className="text-xs text-slate-500">By pipe installations</div>
                 </div>
               </div>
               <select
@@ -595,10 +595,10 @@ export const Dashboard: React.FC<DashboardProps> = ({ pipes, installations, moni
             </div>
             <div className="space-y-2">
               {villageStats.length === 0 ? (
-                <div className="text-center py-6 text-slate-400 text-xs">No data for this filter</div>
+                <div className="text-center py-6 text-slate-500 text-xs">No data for this filter</div>
               ) : villageStats.map(([village, count], idx) => (
                 <div key={village} className="flex items-center gap-3">
-                  <span className="text-xs font-bold text-slate-400 w-4 text-right">{idx + 1}</span>
+                  <span className="text-xs font-bold text-slate-500 w-4 text-right">{idx + 1}</span>
                   <div className="flex-1 min-w-0">
                     <div className="flex justify-between text-xs mb-1">
                       <span className="font-semibold text-slate-700 truncate">{village}</span>
@@ -632,7 +632,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ pipes, installations, moni
                       <div className="w-20">
                         <ProgressBar pct={pct} color={BAR_COLORS[idx % BAR_COLORS.length]} thin />
                       </div>
-                      <span className="text-slate-400 w-8 text-right">{pct}%</span>
+                      <span className="text-slate-500 w-8 text-right">{pct}%</span>
                     </div>
                   );
                 })}
@@ -649,7 +649,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ pipes, installations, moni
                       <span className={`w-2 h-2 rounded-full shrink-0 ${BAR_COLORS[idx % BAR_COLORS.length]}`} />
                       <span className="flex-1 text-slate-600 font-medium truncate">{variety}</span>
                       <span className="font-bold text-slate-800 w-8 text-right">{count}</span>
-                      <span className="text-slate-400 w-8 text-right">{pct}%</span>
+                      <span className="text-slate-500 w-8 text-right">{pct}%</span>
                     </div>
                   );
                 })}
@@ -665,7 +665,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ pipes, installations, moni
           <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm">
             <SectionTitle icon={Calendar} title="Installation Timeline" sub="Pipes deployed per month" />
             {installTimeline.length === 0 ? (
-              <div className="text-center py-8 text-slate-400 text-xs">No timeline data available</div>
+              <div className="text-center py-8 text-slate-500 text-xs">No timeline data available</div>
             ) : (
               <div className="flex items-end gap-2 h-32 mt-2">
                 {installTimeline.map(([month, count], idx) => {
@@ -681,7 +681,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ pipes, installations, moni
                           style={{ height: `${Math.max(4, heightPct)}%` }}
                         />
                       </div>
-                      <span className="text-[9px] text-slate-400 font-medium">{label}</span>
+                      <span className="text-[9px] text-slate-500 font-medium">{label}</span>
                     </div>
                   );
                 })}
@@ -710,7 +710,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ pipes, installations, moni
                 );
               })}
               {Object.keys(cropStageStats).length === 0 && (
-                <div className="text-center py-6 text-slate-400 text-xs">No monitoring data yet</div>
+                <div className="text-center py-6 text-slate-500 text-xs">No monitoring data yet</div>
               )}
             </div>
           </div>
@@ -720,7 +720,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ pipes, installations, moni
             <SectionTitle icon={ClipboardList} title="Recent Field Visits" sub="Latest monitoring entries" />
             <div className="space-y-2">
               {recentVisits.length === 0 ? (
-                <div className="text-center py-6 text-slate-400 text-xs">No monitoring visits recorded</div>
+                <div className="text-center py-6 text-slate-500 text-xs">No monitoring visits recorded</div>
               ) : recentVisits.map((v, i) => {
                 const inst = installations.find(inst => inst.Pipe_ID === v.Pipe_ID);
                 return (
@@ -732,7 +732,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ pipes, installations, moni
                     <div className="flex-1 min-w-0">
                       <div className="flex justify-between items-start gap-1">
                         <span className="font-bold text-slate-800 text-xs truncate">{inst?.Farmer_Name ?? v.Pipe_ID}</span>
-                        <span className="text-xs text-slate-400 shrink-0">{fmtDate(v.Visit_Date)}</span>
+                        <span className="text-xs text-slate-500 shrink-0">{fmtDate(v.Visit_Date)}</span>
                       </div>
                       <div className="text-xs text-slate-500 mt-0.5 flex flex-wrap gap-x-2">
                         <span>💧 {v.Water_Level}cm</span>

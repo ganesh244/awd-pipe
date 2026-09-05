@@ -262,7 +262,7 @@ const EditFarmerModal: React.FC<{
               Edit Farmer & Field Registration ({inst.Pipe_ID})
             </h3>
           </div>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-600 font-bold p-1 cursor-pointer">
+          <button onClick={onClose} className="text-slate-500 hover:text-slate-600 font-bold p-1 cursor-pointer">
             ✕
           </button>
         </div>
@@ -270,7 +270,7 @@ const EditFarmerModal: React.FC<{
         <form onSubmit={handleSubmit} className="space-y-4 max-h-[75vh] overflow-y-auto pr-1">
           {/* Section 1: Farmer Personal Details */}
           <div>
-            <h4 className="text-xs font-black text-slate-400 uppercase tracking-wider mb-2">Farmer Information</h4>
+            <h4 className="text-xs font-black text-slate-500 uppercase tracking-wider mb-2">Farmer Information</h4>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1">Farmer Name *</label>
@@ -306,7 +306,7 @@ const EditFarmerModal: React.FC<{
 
           {/* Section 2: Location */}
           <div>
-            <h4 className="text-xs font-black text-slate-400 uppercase tracking-wider mb-2">Location Details</h4>
+            <h4 className="text-xs font-black text-slate-500 uppercase tracking-wider mb-2">Location Details</h4>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1">Village *</label>
@@ -352,7 +352,7 @@ const EditFarmerModal: React.FC<{
 
           {/* Section 3: Field & Crop Details */}
           <div>
-            <h4 className="text-xs font-black text-slate-400 uppercase tracking-wider mb-2">Field & Crop Specifications</h4>
+            <h4 className="text-xs font-black text-slate-500 uppercase tracking-wider mb-2">Field & Crop Specifications</h4>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1">Survey No.</label>
@@ -419,7 +419,7 @@ const EditFarmerModal: React.FC<{
 
           {/* Section 4: Installation Info */}
           <div>
-            <h4 className="text-xs font-black text-slate-400 uppercase tracking-wider mb-2">Installation Meta</h4>
+            <h4 className="text-xs font-black text-slate-500 uppercase tracking-wider mb-2">Installation Meta</h4>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1">Installed By</label>
@@ -517,12 +517,12 @@ const PipeDetailCard: React.FC<{
             <div className="text-xs text-slate-500 mt-1 flex items-center gap-2">
               <MapPin className="w-3 h-3" />
               {inst.Village}, {inst.Mandal}, {inst.District}
-              {inst.Survey_No && <span className="text-slate-400">• Survey #{inst.Survey_No}</span>}
+              {inst.Survey_No && <span className="text-slate-500">• Survey #{inst.Survey_No}</span>}
             </div>
           </div>
         </div>
         <div className="flex items-center gap-3 shrink-0 ml-2">
-          <div className="text-right text-xs text-slate-400 hidden sm:block">
+          <div className="text-right text-xs text-slate-500 hidden sm:block">
             <div>Installed {formatDate(inst.Installation_Date)}</div>
             <div>{visits.length} visit{visits.length !== 1 ? 's' : ''}</div>
           </div>
@@ -550,7 +550,7 @@ const PipeDetailCard: React.FC<{
               ['Install Date', formatDate(inst.Installation_Date)],
             ].map(([k, v]) => (
               <div key={k} className="bg-slate-50 rounded-xl p-2.5 border border-slate-100">
-                <div className="text-xs font-bold text-slate-400 uppercase tracking-wider">{k}</div>
+                <div className="text-xs font-bold text-slate-500 uppercase tracking-wider">{k}</div>
                 <div className="text-xs font-bold text-slate-700 mt-0.5 break-words">{v}</div>
               </div>
             ))}
@@ -588,7 +588,7 @@ const PipeDetailCard: React.FC<{
               >
                 <MapPin className="w-3.5 h-3.5 text-red-500" /> View on Maps
               </a>
-              <span className="text-xs font-mono text-slate-400">
+              <span className="text-xs font-mono text-slate-500">
                 GPS: {inst.Latitude}, {inst.Longitude} (±{inst.GPS_Accuracy}m)
               </span>
             </div>
@@ -632,7 +632,7 @@ const PipeDetailCard: React.FC<{
               <ClipboardList className="w-3.5 h-3.5" /> Monitoring Visits ({visits.length})
             </div>
             {visits.length === 0 ? (
-              <div className="text-center py-6 border border-dashed border-slate-200 rounded-xl text-slate-400 text-xs">
+              <div className="text-center py-6 border border-dashed border-slate-200 rounded-xl text-slate-500 text-xs">
                 <AlertTriangle className="w-5 h-5 mx-auto mb-1 opacity-40" />
                 No monitoring visits recorded for this pipe yet.
               </div>
@@ -645,21 +645,21 @@ const PipeDetailCard: React.FC<{
                         {i + 1}
                       </div>
                       <div className="flex-1 grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-1 text-xs">
-                        <div><span className="text-slate-400">Date:</span> <span className="font-bold">{formatDate(v.Visit_Date)}</span></div>
-                        <div><span className="text-slate-400">Water Level:</span> <span className="font-bold">{v.Water_Level}</span></div>
-                        <div><span className="text-slate-400">Crop Stage:</span> <span className="font-bold">{v.Crop_Stage}</span></div>
+                        <div><span className="text-slate-500">Date:</span> <span className="font-bold">{formatDate(v.Visit_Date)}</span></div>
+                        <div><span className="text-slate-500">Water Level:</span> <span className="font-bold">{v.Water_Level}</span></div>
+                        <div><span className="text-slate-500">Crop Stage:</span> <span className="font-bold">{v.Crop_Stage}</span></div>
                         <div>
-                          <span className="text-slate-400">AWD Followed:</span>{' '}
+                          <span className="text-slate-500">AWD Followed:</span>{' '}
                           <span className={`font-bold px-1.5 py-0.5 rounded border text-xs ${AWD_COLOR(v.AWD_Followed)}`}>{v.AWD_Followed}</span>
                         </div>
                         <div>
-                          <span className="text-slate-400">Pipe Condition:</span>{' '}
+                          <span className="text-slate-500">Pipe Condition:</span>{' '}
                           <span className={`font-bold px-1.5 py-0.5 rounded border text-xs ${COND_COLOR(v.Pipe_Condition)}`}>{v.Pipe_Condition}</span>
                         </div>
-                        <div><span className="text-slate-400">Visited By:</span> <span className="font-bold">{v.Visited_By}</span></div>
+                        <div><span className="text-slate-500">Visited By:</span> <span className="font-bold">{v.Visited_By}</span></div>
                         {v.Remarks && (
                           <div className="col-span-2 sm:col-span-3">
-                            <span className="text-slate-400">Remarks:</span> <span className="font-semibold">{v.Remarks}</span>
+                            <span className="text-slate-500">Remarks:</span> <span className="font-semibold">{v.Remarks}</span>
                           </div>
                         )}
                       </div>
@@ -817,7 +817,7 @@ const FarmerFullProfile: React.FC<{
             </div>
             <div className="text-xl font-extrabold text-slate-800">{value}</div>
             <div className="text-xs font-semibold text-slate-600 mt-0.5">{label}</div>
-            <div className="text-xs text-slate-400 mt-0.5">{sub}</div>
+            <div className="text-xs text-slate-500 mt-0.5">{sub}</div>
           </div>
         ))}
       </div>
@@ -1250,7 +1250,7 @@ export const FarmerProfiles: React.FC<FarmerProfilesProps> = ({
                         <h3 className="font-extrabold text-slate-900 text-sm group-hover:text-emerald-700 transition">
                           {f.name}
                         </h3>
-                        <div className="text-xs font-semibold text-slate-500 flex items-center gap-1 mt-0.5">
+                        <div className="text-xs font-semibold text-slate-600 flex items-center gap-1 mt-0.5">
                           <Phone className="w-3 h-3 text-slate-400" />
                           {f.rep.Mobile}
                         </div>

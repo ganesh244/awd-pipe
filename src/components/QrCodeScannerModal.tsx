@@ -433,7 +433,7 @@ export const QrCodeScannerModal: React.FC<QrCodeScannerModalProps> = ({
 
             <div className="relative flex items-center gap-3 py-1">
               <div className="flex-1 h-px bg-slate-800"></div>
-              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">OR ENTER ID</span>
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">OR ENTER ID</span>
               <div className="flex-1 h-px bg-slate-800"></div>
             </div>
 

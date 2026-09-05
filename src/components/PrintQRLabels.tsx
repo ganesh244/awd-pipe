@@ -463,7 +463,7 @@ export const PrintQRLabels: React.FC<PrintQRLabelsProps> = ({ pipes, onOpenGener
 
                 {/* Quick Presets */}
                 <div className="flex items-center gap-1.5 self-end pt-1">
-                  <span className="text-xs font-bold text-slate-400 uppercase mr-1">Presets:</span>
+                  <span className="text-xs font-bold text-slate-500 uppercase mr-1">Presets:</span>
                   <button
                     type="button"
                     onClick={() => applyPresetRange(10)}
@@ -597,7 +597,7 @@ export const PrintQRLabels: React.FC<PrintQRLabelsProps> = ({ pipes, onOpenGener
                     <div className="text-[9px] font-black text-emerald-800 uppercase tracking-widest truncate pr-4">
                       DR. REDDY'S FOUNDATION
                     </div>
-                    <div className="text-[8px] font-bold text-slate-400 flex items-center justify-between mt-0.5">
+                    <div className="text-[8px] font-bold text-slate-500 flex items-center justify-between mt-0.5">
                       <span>AWD PIPE</span>
                       <span className="text-emerald-700 font-mono text-[8px]">{p.Batch_No}</span>
                     </div>
@@ -625,7 +625,7 @@ export const PrintQRLabels: React.FC<PrintQRLabelsProps> = ({ pipes, onOpenGener
       )}
 
       {!isGenerating && rangeFilteredPipes.length === 0 && (
-        <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center text-slate-400 text-xs">
+        <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center text-slate-500 text-xs">
           No pipes match the selected range and filter options. Try adjusting the batch or range parameters above.
         </div>
       )}
