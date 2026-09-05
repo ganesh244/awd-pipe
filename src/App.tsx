@@ -18,6 +18,7 @@ const FarmerProfiles = React.lazy(() => import('./components/FarmerProfiles').th
 const Home = React.lazy(() => import('./components/Home').then(m => ({ default: m.Home })));
 import { SyncQueueManager } from './components/SyncQueueManager';
 import { AppLoadingScreen } from './components/AppLoadingScreen';
+import { initRetryDelay, preserveOnDegraded, canRevealApp, HOLD_LOADING_MS } from './utils/initLoad';
 import { AdminDevToolsModal } from './components/AdminDevToolsModal';
 
 const apiFetch = (url: RequestInfo | URL, options?: RequestInit) => {
@@ -317,9 +318,15 @@ export default function App() {
       areas: data.areas || [],
     });
 
-    if (Array.isArray(data.pipes)) setPipes(data.pipes);
-    if (Array.isArray(data.installations)) setInstallations(data.installations);
-    if (Array.isArray(data.monitoringList)) setMonitoringList(data.monitoringList);
+    // A `local` response means the API answered before Atlas finished connecting,
+    // and it carries empty arrays. An empty array is still an array, so applying
+    // it blindly wipes good data and the UI flashes "0 pipes" until the retry
+    // lands. Keep what we already have in that case.
+    const degraded = data.dbStatus !== 'cloud';
+
+    if (Array.isArray(data.pipes)) setPipes((prev) => preserveOnDegraded(data.pipes, prev, degraded));
+    if (Array.isArray(data.installations)) setInstallations((prev) => preserveOnDegraded(data.installations, prev, degraded));
+    if (Array.isArray(data.monitoringList)) setMonitoringList((prev) => preserveOnDegraded(data.monitoringList, prev, degraded));
 
     setDbStatus(data.dbStatus || 'local');
     return data;
@@ -420,6 +427,9 @@ export default function App() {
     let cancelled = false;
     let attempt = 0;
     let isInFlight = false; // guard: only one /api/init in-flight at a time
+    const startedAt = Date.now();
+    const MAX_ATTEMPTS = 5;
+    const readyEnough = () => Date.now() - startedAt >= HOLD_LOADING_MS;
 
     const attemptRefresh = () => {
       if (isInFlight) return; // don't pile up parallel requests — wait for current one
@@ -427,9 +437,15 @@ export default function App() {
       refreshHierarchyFromServer()
         .then((data) => {
           if (cancelled) return;
-          if (data?.dbStatus === 'local' && attempt < 5) {
+          const stillWaking = data?.dbStatus === 'local';
+          if (stillWaking && attempt < MAX_ATTEMPTS) {
             attempt += 1;
-            setTimeout(attemptRefresh, attempt * 4000); // 4s, 8s, 12s, 16s, 20s
+            setTimeout(attemptRefresh, initRetryDelay(attempt));
+          }
+          // Reveal the app once we have real data, or once we have waited long
+          // enough that a spinner is worse than a degraded view.
+          if (canRevealApp({ stillWaking, attempt, maxAttempts: MAX_ATTEMPTS, elapsedMs: Date.now() - startedAt })) {
+            setIsAppReady(true);
           }
         })
         .catch((err) => {
@@ -442,11 +458,15 @@ export default function App() {
           console.warn('Backend API not reachable, using local draft if present:', err);
           if (persistedHierarchy) {
             applyHierarchySnapshot(persistedHierarchy);
+            // We have real cached data to show, so reveal it at once. Holding the
+            // spinner only makes sense while we might still get something better;
+            // out in the field with no signal, the snapshot IS the best answer.
+            setIsAppReady(true);
           }
           setDbStatus('local');
-          if (attempt < 5) {
+          if (attempt < MAX_ATTEMPTS) {
             attempt += 1;
-            setTimeout(attemptRefresh, attempt * 4000);
+            setTimeout(attemptRefresh, initRetryDelay(attempt));
           } else {
             // Fix #5: all retries exhausted — warn the user that they're seeing
             // cached data which may be out of date (e.g. newly added users won't appear)
@@ -457,7 +477,9 @@ export default function App() {
         })
         .finally(() => {
           isInFlight = false;
-          setIsAppReady(true);
+          // Safety net: on the error path, and once the hold window has passed,
+          // never leave the user staring at a spinner.
+          if (attempt >= MAX_ATTEMPTS || readyEnough()) setIsAppReady(true);
         });
     };
 
