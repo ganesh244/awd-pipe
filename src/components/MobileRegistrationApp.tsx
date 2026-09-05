@@ -5,9 +5,10 @@ import { MonitoringForm } from './MonitoringForm';
 import { CameraCapture } from './CameraCapture';
 import { GpsFieldMiniMap } from './GpsFieldMiniMap';
 import { QrCodeScannerModal } from './QrCodeScannerModal';
+import { PlotBoundaryDrawMap } from './PlotBoundaryDrawMap';
 import { reverseGeocodeLocation } from '../utils/geoUtils';
 import { playSuccessSound } from '../utils/soundUtils';
-import { MapPin, CheckCircle2, AlertTriangle, QrCode, Search, Smartphone, Sprout, ArrowRight, RefreshCw, ShieldCheck, Sparkles, Share2, Camera, UserCheck, Users, Plus, ClipboardCheck } from 'lucide-react';
+import { MapPin, CheckCircle2, AlertTriangle, QrCode, Search, Smartphone, Sprout, ArrowRight, RefreshCw, ShieldCheck, Sparkles, Share2, Camera, UserCheck, Users, Plus, ClipboardCheck, Hexagon } from 'lucide-react';
 
 interface MobileRegistrationAppProps {
   pipes: AWDPipe[];
@@ -72,6 +73,12 @@ export const MobileRegistrationApp: React.FC<MobileRegistrationAppProps> = ({
   const [installedBy, setInstalledBy] = useState(currentUser ? `${currentUser.name} (${currentUser.role})` : 'K. Rajesh (Field Facilitator)');
   const [remarks, setRemarks] = useState('');
   const [photoUrl, setPhotoUrl] = useState<string | undefined>(undefined);
+
+  // Plot Boundary State (polygon coordinates). Opt-in: the drawing map is not
+  // mounted until the worker asks for it, so a normal registration never pays
+  // for Leaflet tiles — that matters on the rural 3G these devices run on.
+  const [plotBoundary, setPlotBoundary] = useState<[number, number][] | undefined>(undefined);
+  const [showBoundaryDraw, setShowBoundaryDraw] = useState(false);
 
   // GPS State
   const [gpsData, setGpsData] = useState<GPSData | null>(null);
@@ -154,6 +161,8 @@ export const MobileRegistrationApp: React.FC<MobileRegistrationAppProps> = ({
     setInstallationDate(new Date().toISOString().split('T')[0]);
     setPhotoUrl(undefined);
     setRemarks('');
+    setPlotBoundary(undefined);
+    setShowBoundaryDraw(false);
 
     // Form control
     setCurrentStep(1);
@@ -521,6 +530,7 @@ export const MobileRegistrationApp: React.FC<MobileRegistrationAppProps> = ({
       Area_Manager_User_ID: (currentUser?.role === 'CF' || currentUser?.role === 'JCF') ? currentUser?.reportsToId : (currentUser?.role === 'Area Manager' ? currentUser?.id : undefined),
       Photo_URL: photoUrl,
       Remarks: remarks.trim() || undefined,
+      Plot_Boundary: plotBoundary,
     };
 
     const updatedPipe: AWDPipe = {
@@ -1075,6 +1085,53 @@ export const MobileRegistrationApp: React.FC<MobileRegistrationAppProps> = ({
                         </select>
                       </div>
                     </div>
+
+                    {/* ── PLOT BOUNDARY (OPTIONAL) ── */}
+                    {gpsData && (
+                      <div className="pt-2">
+                        {showBoundaryDraw ? (
+                          <div className="space-y-2">
+                            <PlotBoundaryDrawMap
+                              centerLat={gpsData.latitude}
+                              centerLng={gpsData.longitude}
+                              boundary={plotBoundary}
+                              onBoundaryChange={setPlotBoundary}
+                            />
+                            <button
+                              type="button"
+                              onClick={() => { setShowBoundaryDraw(false); setPlotBoundary(undefined); }}
+                              className="w-full text-xs font-bold text-slate-600 hover:text-slate-800 py-2 min-h-[44px] rounded-lg border border-slate-200 hover:bg-slate-50 transition"
+                            >
+                              Skip plot boundary
+                            </button>
+                          </div>
+                        ) : plotBoundary && plotBoundary.length >= 3 ? (
+                          <div className="flex items-center justify-between gap-2 bg-teal-50 border border-teal-200 rounded-xl px-3 py-2.5">
+                            <span className="text-xs font-bold text-teal-800 flex items-center gap-1.5">
+                              <Hexagon className="w-3.5 h-3.5" />
+                              Plot boundary saved · {plotBoundary.length} points
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => setShowBoundaryDraw(true)}
+                              className="text-xs font-bold text-teal-700 hover:text-teal-900 underline min-h-[44px] px-2"
+                            >
+                              Edit
+                            </button>
+                          </div>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => setShowBoundaryDraw(true)}
+                            className="w-full flex items-center justify-center gap-2 text-xs font-bold text-slate-600 hover:text-emerald-700 bg-slate-50 hover:bg-emerald-50 border border-dashed border-slate-300 hover:border-emerald-300 rounded-xl py-3 min-h-[44px] transition"
+                          >
+                            <Hexagon className="w-4 h-4" />
+                            Add plot boundary
+                            <span className="font-semibold text-slate-500">(optional)</span>
+                          </button>
+                        )}
+                      </div>
+                    )}
 
                     {/* Crop & Variety — AWD is exclusively for Paddy */}
                     <div className="space-y-3 pt-2">

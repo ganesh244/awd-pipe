@@ -63,6 +63,8 @@ export interface Installation {
   Area_Manager_User_ID?: string;
   Photo_URL?: string;
   Remarks?: string;
+  /** Plot boundary polygon — array of [lat, lng] pairs drawn by field worker */
+  Plot_Boundary?: [number, number][];
 }
 
 export interface MonitoringRecord {
