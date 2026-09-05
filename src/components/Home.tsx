@@ -277,7 +277,7 @@ export const Home: React.FC<HomeProps> = ({
               </div>
               <div>
                 <h3 className="font-extrabold text-slate-800 text-sm">Quick Actions</h3>
-                <p className="text-xs text-slate-400">Shortcuts to features matching your role permission level</p>
+                <p className="text-xs text-slate-500">Shortcuts to features matching your role permission level</p>
               </div>
             </div>
 
@@ -298,7 +298,7 @@ export const Home: React.FC<HomeProps> = ({
                         {act.title}
                         <ArrowRight className="w-3 h-3 opacity-0 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all text-emerald-600" />
                       </div>
-                      <p className="text-slate-400 text-xs mt-0.5 leading-snug">{act.desc}</p>
+                      <p className="text-slate-500 text-xs mt-0.5 leading-snug">{act.desc}</p>
                     </div>
                   </button>
                 );
@@ -314,7 +314,7 @@ export const Home: React.FC<HomeProps> = ({
               </div>
               <div>
                 <h3 className="font-extrabold text-slate-800 text-sm">Role Directives & Checklist</h3>
-                <p className="text-xs text-slate-400">Operational tasks and guidelines for {currentUser.role}s</p>
+                <p className="text-xs text-slate-500">Operational tasks and guidelines for {currentUser.role}s</p>
               </div>
             </div>
 
@@ -385,7 +385,7 @@ export const Home: React.FC<HomeProps> = ({
               </div>
               <div>
                 <h3 className="font-extrabold text-slate-800 text-sm">System Guidelines</h3>
-                <p className="text-xs text-slate-400">Current release rules & specs</p>
+                <p className="text-xs text-slate-500">Current release rules & specs</p>
               </div>
             </div>
 

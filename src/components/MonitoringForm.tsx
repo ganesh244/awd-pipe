@@ -147,7 +147,7 @@ export const MonitoringForm: React.FC<MonitoringFormProps> = ({
           <button
             onClick={onClose}
             aria-label="Close Monitoring Modal"
-            className="w-8 h-8 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center hover:bg-slate-200 transition font-bold"
+            className="w-8 h-8 rounded-full bg-slate-100 text-slate-600 flex items-center justify-center hover:bg-slate-200 transition font-bold"
           >
             <X className="w-4 h-4" />
           </button>

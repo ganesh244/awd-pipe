@@ -4,7 +4,7 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "concurrently -n \"API,VITE\" -c \"blue,green\" \"tsx server.js\" \"vite --port=3000 --host=0.0.0.0\"",
+    "dev": "concurrently -n \"API,VITE\" -c \"blue,green\" \"PORT=3001 tsx server.js\" \"vite --port=3000 --host=0.0.0.0\"",
     "start": "tsx server.js",
     "server": "tsx server.js",
     "build": "vite build",

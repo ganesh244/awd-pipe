@@ -186,7 +186,7 @@ export const GenerateBatchModal: React.FC<GenerateBatchModalProps> = ({
               <h3 className="text-lg font-bold text-[slate-800] uppercase tracking-wide">
                 Successfully Generated {generatedResult.pipes.length} QR Codes!
               </h3>
-              <p className="text-xs text-slate-500 mt-1">
+              <p className="text-xs text-slate-600 mt-1">
                 Batch Tag: <span className="font-mono font-bold text-[emerald-700] bg-slate-100 px-2 py-0.5 rounded">{generatedResult.batchNo}</span>
               </p>
             </div>
@@ -203,7 +203,7 @@ export const GenerateBatchModal: React.FC<GenerateBatchModalProps> = ({
                 ))}
               </div>
               {generatedResult.pipes.length > 4 && (
-                <p className="text-xs text-slate-400 italic">
+                <p className="text-xs text-slate-500 italic">
                   + {generatedResult.pipes.length - 4} more unique QR codes added to inventory.
                 </p>
               )}

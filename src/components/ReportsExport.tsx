@@ -446,11 +446,11 @@ export const ReportsExport: React.FC<ReportsExportProps> = ({
               Filtered Results
               <span className="bg-blue-100 text-blue-700 text-xs font-semibold px-2 py-0.5 rounded-full">{filtered.length} farmers</span>
             </div>
-            <span className="text-xs text-slate-400">Select a farmer to view dossier</span>
+            <span className="text-xs text-slate-500">Select a farmer to view dossier</span>
           </div>
 
           {filtered.length === 0 ? (
-            <div className="text-center py-16 text-slate-400">
+            <div className="text-center py-16 text-slate-500">
               <Layers className="w-10 h-10 mx-auto mb-3 opacity-30" />
               <p className="font-semibold">No records match your filters</p>
               <p className="text-xs mt-1">Try adjusting or clearing the filters above</p>
@@ -489,7 +489,7 @@ export const ReportsExport: React.FC<ReportsExportProps> = ({
                             <span className={`text-xs font-semibold px-2 py-0.5 rounded-full border ${lastVisit.AWD_Followed === 'Yes' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : lastVisit.AWD_Followed === 'Partially' ? 'bg-amber-50 text-amber-700 border-amber-200' : 'bg-red-50 text-red-700 border-red-200'}`}>
                               AWD: {lastVisit.AWD_Followed}
                             </span>
-                          ) : <span className="text-xs text-slate-400">—</span>}
+                          ) : <span className="text-xs text-slate-500">—</span>}
                         </td>
                         <td className="px-4 py-2.5">
                           <div className="flex items-center gap-2">
@@ -578,7 +578,7 @@ export const ReportsExport: React.FC<ReportsExportProps> = ({
                     ['Installed By', showDossierModal.Installed_By],
                   ].map(([k, v]) => (
                     <div key={k} className="flex flex-col">
-                      <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">{k}</span>
+                      <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">{k}</span>
                       <span className="font-semibold text-slate-700 mt-0.5">{v}</span>
                     </div>
                   ))}
@@ -587,18 +587,18 @@ export const ReportsExport: React.FC<ReportsExportProps> = ({
                 {/* Photo */}
                 {showDossierModal.Photo_URL && (
                   <div>
-                    <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Field Photo</p>
+                    <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Field Photo</p>
                     <img src={showDossierModal.Photo_URL} alt="Field" className="w-full rounded-lg object-cover max-h-48 border border-slate-200" />
                   </div>
                 )}
 
                 {/* Monitoring History */}
                 <div>
-                  <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">
+                  <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
                     Monitoring Visits ({monitoringList.filter((m) => m.Pipe_ID === showDossierModal.Pipe_ID).length})
                   </p>
                   {monitoringList.filter((m) => m.Pipe_ID === showDossierModal.Pipe_ID).length === 0 ? (
-                    <div className="text-center py-6 text-slate-400 border border-dashed border-slate-200 rounded-xl">
+                    <div className="text-center py-6 text-slate-500 border border-dashed border-slate-200 rounded-xl">
                       <AlertTriangle className="w-6 h-6 mx-auto mb-1 opacity-40" />
                       No monitoring visits recorded yet
                     </div>
@@ -608,12 +608,12 @@ export const ReportsExport: React.FC<ReportsExportProps> = ({
                         <div key={i} className="flex items-start gap-3 bg-slate-50 rounded-lg p-3 border border-slate-100">
                           <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 font-bold text-xs shrink-0">{i + 1}</div>
                           <div className="flex-1 grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
-                            <div><span className="text-slate-400">Date:</span> <span className="font-semibold">{formatDate(v.Visit_Date)}</span></div>
-                            <div><span className="text-slate-400">Water Level:</span> <span className="font-semibold">{v.Water_Level}</span></div>
-                            <div><span className="text-slate-400">Crop Stage:</span> <span className="font-semibold">{v.Crop_Stage}</span></div>
-                            <div><span className="text-slate-400">AWD:</span> <span className={`font-bold ${v.AWD_Followed === 'Yes' ? 'text-emerald-600' : 'text-amber-600'}`}>{v.AWD_Followed}</span></div>
-                            <div><span className="text-slate-400">Pipe Condition:</span> <span className={`font-bold ${v.Pipe_Condition === 'Good' ? 'text-emerald-600' : 'text-red-600'}`}>{v.Pipe_Condition}</span></div>
-                            <div><span className="text-slate-400">Visited By:</span> <span className="font-semibold">{v.Visited_By}</span></div>
+                            <div><span className="text-slate-500">Date:</span> <span className="font-semibold">{formatDate(v.Visit_Date)}</span></div>
+                            <div><span className="text-slate-500">Water Level:</span> <span className="font-semibold">{v.Water_Level}</span></div>
+                            <div><span className="text-slate-500">Crop Stage:</span> <span className="font-semibold">{v.Crop_Stage}</span></div>
+                            <div><span className="text-slate-500">AWD:</span> <span className={`font-bold ${v.AWD_Followed === 'Yes' ? 'text-emerald-600' : 'text-amber-600'}`}>{v.AWD_Followed}</span></div>
+                            <div><span className="text-slate-500">Pipe Condition:</span> <span className={`font-bold ${v.Pipe_Condition === 'Good' ? 'text-emerald-600' : 'text-red-600'}`}>{v.Pipe_Condition}</span></div>
+                            <div><span className="text-slate-500">Visited By:</span> <span className="font-semibold">{v.Visited_By}</span></div>
                             {v.Remarks && <div className="col-span-2"><span className="text-slate-400">Remarks:</span> <span className="font-semibold">{v.Remarks}</span></div>}
                           </div>
                         </div>

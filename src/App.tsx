@@ -1533,7 +1533,7 @@ export default function App() {
       <footer className="bg-[#0a0f0d] text-slate-600 text-[11px] py-3.5 border-t border-white/[0.05]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-2">
           <div className="flex items-center gap-3 flex-wrap justify-center sm:justify-start">
-            <span className="flex items-center gap-1.5 text-slate-500 font-medium">
+            <span className="flex items-center gap-1.5 text-slate-400 font-medium">
               <span className="text-emerald-600">🌱</span>
               <strong className="text-slate-400">AWD Pipe Registry</strong>
               <span className="text-slate-700">·</span>
@@ -1566,13 +1566,13 @@ export default function App() {
                 {offlineQueue.length} pending sync
               </button>
             ) : lastSynced ? (
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full font-semibold text-[10px] border bg-slate-900 text-slate-500 border-slate-800">
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full font-semibold text-[10px] border bg-slate-900 text-slate-400 border-slate-800">
                 ✓ Synced {lastSynced.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
               </span>
             ) : null}
           </div>
-          <span className="text-slate-600 font-medium tabular-nums">
-            {currentUser.name} · <span className="text-slate-500">{currentUser.role}</span>
+          <span className="text-slate-400 font-medium tabular-nums">
+            {currentUser.name} · <span className="text-slate-400">{currentUser.role}</span>
           </span>
         </div>
       </footer>

@@ -118,7 +118,7 @@ export const AppsScriptCodeViewer: React.FC = () => {
             <Code2 className="w-4 h-4" />
             <span>{activeFile === 'Guide' ? 'SETUP_GUIDE.md' : activeFile}</span>
           </div>
-          <span className="text-xs text-slate-500 font-mono">
+          <span className="text-xs text-slate-400 font-mono">
             {getFileContent().length.toLocaleString()} characters
           </span>
         </div>

@@ -70,7 +70,7 @@ export const SyncQueueManager: React.FC<SyncQueueManagerProps> = ({
           <button 
             onClick={onClose}
             aria-label="Close sync manager"
-            className="p-1.5 rounded-full hover:bg-slate-200 text-slate-400 hover:text-slate-600 transition"
+            className="p-1.5 rounded-full hover:bg-slate-200 text-slate-500 hover:text-slate-600 transition"
           >
             <X className="w-5 h-5" />
           </button>
@@ -133,7 +133,7 @@ export const SyncQueueManager: React.FC<SyncQueueManagerProps> = ({
               </div>
               <div>
                 <h3 className="font-bold text-slate-700 text-sm">Sync Queue Empty</h3>
-                <p className="text-xs text-slate-400 mt-1 max-w-sm mx-auto">
+                <p className="text-xs text-slate-500 mt-1 max-w-sm mx-auto">
                   All installations and monitoring visits are fully synced with the database servers. Go to "Register" or "Map" to add new entries.
                 </p>
               </div>
@@ -163,7 +163,7 @@ export const SyncQueueManager: React.FC<SyncQueueManagerProps> = ({
                           }`}>
                             {isReg ? 'Registration' : 'Visit log'}
                           </span>
-                          <span className="text-xs font-semibold text-slate-400 font-mono">
+                          <span className="text-xs font-semibold text-slate-500 font-mono">
                             {new Date(item.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                           </span>
                           {item.status === 'failed' && (
@@ -194,7 +194,7 @@ export const SyncQueueManager: React.FC<SyncQueueManagerProps> = ({
 
                     <button
                       onClick={() => onDeleteItem(item.id)}
-                      className="p-1.5 rounded-lg hover:bg-rose-50 text-slate-400 hover:text-rose-600 transition shrink-0"
+                      className="p-1.5 rounded-lg hover:bg-rose-50 text-slate-500 hover:text-rose-600 transition shrink-0"
                       title="Discard entry"
                     >
                       <Trash2 className="w-4.5 h-4.5" />
