@@ -100,6 +100,13 @@ const canSeeUser = (me: User, u: User) => {
   return u.id === me.id;
 };
 
+/** "11 Aug 2026" from either a plain date or a full ISO timestamp. */
+const fmtDate = (raw?: string) => {
+  if (!raw) return '';
+  const d = new Date(raw);
+  return Number.isNaN(d.getTime()) ? raw : d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+};
+
 const btnBase = 'inline-flex items-center justify-center gap-1.5 font-bold transition active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/50 disabled:opacity-40 disabled:cursor-not-allowed';
 const btnPrimary = `${btnBase} bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl px-4 min-h-[44px] text-sm shadow-sm shadow-emerald-900/10`;
 const btnSecondary = `${btnBase} bg-white hover:bg-slate-50 text-slate-800 border border-slate-200 rounded-xl px-4 min-h-[44px] text-sm`;
@@ -276,7 +283,7 @@ const PersonSheet: React.FC<{
               {user.createdAt && (
                 <div className="flex items-center justify-between gap-3 px-4 py-3">
                   <dt className="text-xs font-bold text-slate-500 uppercase tracking-wider">Added</dt>
-                  <dd className="text-sm font-semibold text-slate-900 tabular-nums">{user.createdAt}</dd>
+                  <dd className="text-sm font-semibold text-slate-900 tabular-nums">{fmtDate(user.createdAt)}</dd>
                 </div>
               )}
             </dl>
