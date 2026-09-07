@@ -279,7 +279,9 @@ a:focus:not(:focus-visible) {
 
 /* Prevent horizontal overflow on mobile */
 html, body {
-  overflow-x: hidden;
+  /* clip, not hidden: hidden makes body a scroll container, which breaks
+     position:fixed (the safe-area filler / bottom nav) on iOS WebKit. */
+  overflow-x: clip;
   max-width: 100vw;
 }
 
