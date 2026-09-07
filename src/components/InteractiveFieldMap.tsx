@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState, useMemo } from 'react';
 import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
 import { AWDPipe, Installation, MonitoringRecord } from '../types';
 import {
   MapPin, Search, Layers, ShieldCheck, Filter, Smartphone, ExternalLink,

@@ -2,10 +2,55 @@ import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
 import path from 'path';
 import {defineConfig} from 'vite';
+import {VitePWA} from 'vite-plugin-pwa';
 
 export default defineConfig(() => {
   return {
-    plugins: [react(), tailwindcss()],
+    plugins: [
+      react(),
+      tailwindcss(),
+      // Service worker: makes repeat opens instant and lets the app shell load
+      // with no signal at all. Data was already offline-capable via the sync
+      // queue; the shell itself was re-downloaded on every cold open.
+      VitePWA({
+        registerType: 'autoUpdate',   // new deploy -> SW updates in background, no stale-shell lock-in
+        injectRegister: 'auto',
+        manifest: false,              // keep the hand-written public/manifest.json
+        workbox: {
+          // Precache ONLY the shell a field worker needs on first paint. Precaching
+          // everything would pull ~400KB gz (recharts, hierarchy manager, ...) over
+          // rural 3G on install, for screens most field roles never open.
+          globPatterns: [
+            'index.html',
+            'favicon.svg',
+            'manifest.json',
+            'icon-*.png',
+            'assets/index-*.{js,css}',
+            'assets/vendor-react-*.js',
+            'assets/vendor-lucide-*.js',
+            'assets/*.woff2',
+          ],
+          // Everything else is content-hashed and immutable: cache on first use.
+          runtimeCaching: [
+            {
+              urlPattern: ({url}) => url.pathname.startsWith('/assets/'),
+              handler: 'CacheFirst',
+              options: {
+                cacheName: 'assets-immutable',
+                expiration: {maxEntries: 80, maxAgeSeconds: 60 * 60 * 24 * 365},
+                cacheableResponse: {statuses: [0, 200]},
+              },
+            },
+            // Never intercept the API: the app's own offline queue owns that.
+            {urlPattern: ({url}) => url.pathname.startsWith('/api/'), handler: 'NetworkOnly'},
+          ],
+          // SPA routing (incl. QR deep links like /?id=AWD-...), but never for the API.
+          navigateFallback: '/index.html',
+          navigateFallbackDenylist: [/^\/api\//],
+          cleanupOutdatedCaches: true,
+        },
+      }),
+    ],
     resolve: {
       alias: {
         '@': path.resolve(__dirname, '.'),
