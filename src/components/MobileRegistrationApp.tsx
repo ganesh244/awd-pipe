@@ -2,13 +2,19 @@ import React, { useState, useEffect } from 'react';
 import { AWDPipe, Installation, MonitoringRecord, EstablishmentMethod, IrrigationSource, PlotUnit, GPSData, User } from '../types';
 import { PipeInfoCard } from './PipeInfoCard';
 import { MonitoringForm } from './MonitoringForm';
-import { CameraCapture } from './CameraCapture';
-import { GpsFieldMiniMap } from './GpsFieldMiniMap';
-import { QrCodeScannerModal } from './QrCodeScannerModal';
-import { PlotBoundaryDrawMap } from './PlotBoundaryDrawMap';
+const QrCodeScannerModal = React.lazy(() => import('./QrCodeScannerModal').then(m => ({ default: m.QrCodeScannerModal })));
+const PlotBoundaryDrawMap = React.lazy(() => import('./PlotBoundaryDrawMap').then(m => ({ default: m.PlotBoundaryDrawMap })));
 import { reverseGeocodeLocation } from '../utils/geoUtils';
 import { playSuccessSound } from '../utils/soundUtils';
 import { MapPin, CheckCircle2, AlertTriangle, QrCode, Search, Smartphone, Sprout, ArrowRight, RefreshCw, ShieldCheck, Sparkles, Share2, Camera, UserCheck, Users, Plus, ClipboardCheck, Hexagon } from 'lucide-react';
+
+/** Full-screen acknowledgement while a deferred chunk (scanner, map) downloads. */
+const ChunkLoadingOverlay: React.FC<{ label: string }> = ({ label }) => (
+  <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-sm flex flex-col items-center justify-center gap-3 text-white" role="status" aria-live="polite">
+    <div className="w-8 h-8 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+    <span className="text-xs font-semibold">{label}</span>
+  </div>
+);
 
 interface MobileRegistrationAppProps {
   pipes: AWDPipe[];
@@ -1091,12 +1097,20 @@ export const MobileRegistrationApp: React.FC<MobileRegistrationAppProps> = ({
                       <div className="pt-2">
                         {showBoundaryDraw ? (
                           <div className="space-y-2">
-                            <PlotBoundaryDrawMap
-                              centerLat={gpsData.latitude}
-                              centerLng={gpsData.longitude}
-                              boundary={plotBoundary}
-                              onBoundaryChange={setPlotBoundary}
-                            />
+                            <React.Suspense
+                              fallback={
+                                <div className="w-full h-56 sm:h-64 rounded-xl border-2 border-slate-200 bg-slate-100 animate-pulse flex items-center justify-center text-xs font-semibold text-slate-500" role="status">
+                                  Loading map…
+                                </div>
+                              }
+                            >
+                              <PlotBoundaryDrawMap
+                                centerLat={gpsData.latitude}
+                                centerLng={gpsData.longitude}
+                                boundary={plotBoundary}
+                                onBoundaryChange={setPlotBoundary}
+                              />
+                            </React.Suspense>
                             <button
                               type="button"
                               onClick={() => { setShowBoundaryDraw(false); setPlotBoundary(undefined); }}
@@ -1315,14 +1329,18 @@ export const MobileRegistrationApp: React.FC<MobileRegistrationAppProps> = ({
         currentUser={currentUser}
       />
 
-      {/* QR CODE SCANNER MODAL */}
-      <QrCodeScannerModal
-        isOpen={isQrScannerOpen}
-        onClose={() => setIsQrScannerOpen(false)}
-        pipes={pipes}
-        installations={installations}
-        onSelectPipe={(scannedId) => setActivePipeId(scannedId)}
-      />
+      {/* QR CODE SCANNER MODAL — chunk (jsQR) is only fetched on first open */}
+      {isQrScannerOpen && (
+        <React.Suspense fallback={<ChunkLoadingOverlay label="Loading scanner…" />}>
+          <QrCodeScannerModal
+            isOpen={isQrScannerOpen}
+            onClose={() => setIsQrScannerOpen(false)}
+            pipes={pipes}
+            installations={installations}
+            onSelectPipe={(scannedId) => setActivePipeId(scannedId)}
+          />
+        </React.Suspense>
+      )}
     </div>
   );
 };

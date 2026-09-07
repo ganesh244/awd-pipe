@@ -10,15 +10,22 @@ const Dashboard = React.lazy(() => import('./components/Dashboard').then(m => ({
 const PipeInventory = React.lazy(() => import('./components/PipeInventory').then(m => ({ default: m.PipeInventory })));
 const PrintQRLabels = React.lazy(() => import('./components/PrintQRLabels').then(m => ({ default: m.PrintQRLabels })));
 const AppsScriptCodeViewer = React.lazy(() => import('./components/AppsScriptCodeViewer').then(m => ({ default: m.AppsScriptCodeViewer })));
-import { GenerateBatchModal } from './components/GenerateBatchModal';
+const GenerateBatchModal = React.lazy(() => import('./components/GenerateBatchModal').then(m => ({ default: m.GenerateBatchModal })));
 const HierarchyManager = React.lazy(() => import('./components/HierarchyManager').then(m => ({ default: m.HierarchyManager })));
 import { LoginScreen } from './components/auth/LoginScreen';
 const ReportsExport = React.lazy(() => import('./components/ReportsExport').then(m => ({ default: m.ReportsExport })));
 const FarmerProfiles = React.lazy(() => import('./components/FarmerProfiles').then(m => ({ default: m.FarmerProfiles })));
 const Home = React.lazy(() => import('./components/Home').then(m => ({ default: m.Home })));
-import { SyncQueueManager } from './components/SyncQueueManager';
+const SyncQueueManager = React.lazy(() => import('./components/SyncQueueManager').then(m => ({ default: m.SyncQueueManager })));
 import { AppLoadingScreen } from './components/AppLoadingScreen';
-import { AdminDevToolsModal } from './components/AdminDevToolsModal';
+const AdminDevToolsModal = React.lazy(() => import('./components/AdminDevToolsModal').then(m => ({ default: m.AdminDevToolsModal })));
+
+/** Acknowledges a tap while a deferred modal chunk downloads on a slow link. */
+const ModalChunkFallback: React.FC = () => (
+  <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center" role="status" aria-live="polite">
+    <div className="w-8 h-8 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+  </div>
+);
 
 const apiFetch = (url: RequestInfo | URL, options?: RequestInit) => {
   const token = localStorage.getItem("awd_auth_token");
@@ -1484,31 +1491,43 @@ export default function App() {
         </React.Suspense>
       </main>
 
-      {/* Generate Authenticated QR Batch Modal */}
-      <GenerateBatchModal
-        isOpen={isGenerateModalOpen}
-        onClose={() => setIsGenerateModalOpen(false)}
-        existingPipeCount={pipes.length}
-        onBatchGenerated={(newPipes) => handleCustomBatchGenerated(newPipes)}
-        onNavigateToLabels={() => { setActiveTab('inventory'); setInventorySubTab('labels'); }}
-      />
+      {/* Generate Authenticated QR Batch Modal — chunk fetched on first open */}
+      {isGenerateModalOpen && (
+        <React.Suspense fallback={<ModalChunkFallback />}>
+          <GenerateBatchModal
+            isOpen={isGenerateModalOpen}
+            onClose={() => setIsGenerateModalOpen(false)}
+            existingPipeCount={pipes.length}
+            onBatchGenerated={(newPipes) => handleCustomBatchGenerated(newPipes)}
+            onNavigateToLabels={() => { setActiveTab('inventory'); setInventorySubTab('labels'); }}
+          />
+        </React.Suspense>
+      )}
 
-      {/* Offline Sync Manager Modal */}
-      <SyncQueueManager
-        isOpen={isSyncModalOpen}
-        onClose={() => setIsSyncModalOpen(false)}
-        isOnline={isOnline}
-        onToggleOnline={() => setIsOnline(!isOnline)}
-        queue={offlineQueue}
-        onSyncAll={handleSyncAll}
-        onDeleteItem={handleDeleteQueueItem}
-      />
+      {/* Offline Sync Manager Modal — chunk fetched on first open */}
+      {isSyncModalOpen && (
+        <React.Suspense fallback={<ModalChunkFallback />}>
+          <SyncQueueManager
+            isOpen={isSyncModalOpen}
+            onClose={() => setIsSyncModalOpen(false)}
+            isOnline={isOnline}
+            onToggleOnline={() => setIsOnline(!isOnline)}
+            queue={offlineQueue}
+            onSyncAll={handleSyncAll}
+            onDeleteItem={handleDeleteQueueItem}
+          />
+        </React.Suspense>
+      )}
 
-      {/* Admin Dev Tools & DB Storage Modal */}
-      <AdminDevToolsModal
-        isOpen={isAdminDevToolsOpen}
-        onClose={() => setIsAdminDevToolsOpen(false)}
-      />
+      {/* Admin Dev Tools & DB Storage Modal — chunk fetched on first open */}
+      {isAdminDevToolsOpen && (
+        <React.Suspense fallback={<ModalChunkFallback />}>
+          <AdminDevToolsModal
+            isOpen={isAdminDevToolsOpen}
+            onClose={() => setIsAdminDevToolsOpen(false)}
+          />
+        </React.Suspense>
+      )}
 
 
       {/* Toast notification for silent save failures */}

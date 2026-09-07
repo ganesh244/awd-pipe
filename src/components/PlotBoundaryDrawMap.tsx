@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
 import {
   MapPin, Undo2, Trash2, Check, Layers, PenTool, Move, Info, Maximize2
 } from 'lucide-react';

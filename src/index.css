@@ -2,7 +2,11 @@
 /* @import "@fontsource-variable/geist/index.css"; */
 /* @import "@fontsource-variable/geist-mono/index.css"; */
 @import "tailwindcss";
-@import "leaflet/dist/leaflet.css";
+/* Self-hosted variable font: one origin, one file, no render-blocking third-party
+   stylesheet. font-display: swap is set by the package. */
+@import "@fontsource-variable/outfit";
+/* Leaflet CSS moved into the three map components so it ships with their lazy
+   chunks instead of every page load. */
 
 
 /* ── Global Reset & Base ── */
@@ -33,7 +37,7 @@
 }
 
 html {
-  font-family: 'Outfit', system-ui, sans-serif;
+  font-family: 'Outfit Variable', 'Outfit', system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   scroll-behavior: smooth;
