@@ -283,6 +283,28 @@ html, body {
   max-width: 100vw;
 }
 
+/* iOS home-indicator safe area.
+   The body background is light (the app surface shows through the translucent
+   app shell), so on an iPhone the strip beneath the fixed bottom nav — the
+   home-indicator zone — showed that light body as a white bar. This fixed
+   filler paints that zone in the app's dark chrome colour, matching the nav,
+   so nothing white can show there whether the nav's own padding reaches it or
+   not (standalone PWA vs Safari behave differently). It sits below the nav
+   (z-40) and sub-tab bars (z-30); the registration screen's own white action
+   bar (z-40) covers it there. pointer-events:none so it never blocks a tap, and
+   it collapses to zero height on devices with no bottom inset. */
+body::after {
+  content: '';
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: env(safe-area-inset-bottom, 0px);
+  background-color: #060b08;
+  z-index: 20;
+  pointer-events: none;
+}
+
 /* Safe-area insets for notched phones (iPhone etc.) */
 .safe-top    { padding-top:    env(safe-area-inset-top, 0px); }
 .safe-bottom { padding-bottom: env(safe-area-inset-bottom, 0px); }
