@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { BarChart3, FileDown, Box, Printer } from 'lucide-react';
 import { AWDPipe, Installation, MonitoringRecord, User, StateNode, DistrictNode, AreaNode, OfflineQueueItem } from './types';
 import { INITIAL_PIPES, INITIAL_INSTALLATIONS, INITIAL_MONITORING } from './data/initialData';
+import { loadDataSnapshot, saveDataSnapshot, clearDataSnapshot, preserveOnDegraded } from './utils/offlineSnapshot';
 import { INITIAL_STATES, INITIAL_DISTRICTS, INITIAL_AREAS, INITIAL_USERS } from './data/hierarchyData';
 import { Navbar } from './components/Navbar';
 const MobileRegistrationApp = React.lazy(() => import('./components/MobileRegistrationApp').then(m => ({ default: m.MobileRegistrationApp })));
@@ -162,9 +163,12 @@ const buildScopedUser = (
 
 export default function App() {
   const persistedHierarchy = loadPersistedHierarchy();
-  const [pipes, setPipes] = useState<AWDPipe[]>(INITIAL_PIPES);
-  const [installations, setInstallations] = useState<Installation[]>(INITIAL_INSTALLATIONS);
-  const [monitoringList, setMonitoringList] = useState<MonitoringRecord[]>(INITIAL_MONITORING);
+  // Seed from the last good offline snapshot (per user) so a cold start with no
+  // signal still has a registry to scan and Verify against; /api/init replaces
+  // it as soon as the network answers.
+  const [pipes, setPipes] = useState<AWDPipe[]>(() => loadDataSnapshot(loadPersistedCurrentUser()?.id)?.pipes ?? INITIAL_PIPES);
+  const [installations, setInstallations] = useState<Installation[]>(() => loadDataSnapshot(loadPersistedCurrentUser()?.id)?.installations ?? INITIAL_INSTALLATIONS);
+  const [monitoringList, setMonitoringList] = useState<MonitoringRecord[]>(() => loadDataSnapshot(loadPersistedCurrentUser()?.id)?.monitoringList ?? INITIAL_MONITORING);
 
   // Hierarchy Data States
   const [states, setStates] = useState<StateNode[]>(persistedHierarchy?.states || INITIAL_STATES);
@@ -243,6 +247,12 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem(HIERARCHY_STORAGE_KEY, JSON.stringify({ users, states, districts, areas }));
   }, [users, states, districts, areas]);
+
+  // Offline copy of the field data, keyed by the signed-in user. Skips empty
+  // writes and oversize payloads internally, and never throws on quota errors.
+  useEffect(() => {
+    saveDataSnapshot(currentUser?.id, { pipes, installations, monitoringList });
+  }, [currentUser?.id, pipes, installations, monitoringList]);
 
   useEffect(() => {
     if (currentUser) {
@@ -324,9 +334,13 @@ export default function App() {
       areas: data.areas || [],
     });
 
-    if (Array.isArray(data.pipes)) setPipes(data.pipes);
-    if (Array.isArray(data.installations)) setInstallations(data.installations);
-    if (Array.isArray(data.monitoringList)) setMonitoringList(data.monitoringList);
+    // A 'local' answer (API up, Atlas not yet connected) carries empty arrays;
+    // applying it would wipe the offline snapshot we seeded from. Keep what we
+    // hold in that one case; an authoritative empty list is still applied.
+    const degraded = data.dbStatus !== 'cloud';
+    if (Array.isArray(data.pipes)) setPipes((prev) => preserveOnDegraded(data.pipes, prev, degraded));
+    if (Array.isArray(data.installations)) setInstallations((prev) => preserveOnDegraded(data.installations, prev, degraded));
+    if (Array.isArray(data.monitoringList)) setMonitoringList((prev) => preserveOnDegraded(data.monitoringList, prev, degraded));
 
     setDbStatus(data.dbStatus || 'local');
     return data;
@@ -1295,6 +1309,7 @@ export default function App() {
           localStorage.removeItem('awd_auth_token');
           localStorage.removeItem(HIERARCHY_STORAGE_KEY);
           localStorage.removeItem('awd_offline_queue');
+          clearDataSnapshot(currentUser?.id);
         }}
         onOpenGenerateModal={() => setIsGenerateModalOpen(true)}
         isOnline={isOnline}
