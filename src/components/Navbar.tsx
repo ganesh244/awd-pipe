@@ -148,6 +148,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             ? 'shadow-2xl shadow-black/70 border-emerald-500/20'
             : 'border-white/[0.08]'
         }`}
+        style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}
       >
         {/* Ambient Top Glow Accent Line */}
         <div className="absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-emerald-400/50 to-transparent" />
@@ -447,8 +448,6 @@ export const Navbar: React.FC<NavbarProps> = ({
         </div>
       </nav>
 
-      {/* ── Spacer for mobile bottom nav ── */}
-      <div className="lg:hidden h-[60px]" style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }} />
     </>
   );
 };
