@@ -31,14 +31,19 @@ export default defineConfig(() => {
             'assets/*.woff2',
           ],
           // Everything else is content-hashed and immutable: cache on first use.
+          // Restricted to real asset extensions and status 200 only. Before the
+          // server learned to 404 missing chunks, a stale build's request for an
+          // old chunk got index.html back with a 200 — and this rule would have
+          // pinned that HTML under the .js URL for a year. The cache name is
+          // rotated so any such poisoned entry on a device is simply abandoned.
           runtimeCaching: [
             {
-              urlPattern: ({url}) => url.pathname.startsWith('/assets/'),
+              urlPattern: ({url}) => url.pathname.startsWith('/assets/') && /\.(js|css|woff2|png|svg)$/.test(url.pathname),
               handler: 'CacheFirst',
               options: {
-                cacheName: 'assets-immutable',
+                cacheName: 'assets-immutable-v2',
                 expiration: {maxEntries: 80, maxAgeSeconds: 60 * 60 * 24 * 365},
-                cacheableResponse: {statuses: [0, 200]},
+                cacheableResponse: {statuses: [200]},
               },
             },
             // Never intercept the API: the app's own offline queue owns that.
@@ -46,7 +51,8 @@ export default defineConfig(() => {
           ],
           // SPA routing (incl. QR deep links like /?id=AWD-...), but never for the API.
           navigateFallback: '/index.html',
-          navigateFallbackDenylist: [/^\/api\//],
+          // Never answer an asset or file URL with index.html from the SW either.
+          navigateFallbackDenylist: [/^\/api\//, /^\/assets\//, /\.[a-z0-9]{2,5}$/i],
           cleanupOutdatedCaches: true,
         },
       }),

@@ -1558,6 +1558,21 @@ app.use('/assets', express.static(path.join(__dirname, 'dist', 'assets'), {
 // Everything else in dist/ (manifest.json, icons, etc.) — safe defaults, no aggressive caching.
 app.use(express.static(path.join(__dirname, 'dist'), { index: false }));
 
+// Anything that looks like a file but was NOT found by express.static — a
+// hashed chunk from a previous build, sw.js, a font — must 404 here rather
+// than fall through to the SPA index.html below. Serving HTML with a 200 for a
+// missing .js is worse than a 404: the browser rejects it as a module script
+// ("expected JavaScript, got text/html"), the lazy-loaded screen goes blank,
+// and the service worker's asset cache can pin that bad response for a year.
+// Deep links like /?id=AWD-1234 have no extension and still reach the SPA.
+app.use((req, res, next) => {
+  const looksLikeFile = req.path.startsWith('/assets/') || /\.[a-z0-9]{2,5}$/i.test(req.path);
+  if (req.method === 'GET' && looksLikeFile && !req.path.startsWith('/api/')) {
+    return res.status(404).type('text/plain').send('Not found');
+  }
+  next();
+});
+
 app.get('*', (req, res, next) => {
   if (req.path.startsWith('/api')) return next();
   res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
