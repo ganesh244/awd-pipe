@@ -12,7 +12,9 @@ const PipeInventory = React.lazy(() => import('./components/PipeInventory').then
 const PrintQRLabels = React.lazy(() => import('./components/PrintQRLabels').then(m => ({ default: m.PrintQRLabels })));
 const AppsScriptCodeViewer = React.lazy(() => import('./components/AppsScriptCodeViewer').then(m => ({ default: m.AppsScriptCodeViewer })));
 const GenerateBatchModal = React.lazy(() => import('./components/GenerateBatchModal').then(m => ({ default: m.GenerateBatchModal })));
-const HierarchyManager = React.lazy(() => import('./components/HierarchyManager').then(m => ({ default: m.HierarchyManager })));
+// Team screen: the tree-based rebuild. The previous three-column version is
+// still on disk as HierarchyManager.tsx; switch this path back to revert.
+const HierarchyManager = React.lazy(() => import('./components/TeamTree').then(m => ({ default: m.HierarchyManager })));
 import { LoginScreen } from './components/auth/LoginScreen';
 const ReportsExport = React.lazy(() => import('./components/ReportsExport').then(m => ({ default: m.ReportsExport })));
 const FarmerProfiles = React.lazy(() => import('./components/FarmerProfiles').then(m => ({ default: m.FarmerProfiles })));

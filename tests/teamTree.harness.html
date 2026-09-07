@@ -1,0 +1,68 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Team screen harness</title>
+<!--
+  Mounts the rebuilt Team screen (src/components/TeamTree.tsx) with mock data
+  shaped like production — 1 state, 3 districts, 5 areas, 10 people, plus one
+  person whose recorded area matches no node — so it can be exercised in a real
+  browser without a login. Every callback is recorded on window.__calls.
+  Load through the Vite dev server: /tests/teamTree.harness.html
+  window.__as('Area Manager') re-mounts as a different role to check scoping.
+-->
+<body style="background:#f8fafc">
+  <div id="root"></div>
+<script type="module">
+import React from 'react';
+import { createRoot } from 'react-dom/client';
+import '/src/index.css';
+import { HierarchyManager } from '/src/components/TeamTree.tsx';
+
+const h = React.createElement;
+window.__calls = [];
+const rec = (name) => (...args) => { window.__calls.push({ name, args }); };
+
+const states = [{ id: 'st-2', name: 'Telangana', code: 'TS', managerId: 'usr-sm', managerName: 'Rajinikanth' }];
+const districts = [
+  { id: 'dist-nzm', stateId: 'st-2', stateName: 'Telangana', name: 'Nizamabad', managerId: 'usr-dm1', managerName: 'lahari' },
+  { id: 'dist-krm', stateId: 'st-2', stateName: 'Telangana', name: 'Karimnagar', managerId: 'usr-dm2', managerName: 'Veeraswamy' },
+  { id: 'dist-sng', stateId: 'st-2', stateName: 'Telangana', name: 'Sangareddy', managerId: '', managerName: '' },
+];
+const areas = [
+  { id: 'area-1', districtId: 'dist-nzm', districtName: 'Nizamabad', stateName: 'Telangana', name: 'Nizamabad cluster', managerId: '', managerName: '' },
+  { id: 'area-2', districtId: 'dist-nzm', districtName: 'Nizamabad', stateName: 'Telangana', name: 'Bodhan', managerId: '', managerName: '' },
+  { id: 'area-3', districtId: 'dist-nzm', districtName: 'Nizamabad', stateName: 'Telangana', name: 'Armoor', managerId: '', managerName: '' },
+  { id: 'area-4', districtId: 'dist-sng', districtName: 'Sangareddy', stateName: 'Telangana', name: 'Kandi', managerId: 'usr-am2', managerName: 'Durga Rao' },
+  { id: 'area-5', districtId: 'dist-krm', districtName: 'Karimnagar', stateName: 'Telangana', name: 'Jammikunta', managerId: 'usr-am1', managerName: 'Ramesh' },
+];
+const u = (id, name, username, role, extra = {}) => ({ id, name, username, role, email: `${username}@awdpipe.org`, phone: '+91 98765 00000', isActive: true, createdAt: '2026-08-10', ...extra });
+const users = [
+  u('usr-admin', 'System Administrator', 'admin', 'Admin'),
+  u('usr-admin-ganesh', 'Ganesh Keesara', 'ganeshkeesara', 'Admin'),
+  u('usr-sm', 'Rajinikanth', 'rajinikanth', 'State Manager', { state: 'Telangana', reportsToId: 'usr-admin-ganesh' }),
+  u('usr-dm1', 'lahari', 'lahari', 'District Manager', { state: 'Telangana', district: 'Nizamabad', reportsToId: 'usr-sm' }),
+  u('usr-dm2', 'Veeraswamy', 'veeraswamy', 'District Manager', { state: 'Telangana', district: 'Karimnagar', reportsToId: 'usr-sm' }),
+  u('usr-am1', 'Ramesh', 'ramesh', 'Area Manager', { state: 'Telangana', district: 'Karimnagar', areaName: 'Jammikunta', reportsToId: 'usr-dm2' }),
+  u('usr-am2', 'Durga Rao', 'durgarao', 'Area Manager', { state: 'Telangana', district: 'Sangareddy', areaName: 'Kandi', reportsToId: 'usr-sm' }),
+  u('usr-cf1', 'mahesh', 'mahesh', 'CF', { state: 'Telangana', district: 'Karimnagar', areaName: 'Jammikunta', reportsToId: 'usr-am1' }),
+  u('usr-cf2', 'Pushpalatha', 'pushpalatha', 'CF', { state: 'Telangana', district: 'Sangareddy', areaName: 'Kandi', reportsToId: 'usr-am2' }),
+  u('usr-cf3', 'maschendar', 'maschendar', 'JCF', { state: 'Telangana', district: 'Sangareddy', areaName: 'Kandi', reportsToId: 'usr-am2', isActive: false }),
+  // Recorded area matches no node: must surface in "Not placed", never vanish.
+  u('usr-cf4', 'Anitha', 'anitha', 'CF', { state: 'Telangana', district: 'Sangareddy', areaName: 'Zaheerabad', reportsToId: 'usr-sm' }),
+];
+
+const root = createRoot(document.getElementById('root'));
+const mount = (me) => root.render(h(HierarchyManager, {
+  states, districts, areas, users, currentUser: me,
+  onAddUser: rec('onAddUser'), onUpdateUser: rec('onUpdateUser'), onDeleteUser: rec('onDeleteUser'),
+  onUpdateState: rec('onUpdateState'), onUpdateDistrict: rec('onUpdateDistrict'), onUpdateArea: rec('onUpdateArea'),
+  onAddState: rec('onAddState'), onAddDistrict: rec('onAddDistrict'), onAddArea: rec('onAddArea'),
+  onDeleteState: rec('onDeleteState'), onDeleteDistrict: rec('onDeleteDistrict'), onDeleteArea: rec('onDeleteArea'),
+  dbStatus: 'cloud', onOpenDevTools: rec('onOpenDevTools'),
+}));
+
+window.__as = (role) => { mount(users.find((x) => x.role === role) || users[1]); return role; };
+mount(users[1]); // Ganesh Keesara, Admin
+window.__ready = true;
+</script>
+</body>
