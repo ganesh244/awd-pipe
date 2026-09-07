@@ -23,6 +23,56 @@ const SyncQueueManager = React.lazy(() => import('./components/SyncQueueManager'
 import { AppLoadingScreen } from './components/AppLoadingScreen';
 const AdminDevToolsModal = React.lazy(() => import('./components/AdminDevToolsModal').then(m => ({ default: m.AdminDevToolsModal })));
 
+/**
+ * Catches a failed lazy screen instead of letting React unmount the whole app
+ * into a blank page.
+ *
+ * The usual cause is a device still running a build that has since been
+ * replaced: its index.html points at chunk files that no longer exist on the
+ * server. One reload picks up the current build, so the first such failure per
+ * session reloads automatically; the sessionStorage flag stops that from ever
+ * looping. Anything else — or a second failure — shows a message with a Reload
+ * button rather than nothing.
+ */
+const CHUNK_RELOAD_FLAG = 'awd_chunk_reloaded';
+const isChunkLoadError = (err: unknown) =>
+  /dynamically imported module|Importing a module script failed|Loading chunk|Failed to fetch|module script/i.test(String((err as Error)?.message || err));
+
+type ChunkBoundaryProps = { children: React.ReactNode };
+type ChunkBoundaryState = { error: Error | null };
+class ChunkErrorBoundary extends React.Component<ChunkBoundaryProps, ChunkBoundaryState> {
+  // This project ships no @types/react, so `React` types as `any` and the base
+  // class contributes no members to the instance type. Declare the two we use;
+  // `declare` emits nothing at runtime.
+  declare props: Readonly<ChunkBoundaryProps>;
+  state: ChunkBoundaryState = { error: null };
+  static getDerivedStateFromError(error: Error) { return { error }; }
+  componentDidCatch(error: Error) {
+    if (isChunkLoadError(error) && !sessionStorage.getItem(CHUNK_RELOAD_FLAG)) {
+      sessionStorage.setItem(CHUNK_RELOAD_FLAG, '1');
+      window.location.reload();
+    }
+  }
+  render() {
+    if (!this.state.error) return this.props.children;
+    return (
+      <div className="min-h-[50vh] flex items-center justify-center p-6">
+        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 max-w-sm w-full text-center space-y-3">
+          <p className="text-base font-extrabold text-slate-900">This screen couldn’t load</p>
+          <p className="text-sm text-slate-600">Usually the app has been updated while it was open. Reload to get the latest version.</p>
+          <button
+            type="button"
+            onClick={() => { sessionStorage.removeItem(CHUNK_RELOAD_FLAG); window.location.reload(); }}
+            className="inline-flex items-center justify-center bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-sm rounded-xl px-5 min-h-[44px] transition active:scale-[0.98]"
+          >
+            Reload
+          </button>
+        </div>
+      </div>
+    );
+  }
+}
+
 /** Acknowledges a tap while a deferred modal chunk downloads on a slow link. */
 const ModalChunkFallback: React.FC = () => (
   <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center" role="status" aria-live="polite">
@@ -1326,6 +1376,7 @@ export default function App() {
           (56px min-height) PLUS the iOS safe-area home-indicator inset, so
           content never sits behind it. */}
       <main className="flex-1 pb-[calc(5rem+env(safe-area-inset-bottom,0px))] lg:pb-4">
+        <ChunkErrorBoundary key={activeTab}>
         <React.Suspense fallback={<div className="h-[60vh] w-full flex flex-col items-center justify-center animate-pulse gap-3 text-slate-400"><div className="w-8 h-8 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin"></div><span className="text-sm font-medium">Loading module...</span></div>}>
         {activeTab === 'home' && (
           <Home
@@ -1506,6 +1557,7 @@ export default function App() {
 
         {activeTab === 'code' && <AppsScriptCodeViewer />}
         </React.Suspense>
+        </ChunkErrorBoundary>
       </main>
 
       {/* Generate Authenticated QR Batch Modal — chunk fetched on first open */}
