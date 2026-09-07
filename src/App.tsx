@@ -1348,7 +1348,7 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-100/70 text-slate-800 flex flex-col font-sans">
+    <div className="min-h-screen min-h-[100dvh] bg-slate-100/70 text-slate-800 flex flex-col font-sans">
 
       {/* Navigation Bar */}
       <Navbar
@@ -1426,7 +1426,7 @@ export default function App() {
           return (
             <div className="page-enter">
               {/* Sub-tab bar */}
-              <div className="bg-white/80 backdrop-blur-sm border-b border-slate-200/80 sticky top-[56px] sm:top-[60px] z-30 shadow-sm">
+              <div className="bg-white/80 backdrop-blur-sm border-b border-slate-200/80 sticky top-[calc(56px+env(safe-area-inset-top,0px))] sm:top-[calc(60px+env(safe-area-inset-top,0px))] z-30 shadow-sm">
                 <div className="max-w-7xl mx-auto px-4 py-2.5">
                   <div className="sub-tab-bar w-fit">
                     {hasDashboard && (
@@ -1473,7 +1473,7 @@ export default function App() {
         {activeTab === 'inventory' && (
           <div className="page-enter">
             {/* Sub-tab bar */}
-            <div className="bg-white/80 backdrop-blur-sm border-b border-slate-200/80 sticky top-[56px] sm:top-[60px] z-30 shadow-sm">
+            <div className="bg-white/80 backdrop-blur-sm border-b border-slate-200/80 sticky top-[calc(56px+env(safe-area-inset-top,0px))] sm:top-[calc(60px+env(safe-area-inset-top,0px))] z-30 shadow-sm">
               <div className="max-w-7xl mx-auto px-4 py-2.5 flex items-center justify-between gap-4">
                 <div className="sub-tab-bar w-fit">
                   <button
