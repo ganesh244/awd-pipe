@@ -1348,7 +1348,7 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen min-h-[100dvh] bg-slate-100/70 text-slate-800 flex flex-col font-sans">
+    <div className="min-h-screen min-h-[100dvh] bg-slate-50 text-slate-800 flex flex-col font-sans">
 
       {/* Navigation Bar */}
       <Navbar
