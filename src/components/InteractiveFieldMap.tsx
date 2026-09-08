@@ -534,6 +534,22 @@ export const InteractiveFieldMap: React.FC<InteractiveFieldMapProps> = ({
                     </div>
                   </div>
 
+                  {/* Installation Date & Installed By */}
+                  <div className="grid grid-cols-2 gap-2 text-xs">
+                    <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-200">
+                      <span className="text-slate-600 font-bold block mb-0.5 flex items-center gap-1">
+                        <Calendar className="w-3.5 h-3.5 text-slate-500" /> Installed On
+                      </span>
+                      <span className="font-bold text-slate-900 tabular-nums">{selectedPipeDetails.installation.Installation_Date || '—'}</span>
+                    </div>
+                    <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-200">
+                      <span className="text-slate-600 font-bold block mb-0.5 flex items-center gap-1">
+                        <UserCheck className="w-3.5 h-3.5 text-slate-500" /> Installed By
+                      </span>
+                      <span className="font-bold text-slate-900 truncate block">{selectedPipeDetails.installation.Installed_By || '—'}</span>
+                    </div>
+                  </div>
+
                   {/* Captured Field Installation Photo */}
                   {selectedPipeDetails.installation.Photo_URL && (
                     <div className="space-y-1">
