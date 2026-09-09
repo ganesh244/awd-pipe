@@ -1,10 +1,9 @@
 import React, { useMemo } from 'react';
-import { User, Installation, MonitoringRecord, AWDPipe } from '../types';
+import { User, Installation, MonitoringRecord, AWDPipe, PipeStatus } from '../types';
 import { toAcres } from '../utils/plotUtils';
-import { 
-  Sprout, ClipboardCheck, MapPin, BarChart3, Users, 
-  Printer, Network, Droplets, Sparkles, CheckSquare, 
-  Leaf, ArrowRight, Clock, Award, ShieldCheck, Zap, CheckCircle2
+import {
+  ScanLine, ClipboardCheck, MapPin, Users, Printer, Network,
+  RefreshCw, ArrowRight, ChevronRight, Boxes, Download,
 } from 'lucide-react';
 
 interface HomeProps {
@@ -21,6 +20,26 @@ interface HomeProps {
   onOpenSyncModal: () => void;
 }
 
+// Real Status values only — the design prototype's mock "Verified/Unverified"
+// concept doesn't exist in this app's data model, so stats below are built
+// from the actual PipeStatus values instead of inventing a field.
+const STATUS_TAG: Record<PipeStatus, string> = {
+  Installed: 'awd-tag-accent',
+  Available: 'awd-tag-neutral',
+  Damaged: 'awd-tag-danger',
+  Removed: 'awd-tag-danger',
+  Replaced: 'awd-tag-warning',
+};
+
+function groupCount<T>(items: T[], key: (item: T) => string | undefined): Array<{ name: string; count: number }> {
+  const map = new Map<string, number>();
+  for (const item of items) {
+    const k = key(item) || 'Unassigned';
+    map.set(k, (map.get(k) || 0) + 1);
+  }
+  return Array.from(map.entries()).map(([name, count]) => ({ name, count })).sort((a, b) => b.count - a.count);
+}
+
 export const Home: React.FC<HomeProps> = ({
   currentUser,
   setActiveTab,
@@ -34,381 +53,290 @@ export const Home: React.FC<HomeProps> = ({
   offlineQueueCount,
   onOpenSyncModal,
 }) => {
-  // Time of day greeting
-  const greeting = useMemo(() => {
-    const hrs = new Date().getHours();
-    if (hrs < 12) return 'Good Morning';
-    if (hrs < 17) return 'Good Afternoon';
-    return 'Good Evening';
-  }, []);
+  const role = currentUser.role;
+  const isJcf = role === 'JCF' || role === 'CF';
+  const isArea = role === 'Area Manager';
+  const isMgr = role === 'District Manager' || role === 'State Manager';
+  const isAdmin = role === 'Admin';
 
-  // Filter scope based on user role to show personal stats on home screen
-  const userInstallations = useMemo(() => {
-    return installations;
+  const villageCount = useMemo(
+    () => new Set(installations.map(i => i.Village).filter(Boolean)).size,
+    [installations]
+  );
+
+  const weekCount = useMemo(() => {
+    const weekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+    return installations.filter(i => i.Installation_Date && new Date(i.Installation_Date).getTime() >= weekAgo).length;
   }, [installations]);
 
-  const userMonitoring = useMemo(() => {
-    const pipeIds = new Set(userInstallations.map(i => i.Pipe_ID));
-    return monitoringList.filter(m => pipeIds.has(m.Pipe_ID));
-  }, [monitoringList, userInstallations]);
+  const totalAcres = useMemo(
+    () => installations.reduce((sum, i) => sum + toAcres(Number(i.Plot_Size) || 0, i.Plot_Size_Unit), 0),
+    [installations]
+  );
 
-  // AWD Compliance
-  const compliantVisits = userMonitoring.filter(m => m.AWD_Followed === 'Yes').length;
-  const totalVisits = userMonitoring.length;
-  const personalComplianceRate = totalVisits > 0 ? Math.round((compliantVisits / totalVisits) * 100) : 100;
+  const farmerCount = useMemo(
+    () => new Set(installations.map(i => i.Farmer_Name).filter(Boolean)).size,
+    [installations]
+  );
 
-  // Impact Calculations (AWD savings estimates)
-  // Assuming 1 Acre under AWD saves ~150,000 Liters of water per wet season/cycle
-  const totalAcres = userInstallations.reduce((sum, i) => sum + toAcres(Number(i.Plot_Size) || 0, i.Plot_Size_Unit), 0);
-  const waterSavedLiters = Math.round(totalAcres * 150000 * (personalComplianceRate / 100));
-  
-  // Methane reduction: AWD reduces methane emissions by up to ~48%
-  // CO2 equivalent reduction: ~0.8 tonnes per acre
-  const co2ReducedTons = (totalAcres * 0.8 * (personalComplianceRate / 100)).toFixed(1);
+  const availableCount = useMemo(() => pipes.filter(p => p.Status === 'Available').length, [pipes]);
+  const installedCount = useMemo(() => pipes.filter(p => p.Status === 'Installed').length, [pipes]);
+  const damagedCount = useMemo(() => pipes.filter(p => p.Status === 'Damaged').length, [pipes]);
 
-  // Quick Action Buttons configurations
-  const actions = useMemo(() => {
-    const list = [
-      {
-        title: 'Register Pipe',
-        desc: 'Scan QR and assign new farmer',
-        icon: ClipboardCheck,
-        color: 'from-accent-500 to-teal-600',
-        onClick: () => setActiveTab('mobile'),
-        roles: ['Admin', 'State Manager', 'District Manager', 'Area Manager', 'CF', 'JCF']
-      },
-      {
-        title: 'Interactive Map',
-        desc: 'View geo-tagged plots and water status',
-        icon: MapPin,
-        color: 'from-blue-500 to-indigo-600',
-        onClick: () => setActiveTab('map'),
-        roles: ['Admin', 'State Manager', 'District Manager', 'Area Manager']
-      },
-      {
-        title: 'Analytics Dashboard',
-        desc: 'Analyze AWD adoption and indicators',
-        icon: BarChart3,
-        color: 'from-purple-500 to-violet-600',
-        onClick: () => {
-          setAnalyticsSubTab('overview');
-          setActiveTab('analytics');
-        },
-        roles: ['Admin', 'State Manager', 'District Manager']
-      },
-      {
-        title: 'Farmer Directory',
-        desc: 'Search farmer details and profiles',
-        icon: Users,
-        color: 'from-indigo-500 to-blue-600',
-        onClick: () => setActiveTab('farmers'),
-        roles: ['Admin', 'State Manager', 'District Manager', 'Area Manager', 'CF', 'JCF']
-      },
-      {
-        title: 'Reports & Export',
-        desc: 'Download CSV and printable data dossiers',
-        icon: Sprout,
-        color: 'from-accent-500 to-green-600',
-        onClick: () => {
-          setAnalyticsSubTab('reports');
-          setActiveTab('analytics');
-        },
-        roles: ['Admin', 'State Manager', 'District Manager', 'Area Manager', 'CF', 'JCF']
-      },
-      {
-        title: 'Mint QR & Print Labels',
-        desc: 'Generate batches and print QR codes',
-        icon: Printer,
-        color: 'from-amber-500 to-orange-600',
-        onClick: () => {
-          setInventorySubTab('labels');
-          setActiveTab('inventory');
-        },
-        roles: ['Admin', 'State Manager']
-      },
-      {
-        title: 'Manage Team',
-        desc: 'Add, update or delete user roles',
-        icon: Network,
-        color: 'from-teal-500 to-cyan-600',
-        onClick: () => setActiveTab('hierarchy'),
-        roles: ['Admin', 'State Manager', 'District Manager']
-      }
-    ];
+  const recentInstalls = useMemo(() => {
+    return [...installations]
+      .sort((a, b) => new Date(b.Installation_Date || b.Timestamp).getTime() - new Date(a.Installation_Date || a.Timestamp).getTime())
+      .slice(0, 8);
+  }, [installations]);
 
-    return list.filter(a => a.roles.includes(currentUser.role));
-  }, [currentUser, setActiveTab, setAnalyticsSubTab, setInventorySubTab]);
+  const byDistrict = useMemo(() => groupCount<AWDPipe>(pipes, p => p.District), [pipes]);
+  const byVillage = useMemo(() => groupCount<Installation>(installations, i => i.Village), [installations]);
+  const stateCount = useMemo(() => new Set(pipes.map(p => p.State).filter(Boolean)).size, [pipes]);
+  const districtCount = useMemo(() => new Set(pipes.map(p => p.District).filter(Boolean)).size, [pipes]);
 
-  // Role based duties checklist
-  const checklist = useMemo(() => {
-    switch (currentUser.role) {
-      case 'CF':
-      case 'JCF':
-        return [
-          'Verify newly installed field pipes status is "Good"',
-          'Collect water level readings every 3-4 days',
-          'Maintain coordination with JCF and regional farmers',
-          'Report damaged pipes to Area Manager immediately'
-        ];
-      case 'Area Manager':
-        return [
-          'Audit field installations to ensure correct geo-tagging',
-          'Provide physical training on reading pipe gauges',
-          'Resolve farmer questions regarding direct-seeding methods',
-          'Consolidate local progress reports for District review'
-        ];
-      case 'District Manager':
-        return [
-          'Coordinate CF/JCF deployments inside active blocks',
-          'Ensure high AWD compliance rates across the district',
-          'Analyze weekly village-level water indicator cycles',
-          'Approve user hierarchy changes within the district'
-        ];
-      case 'State Manager':
-        return [
-          'Allocate pipe batch resources to active districts',
-          'Organize state-wide training sessions for field staff',
-          'Review progress on sustainability water preservation metrics',
-          'Authorize system database batch updates'
-        ];
-      case 'Admin':
-      default:
-        return [
-          'Monitor database connections and cloud-sync states',
-          'Generate high security authenticated QR code batches',
-          'Maintain global user hierarchy parameters',
-          'Configure Google Apps Script sync parameters'
-        ];
-    }
-  }, [currentUser]);
+  const openDirectory = () => setActiveTab('farmers');
+  const openMap = () => setActiveTab('map');
+  const openHierarchy = () => setActiveTab('hierarchy');
+  const openReports = () => { setAnalyticsSubTab('reports'); setActiveTab('analytics'); };
+  const openInventory = () => { setInventorySubTab('inventory'); setActiveTab('inventory'); };
+  const openLabels = () => { setInventorySubTab('labels'); setActiveTab('inventory'); };
+  const openRegister = () => setActiveTab('mobile');
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6 page-enter">
-
-      {/* Offline Alert Banner */}
+    <div className="pb-6">
+      {/* Offline / sync queue banner */}
       {(!isOnline || offlineQueueCount > 0) && (
-        <div className={`p-4 rounded-3xl border flex items-center justify-between flex-wrap gap-3 ${
-          offlineQueueCount > 0 
-            ? 'bg-amber-50 border-amber-200 text-amber-900 animate-pulse' 
-            : 'bg-rose-50 border-rose-200 text-rose-900'
-        }`}>
-          <div className="flex items-center gap-3">
-            <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${
-              offlineQueueCount > 0 ? 'bg-amber-100 text-amber-700' : 'bg-rose-100 text-rose-700'
-            }`}>
-              {offlineQueueCount > 0 ? <Zap className="w-4 h-4" /> : <Clock className="w-4 h-4" />}
-            </div>
-            <div>
-              <div className="font-bold text-xs">
-                {offlineQueueCount > 0 
-                  ? `Offline Records Detected (${offlineQueueCount} pending)` 
-                  : 'Field Device Operating in Offline Mode'
-                }
-              </div>
-              <p className="text-xs opacity-80 mt-0.5">
-                {offlineQueueCount > 0 
-                  ? 'You registered new farmers or visits while offline. Sync them back to server once connected.' 
-                  : 'You can still register farmers and log visits. They will be queued for upload later.'
-                }
-              </p>
-            </div>
+        <div className="flex items-center gap-3 px-4 py-3 border-b-2" style={{ borderColor: 'var(--color-border-light)', background: 'var(--color-accent-100)' }}>
+          <RefreshCw className="w-4 h-4 shrink-0" style={{ color: 'var(--color-accent-700)' }} />
+          <div className="flex-1 min-w-0 text-xs" style={{ color: 'var(--color-accent-800)' }}>
+            {offlineQueueCount > 0
+              ? `${offlineQueueCount} registration${offlineQueueCount === 1 ? '' : 's'} saved on this device, waiting to sync.`
+              : 'You are offline. New records will be queued until you reconnect.'}
           </div>
-          
-          <button
-            onClick={onOpenSyncModal}
-            className={`px-3 py-1.5 rounded-xl text-xs font-extrabold shadow-sm active:scale-95 transition-all cursor-pointer ${
-              offlineQueueCount > 0 
-                ? 'bg-amber-600 hover:bg-amber-700 text-white' 
-                : 'bg-rose-600 hover:bg-rose-700 text-white'
-            }`}
-          >
-            {offlineQueueCount > 0 ? 'Sync Now' : 'Sync Queue'}
-          </button>
+          {offlineQueueCount > 0 && (
+            <button onClick={onOpenSyncModal} className="awd-btn-primary shrink-0" style={{ padding: '6px 12px' }}>
+              Sync
+            </button>
+          )}
         </div>
       )}
-      
-      {/* ── Welcome Banner ── */}
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-accent-800 via-accent-900 to-[#0a180e] p-6 sm:p-8 text-white shadow-xl shadow-accent-950/20 border border-accent-700/20">
-        <div className="absolute right-0 top-0 -mr-10 -mt-10 w-48 h-48 rounded-full bg-accent-600/10 blur-3xl pointer-events-none" />
-        <div className="absolute left-1/3 bottom-0 -ml-10 -mb-10 w-48 h-48 rounded-full bg-lime-500/10 blur-2xl pointer-events-none" />
-        
-        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
-          <div className="space-y-2">
-            <div className="inline-flex items-center gap-1.5 bg-accent-700/40 border border-accent-500/30 rounded-full px-3 py-1 text-xs font-bold text-accent-300">
-              <Sparkles className="w-3.5 h-3.5" />
-              {currentUser.role} Account
-            </div>
-            
-            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">
-              {greeting}, <span className="text-accent-400">{currentUser.name}</span>!
-            </h1>
-            
-            <p className="text-slate-300 text-sm max-w-xl leading-relaxed">
-              Welcome back to your Alternate Wetting & Drying field workspace. 
-              {currentUser.areaName ? ` Managing field operations for ${currentUser.areaName}.` : ''} 
-              {currentUser.district ? ` Scoped to ${currentUser.district} District.` : ''}
-            </p>
-          </div>
 
-          <div className="flex gap-3">
-            <div className="bg-white/10 backdrop-blur-md rounded-2xl p-4 border border-white/10 text-center min-w-0 flex-1">
-              <div className="text-2xl font-black text-accent-400 font-mono tabular-nums">{userInstallations.length}</div>
-              <div className="text-xs text-slate-300 font-semibold uppercase tracking-wider mt-0.5">My Pipes</div>
-            </div>
-            <div className="bg-white/10 backdrop-blur-md rounded-2xl p-4 border border-white/10 text-center min-w-0 flex-1">
-              <div className="text-2xl font-black text-accent-400 font-mono tabular-nums">{personalComplianceRate}%</div>
-              <div className="text-xs text-slate-300 font-semibold uppercase tracking-wider mt-0.5">AWD Rate</div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* ── Main Dashboard Columns ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        
-        {/* Left Column: Quick Actions & Checklist */}
-        <div className="lg:col-span-2 space-y-6">
-          
-          {/* Quick Actions */}
-          <div className="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm space-y-4">
-            <div className="flex items-center gap-2 border-b border-slate-100 pb-3">
-              <div className="w-7 h-7 bg-accent-50 rounded-lg flex items-center justify-center">
-                <Zap className="w-4 h-4 text-accent-600" />
-              </div>
-              <div>
-                <h3 className="font-extrabold text-slate-800 text-sm">Quick Actions</h3>
-                <p className="text-xs text-slate-500">Shortcuts to features matching your role permission level</p>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {actions.map((act) => {
-                const Icon = act.icon;
-                return (
-                  <button
-                    key={act.title}
-                    onClick={act.onClick}
-                    className="flex items-start gap-4 p-4 rounded-2xl border border-slate-100 hover:border-accent-200 bg-slate-50/50 hover:bg-accent-50/20 transition-all text-left group cursor-pointer"
-                  >
-                    <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${act.color} flex items-center justify-center text-white shrink-0 shadow-md`}>
-                      <Icon className="w-5 h-5" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="font-bold text-slate-800 text-sm group-hover:text-accent-700 transition-colors flex items-center gap-1.5">
-                        {act.title}
-                        <ArrowRight className="w-3 h-3 opacity-0 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all text-accent-600" />
-                      </div>
-                      <p className="text-slate-500 text-xs mt-0.5 leading-snug">{act.desc}</p>
-                    </div>
-                  </button>
-                );
-              })}
+      {/* ══════════════════ JCF / CF ══════════════════ */}
+      {isJcf && (
+        <div>
+          <div className="px-4 pt-5 pb-6 text-white" style={{ background: 'var(--color-accent-500)' }}>
+            <div className="awd-kicker" style={{ color: 'rgba(255,255,255,0.85)' }}>Pipes I have installed</div>
+            <div className="flex items-end gap-3 mt-1">
+              <span className="awd-mono font-black leading-none" style={{ fontSize: 56 }}>{installations.length}</span>
+              <span className="text-xs leading-snug pb-1.5 max-w-[190px] opacity-90">
+                across {villageCount} village{villageCount === 1 ? '' : 's'}. {weekCount} registered this week.
+              </span>
             </div>
           </div>
 
-          {/* Role Duties Checklist */}
-          <div className="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm space-y-4">
-            <div className="flex items-center gap-2 border-b border-slate-100 pb-3">
-              <div className="w-7 h-7 bg-accent-50 rounded-lg flex items-center justify-center">
-                <CheckSquare className="w-4 h-4 text-accent-600" />
-              </div>
-              <div>
-                <h3 className="font-extrabold text-slate-800 text-sm">Role Directives & Checklist</h3>
-                <p className="text-xs text-slate-500">Operational tasks and guidelines for {currentUser.role}s</p>
-              </div>
-            </div>
+          <div className="grid grid-cols-2 awd-card" style={{ borderTop: 0 }}>
+            <button onClick={openRegister} className="awd-btn-secondary" style={{ border: 0, borderRight: '2px solid var(--color-border-light)' }}>
+              <ScanLine className="w-5 h-5 shrink-0" />Scan a QR
+            </button>
+            <button onClick={openRegister} className="awd-btn-secondary" style={{ border: 0 }}>
+              <ClipboardCheck className="w-5 h-5 shrink-0" />Register pipe
+            </button>
+          </div>
 
-            <div className="space-y-3">
-              {checklist.map((item, idx) => (
-                <div key={idx} className="flex items-start gap-3 p-3 rounded-xl bg-slate-50/60 border border-slate-100 text-xs">
-                  <span className="w-5 h-5 rounded-md bg-accent-100 text-accent-700 flex items-center justify-center text-xs font-bold shrink-0">
-                    {idx + 1}
-                  </span>
-                  <p className="text-slate-600 leading-normal font-medium mt-0.5">{item}</p>
+          <div className="grid grid-cols-2 awd-card" style={{ borderTop: 0 }}>
+            <div className="px-3.5 py-3" style={{ borderRight: '1px solid var(--color-border-light)' }}>
+              <div className="awd-mono font-black" style={{ fontSize: 22 }}>{totalAcres.toFixed(1)}</div>
+              <div className="text-[9.5px] uppercase tracking-wide" style={{ color: 'var(--color-text-muted)' }}>Acres</div>
+            </div>
+            <div className="px-3.5 py-3">
+              <div className="awd-mono font-black" style={{ fontSize: 22 }}>{farmerCount}</div>
+              <div className="text-[9.5px] uppercase tracking-wide" style={{ color: 'var(--color-text-muted)' }}>Farmers</div>
+            </div>
+          </div>
+
+          <div className="flex items-baseline justify-between px-4 pt-4 pb-1.5">
+            <h3 className="font-extrabold text-sm">Recent installations</h3>
+            <span className="text-[11px]" style={{ color: 'var(--color-text-muted)' }}>Newest first</span>
+          </div>
+          <div className="awd-card" style={{ borderLeft: 0, borderRight: 0 }}>
+            {recentInstalls.length === 0 && (
+              <div className="px-4 py-6 text-xs text-center" style={{ color: 'var(--color-text-muted)' }}>No installations yet.</div>
+            )}
+            {recentInstalls.map(p => (
+              <div
+                key={p.Pipe_ID}
+                className="awd-row"
+                onClick={() => setActiveTab('farmers')}
+              >
+                <div className="flex-none w-11 h-11 grid place-items-center" style={{ background: 'var(--color-accent-100)', color: 'var(--color-accent-700)' }}>
+                  <ClipboardCheck className="w-[18px] h-[18px]" />
                 </div>
-              ))}
-            </div>
+                <div className="flex-1 min-w-0">
+                  <div className="awd-mono font-extrabold" style={{ fontSize: 12.5 }}>{p.Pipe_ID}</div>
+                  <div className="text-xs truncate" style={{ color: 'var(--color-text-secondary)' }}>
+                    {p.Farmer_Name} · {p.Village} · {p.Plot_Size}{p.Plot_Size_Unit}
+                  </div>
+                </div>
+                <span className="awd-tag awd-tag-accent">Installed</span>
+              </div>
+            ))}
           </div>
 
+          <div className="px-4 pt-4 flex flex-col gap-2">
+            <button onClick={openDirectory} className="awd-btn-secondary justify-start w-full">
+              All installations ({installations.length})<ChevronRight className="w-4 h-4 ml-auto opacity-50" />
+            </button>
+          </div>
         </div>
+      )}
 
-        {/* Right Column: Sustainability Impact & Info Panel */}
-        <div className="space-y-6">
-
-          {/* Sustainability & Environmental Impact */}
-          <div className="bg-gradient-to-b from-[#111e15] to-[#09100b] rounded-3xl p-6 text-white shadow-xl shadow-slate-900/10 border border-white/5 space-y-5 relative overflow-hidden">
-            <div className="absolute -right-16 -bottom-16 w-36 h-36 rounded-full bg-accent-500/5 blur-3xl pointer-events-none" />
-            
-            <div className="flex items-center gap-2 border-b border-white/10 pb-3">
-              <div className="w-7 h-7 bg-accent-500/10 rounded-lg flex items-center justify-center border border-accent-500/20">
-                <Leaf className="w-4 h-4 text-accent-400" />
-              </div>
-              <div>
-                <h3 className="font-extrabold text-white text-sm">Sustainability Impact</h3>
-                <p className="text-xs text-slate-400">Environmental benefits from your field operations</p>
-              </div>
+      {/* ══════════════════ Area Manager ══════════════════ */}
+      {isArea && (
+        <div>
+          <div className="px-4 py-4" style={{ borderBottom: '2px solid var(--color-border-light)' }}>
+            <div className="text-xs" style={{ color: 'var(--color-text-secondary)' }}>
+              {currentUser.areaName || 'Your area'} · {villageCount} village{villageCount === 1 ? '' : 's'}
             </div>
-
-            {/* Metric widgets */}
-            <div className="space-y-4">
-              <div className="p-3 bg-white/5 rounded-2xl border border-white/5">
-                <div className="text-xs text-accent-400 font-bold uppercase tracking-wider">Estimated Water Saved</div>
-                <div className="text-2xl font-black mt-1 font-mono">{waterSavedLiters.toLocaleString('en-IN')} L</div>
-                <p className="text-xs text-slate-400 mt-1 leading-relaxed">
-                  Calculated based on {totalAcres.toFixed(1)} active acres managed with a {personalComplianceRate}% AWD follow-through rate.
-                </p>
-              </div>
-
-              <div className="p-3 bg-white/5 rounded-2xl border border-white/5">
-                <div className="text-xs text-teal-400 font-bold uppercase tracking-wider">Methane Emission Reduction</div>
-                <div className="text-2xl font-black mt-1 font-mono">~48%</div>
-                <p className="text-xs text-slate-400 mt-1 leading-relaxed">
-                  AWD practice significantly reduces carbon equivalent methane output of paddy wetlands.
-                </p>
-              </div>
-
-              <div className="p-3 bg-white/5 rounded-2xl border border-white/5">
-                <div className="text-xs text-lime-400 font-bold uppercase tracking-wider">CO₂ Equivalent Offset</div>
-                <div className="text-2xl font-black mt-1 font-mono">{co2ReducedTons} Tons</div>
-                <p className="text-xs text-slate-400 mt-1 leading-relaxed">
-                  Net greenhouse gas mitigation equivalent to planting approx. {Math.round(Number(co2ReducedTons) * 16 || 0)} mature trees!
-                </p>
-              </div>
+            <div className="flex items-end gap-2 mt-1.5">
+              <span className="awd-mono font-black leading-none" style={{ fontSize: 44 }}>{installedCount}</span>
+              <span className="text-[11px] leading-snug pb-1.5" style={{ color: 'var(--color-text-secondary)' }}>
+                pipes installed<br />of {pipes.length} allotted
+              </span>
+            </div>
+            <div className="h-3 mt-2.5 flex" style={{ background: 'var(--color-surface-alt)' }}>
+              <div style={{ width: `${pipes.length ? Math.round((installedCount / pipes.length) * 100) : 0}%`, background: 'var(--color-accent-500)' }} />
             </div>
           </div>
 
-          {/* Quick System Info / Announcement */}
-          <div className="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm space-y-4">
-            <div className="flex items-center gap-2 border-b border-slate-100 pb-3">
-              <div className="w-7 h-7 bg-accent-50 rounded-lg flex items-center justify-center">
-                <Clock className="w-4 h-4 text-accent-600" />
-              </div>
-              <div>
-                <h3 className="font-extrabold text-slate-800 text-sm">System Guidelines</h3>
-                <p className="text-xs text-slate-500">Current release rules & specs</p>
-              </div>
+          <div className="grid grid-cols-2 awd-card" style={{ borderTop: 0 }}>
+            <div className="px-3.5 py-3" style={{ borderRight: '1px solid var(--color-border-light)' }}>
+              <div className="awd-mono font-black" style={{ fontSize: 22 }}>{availableCount}</div>
+              <div className="text-[9.5px] uppercase tracking-wide" style={{ color: 'var(--color-text-muted)' }}>Available</div>
             </div>
-
-            <div className="text-xs text-slate-500 space-y-3 leading-relaxed">
-              <div className="flex gap-2.5">
-                <CheckCircle2 className="w-4 h-4 text-accent-500 shrink-0 mt-0.5" />
-                <p>Ensure your mobile GPS is enabled before starting pipe registrations.</p>
-              </div>
-              <div className="flex gap-2.5">
-                <CheckCircle2 className="w-4 h-4 text-accent-500 shrink-0 mt-0.5" />
-                <p>If camera output remains blank on desktop browsers, verify camera permission settings for localhost/Render domain name.</p>
-              </div>
-              <div className="flex gap-2.5">
-                <CheckCircle2 className="w-4 h-4 text-accent-500 shrink-0 mt-0.5" />
-                <p>Weekly summaries are exported automatically to Google Sheets at midnight.</p>
-              </div>
+            <div className="px-3.5 py-3">
+              <div className="awd-mono font-black" style={{ fontSize: 22, color: damagedCount ? 'var(--color-warning)' : undefined }}>{damagedCount}</div>
+              <div className="text-[9.5px] uppercase tracking-wide" style={{ color: 'var(--color-text-muted)' }}>Damaged</div>
             </div>
           </div>
 
+          <div className="px-4 pt-4 pb-1.5">
+            <h3 className="font-extrabold text-sm">By village</h3>
+          </div>
+          <div className="awd-card" style={{ borderLeft: 0, borderRight: 0 }}>
+            {byVillage.slice(0, 8).map(v => (
+              <div key={v.name} className="awd-row" style={{ cursor: 'default' }}>
+                <div className="flex-1 min-w-0 text-xs font-semibold">{v.name}</div>
+                <span className="awd-mono text-xs font-bold" style={{ color: 'var(--color-text-secondary)' }}>{v.count}</span>
+              </div>
+            ))}
+          </div>
+
+          <div className="px-4 pt-4 grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <button onClick={openMap} className="awd-btn-secondary"><MapPin className="w-4 h-4" />Open field map</button>
+            <button onClick={openDirectory} className="awd-btn-secondary"><Users className="w-4 h-4" />All installations ({installations.length})</button>
+            <button onClick={openReports} className="awd-btn-secondary sm:col-span-2"><Download className="w-4 h-4" />Export installation data</button>
+          </div>
         </div>
+      )}
 
-      </div>
+      {/* ══════════════════ District / State Manager ══════════════════ */}
+      {isMgr && (
+        <div>
+          <div className="px-4 py-4" style={{ borderBottom: '2px solid var(--color-border-light)' }}>
+            <div className="text-xs" style={{ color: 'var(--color-text-secondary)' }}>
+              {role === 'State Manager' ? (currentUser.state || 'Your state') : (currentUser.district || 'Your district')}
+            </div>
+            <div className="flex items-end gap-2 mt-1.5">
+              <span className="awd-mono font-black leading-none" style={{ fontSize: 44 }}>{installedCount}</span>
+              <span className="text-[11px] leading-snug pb-1.5" style={{ color: 'var(--color-text-secondary)' }}>
+                pipes installed<br />of {pipes.length} allotted
+              </span>
+            </div>
+            <div className="h-3 mt-2.5 flex" style={{ background: 'var(--color-surface-alt)' }}>
+              <div style={{ width: `${pipes.length ? Math.round((installedCount / pipes.length) * 100) : 0}%`, background: 'var(--color-accent-500)' }} />
+            </div>
+          </div>
 
+          <div className="grid grid-cols-2 awd-card" style={{ borderTop: 0 }}>
+            <div className="px-3.5 py-3" style={{ borderRight: '1px solid var(--color-border-light)' }}>
+              <div className="awd-mono font-black" style={{ fontSize: 22 }}>{availableCount}</div>
+              <div className="text-[9.5px] uppercase tracking-wide" style={{ color: 'var(--color-text-muted)' }}>Available</div>
+            </div>
+            <div className="px-3.5 py-3">
+              <div className="awd-mono font-black" style={{ fontSize: 22, color: damagedCount ? 'var(--color-warning)' : undefined }}>{damagedCount}</div>
+              <div className="text-[9.5px] uppercase tracking-wide" style={{ color: 'var(--color-text-muted)' }}>Damaged</div>
+            </div>
+          </div>
+
+          <div className="px-4 pt-4 pb-1.5">
+            <h3 className="font-extrabold text-sm">{role === 'State Manager' ? 'By district' : 'By village'}</h3>
+          </div>
+          <div className="awd-card" style={{ borderLeft: 0, borderRight: 0 }}>
+            {(role === 'State Manager' ? byDistrict : byVillage).slice(0, 8).map(v => (
+              <div key={v.name} className="awd-row" style={{ cursor: 'default' }}>
+                <div className="flex-1 min-w-0 text-xs font-semibold">{v.name}</div>
+                <span className="awd-mono text-xs font-bold" style={{ color: 'var(--color-text-secondary)' }}>{v.count}</span>
+              </div>
+            ))}
+          </div>
+
+          <div className="px-4 pt-4 grid grid-cols-1 sm:grid-cols-2 gap-2">
+            {role === 'State Manager' && onOpenGenerateModal && (
+              <button onClick={onOpenGenerateModal} className="awd-btn-primary sm:col-span-2"><Boxes className="w-4 h-4" />Allot a new QR batch</button>
+            )}
+            <button onClick={openMap} className="awd-btn-secondary"><MapPin className="w-4 h-4" />Open field map</button>
+            <button onClick={openHierarchy} className="awd-btn-secondary"><Network className="w-4 h-4" />Hierarchy &amp; users</button>
+            <button onClick={openReports} className="awd-btn-secondary sm:col-span-2"><Download className="w-4 h-4" />Export installation data</button>
+          </div>
+        </div>
+      )}
+
+      {/* ══════════════════ Admin ══════════════════ */}
+      {isAdmin && (
+        <div>
+          <div className="px-4 py-5 text-white" style={{ background: 'var(--color-shell)' }}>
+            <div className="awd-kicker" style={{ color: 'var(--color-accent-400)' }}>Pipes registered</div>
+            <div className="awd-mono font-black leading-none mt-1" style={{ fontSize: 44 }}>{installedCount}</div>
+            <div className="text-[11px] mt-1 opacity-70">
+              of {pipes.length} minted · {stateCount} state{stateCount === 1 ? '' : 's'} · {districtCount} district{districtCount === 1 ? '' : 's'}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-3 awd-card" style={{ borderTop: 0 }}>
+            <div className="px-3 py-3" style={{ borderRight: '1px solid var(--color-border-light)' }}>
+              <div className="awd-mono font-black" style={{ fontSize: 22 }}>{availableCount}</div>
+              <div className="text-[9.5px] uppercase tracking-wide" style={{ color: 'var(--color-text-muted)' }}>Available</div>
+            </div>
+            <div className="px-3 py-3" style={{ borderRight: '1px solid var(--color-border-light)' }}>
+              <div className="awd-mono font-black" style={{ fontSize: 22, color: 'var(--color-accent-600)' }}>{installedCount}</div>
+              <div className="text-[9.5px] uppercase tracking-wide" style={{ color: 'var(--color-text-muted)' }}>Installed</div>
+            </div>
+            <div className="px-3 py-3">
+              <div className="awd-mono font-black" style={{ fontSize: 22, color: damagedCount ? 'var(--color-warning)' : undefined }}>{damagedCount}</div>
+              <div className="text-[9.5px] uppercase tracking-wide" style={{ color: 'var(--color-text-muted)' }}>Damaged</div>
+            </div>
+          </div>
+
+          <div className="px-4 pt-4 pb-1.5">
+            <h3 className="font-extrabold text-sm">By district</h3>
+          </div>
+          <div className="awd-card" style={{ borderLeft: 0, borderRight: 0 }}>
+            {byDistrict.slice(0, 8).map(d => (
+              <div key={d.name} className="awd-row" style={{ cursor: 'default' }}>
+                <div className="flex-1 min-w-0 text-xs font-semibold">{d.name}</div>
+                <span className="awd-mono text-xs font-bold" style={{ color: 'var(--color-text-secondary)' }}>{d.count} pipes</span>
+              </div>
+            ))}
+          </div>
+
+          <div className="px-4 pt-4 grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <button onClick={openInventory} className="awd-btn-secondary"><Boxes className="w-4 h-4" />Pipe inventory &amp; batches</button>
+            <button onClick={openLabels} className="awd-btn-secondary"><Printer className="w-4 h-4" />Print QR labels</button>
+            <button onClick={openHierarchy} className="awd-btn-secondary"><Network className="w-4 h-4" />Hierarchy &amp; users</button>
+            <button onClick={openReports} className="awd-btn-secondary"><Download className="w-4 h-4" />Export installation data</button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
