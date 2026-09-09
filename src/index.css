@@ -13,11 +13,25 @@
 *, *::before, *::after { box-sizing: border-box; }
 
 @theme {
-  --color-primary: #15803D;
-  --color-primary-light: #DCFCE7;
-  --color-primary-dark: #14532D;
-  --color-secondary: #0F766E;
+  /* Accent ramp — from the AWD Field design prototype's green override,
+     matching the PWA manifest's theme_color (#059669) family. 50/950 are
+     extrapolated endpoints (not in the prototype) to cover call sites that
+     need a lighter tint or a near-black shade. */
+  --color-accent-50: #F1F6ED;
+  --color-accent-100: #E6EFDF;
+  --color-accent-200: #C9DEB9;
+  --color-accent-300: #A5C98D;
+  --color-accent-400: #6FA551;
+  --color-accent-500: #3F7D20;
+  --color-accent-600: #376E1C;
+  --color-accent-700: #2E5C17;
+  --color-accent-800: #244711;
+  --color-accent-900: #1A330C;
+  --color-accent-950: #0F1F07;
+  --color-accent: var(--color-accent-500);
+
   --color-warning: #B45309;
+
   --color-background: #F8F9FA; /* Softer, slightly warmer neutral */
   --color-surface: #FFFFFF;
   --color-surface-alt: #F1F3F5; /* Subtle off-white for depth */
@@ -26,7 +40,13 @@
   --color-text-muted: #9CA3AF;
   --color-border-light: #E5E7EB;
   --color-border-strong: #D1D5DB;
-  --color-focus-ring: #15803D;
+  --color-focus-ring: var(--color-accent-500);
+
+  /* Dark app-shell chrome (nav, safe-area filler) — matches manifest
+     background_color #060d09, currently hardcoded per-callsite. */
+  --color-shell: #060B08;
+  --color-shell-alt: #09120E;
+  --color-shell-border: #070E0A;
 }
 
 :root {
@@ -168,7 +188,7 @@ select:focus-visible,
 textarea:focus-visible,
 button:focus-visible,
 a:focus-visible {
-  outline: 2px solid #16a34a;
+  outline: 2px solid var(--color-focus-ring);
   outline-offset: 2px;
   border-radius: 4px;
 }
@@ -246,8 +266,8 @@ a:focus:not(:focus-visible) {
 .sub-tab-btn:hover { background: #fff; color: #0f172a; }
 .sub-tab-btn.active {
   background: #fff;
-  color: #15803d;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.08), 0 0 0 1px rgba(22,163,74,0.15);
+  color: var(--color-accent-700);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.08), 0 0 0 1px color-mix(in srgb, var(--color-accent-500) 15%, transparent);
 }
 
 /* ── Stat card ── */
@@ -268,7 +288,7 @@ a:focus:not(:focus-visible) {
 
 /* ── Badge styles ── */
 .badge { display: inline-flex; align-items: center; gap: 0.25rem; font-size: 0.6875rem; font-weight: 700; padding: 0.2rem 0.5rem; border-radius: 999px; }
-.badge-emerald { background: #dcfce7; color: #15803d; border: 1px solid #bbf7d0; }
+.badge-emerald { background: var(--color-accent-100); color: var(--color-accent-700); border: 1px solid var(--color-accent-200); }
 .badge-blue { background: #dbeafe; color: #1d4ed8; border: 1px solid #bfdbfe; }
 .badge-amber { background: #fef3c7; color: #b45309; border: 1px solid #fde68a; }
 .badge-red { background: #fee2e2; color: #dc2626; border: 1px solid #fecaca; }
@@ -302,7 +322,7 @@ body::after {
   right: 0;
   bottom: 0;
   height: env(safe-area-inset-bottom, 0px);
-  background-color: #060b08;
+  background-color: var(--color-shell);
   z-index: 20;
   pointer-events: none;
 }

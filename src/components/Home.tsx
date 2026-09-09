@@ -73,7 +73,7 @@ export const Home: React.FC<HomeProps> = ({
         title: 'Register Pipe',
         desc: 'Scan QR and assign new farmer',
         icon: ClipboardCheck,
-        color: 'from-emerald-500 to-teal-600',
+        color: 'from-accent-500 to-teal-600',
         onClick: () => setActiveTab('mobile'),
         roles: ['Admin', 'State Manager', 'District Manager', 'Area Manager', 'CF', 'JCF']
       },
@@ -108,7 +108,7 @@ export const Home: React.FC<HomeProps> = ({
         title: 'Reports & Export',
         desc: 'Download CSV and printable data dossiers',
         icon: Sprout,
-        color: 'from-emerald-500 to-green-600',
+        color: 'from-accent-500 to-green-600',
         onClick: () => {
           setAnalyticsSubTab('reports');
           setActiveTab('analytics');
@@ -228,19 +228,19 @@ export const Home: React.FC<HomeProps> = ({
       )}
       
       {/* ── Welcome Banner ── */}
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-emerald-800 via-emerald-900 to-[#0a180e] p-6 sm:p-8 text-white shadow-xl shadow-emerald-950/20 border border-emerald-700/20">
-        <div className="absolute right-0 top-0 -mr-10 -mt-10 w-48 h-48 rounded-full bg-emerald-600/10 blur-3xl pointer-events-none" />
+      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-accent-800 via-accent-900 to-[#0a180e] p-6 sm:p-8 text-white shadow-xl shadow-accent-950/20 border border-accent-700/20">
+        <div className="absolute right-0 top-0 -mr-10 -mt-10 w-48 h-48 rounded-full bg-accent-600/10 blur-3xl pointer-events-none" />
         <div className="absolute left-1/3 bottom-0 -ml-10 -mb-10 w-48 h-48 rounded-full bg-lime-500/10 blur-2xl pointer-events-none" />
         
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="space-y-2">
-            <div className="inline-flex items-center gap-1.5 bg-emerald-700/40 border border-emerald-500/30 rounded-full px-3 py-1 text-xs font-bold text-emerald-300">
+            <div className="inline-flex items-center gap-1.5 bg-accent-700/40 border border-accent-500/30 rounded-full px-3 py-1 text-xs font-bold text-accent-300">
               <Sparkles className="w-3.5 h-3.5" />
               {currentUser.role} Account
             </div>
             
             <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">
-              {greeting}, <span className="text-emerald-400">{currentUser.name}</span>!
+              {greeting}, <span className="text-accent-400">{currentUser.name}</span>!
             </h1>
             
             <p className="text-slate-300 text-sm max-w-xl leading-relaxed">
@@ -252,11 +252,11 @@ export const Home: React.FC<HomeProps> = ({
 
           <div className="flex gap-3">
             <div className="bg-white/10 backdrop-blur-md rounded-2xl p-4 border border-white/10 text-center min-w-0 flex-1">
-              <div className="text-2xl font-black text-emerald-400">{userInstallations.length}</div>
+              <div className="text-2xl font-black text-accent-400 font-mono tabular-nums">{userInstallations.length}</div>
               <div className="text-xs text-slate-300 font-semibold uppercase tracking-wider mt-0.5">My Pipes</div>
             </div>
             <div className="bg-white/10 backdrop-blur-md rounded-2xl p-4 border border-white/10 text-center min-w-0 flex-1">
-              <div className="text-2xl font-black text-emerald-400">{personalComplianceRate}%</div>
+              <div className="text-2xl font-black text-accent-400 font-mono tabular-nums">{personalComplianceRate}%</div>
               <div className="text-xs text-slate-300 font-semibold uppercase tracking-wider mt-0.5">AWD Rate</div>
             </div>
           </div>
@@ -272,8 +272,8 @@ export const Home: React.FC<HomeProps> = ({
           {/* Quick Actions */}
           <div className="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm space-y-4">
             <div className="flex items-center gap-2 border-b border-slate-100 pb-3">
-              <div className="w-7 h-7 bg-emerald-50 rounded-lg flex items-center justify-center">
-                <Zap className="w-4 h-4 text-emerald-600" />
+              <div className="w-7 h-7 bg-accent-50 rounded-lg flex items-center justify-center">
+                <Zap className="w-4 h-4 text-accent-600" />
               </div>
               <div>
                 <h3 className="font-extrabold text-slate-800 text-sm">Quick Actions</h3>
@@ -288,15 +288,15 @@ export const Home: React.FC<HomeProps> = ({
                   <button
                     key={act.title}
                     onClick={act.onClick}
-                    className="flex items-start gap-4 p-4 rounded-2xl border border-slate-100 hover:border-emerald-200 bg-slate-50/50 hover:bg-emerald-50/20 transition-all text-left group cursor-pointer"
+                    className="flex items-start gap-4 p-4 rounded-2xl border border-slate-100 hover:border-accent-200 bg-slate-50/50 hover:bg-accent-50/20 transition-all text-left group cursor-pointer"
                   >
                     <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${act.color} flex items-center justify-center text-white shrink-0 shadow-md`}>
                       <Icon className="w-5 h-5" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <div className="font-bold text-slate-800 text-sm group-hover:text-emerald-700 transition-colors flex items-center gap-1.5">
+                      <div className="font-bold text-slate-800 text-sm group-hover:text-accent-700 transition-colors flex items-center gap-1.5">
                         {act.title}
-                        <ArrowRight className="w-3 h-3 opacity-0 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all text-emerald-600" />
+                        <ArrowRight className="w-3 h-3 opacity-0 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all text-accent-600" />
                       </div>
                       <p className="text-slate-500 text-xs mt-0.5 leading-snug">{act.desc}</p>
                     </div>
@@ -309,8 +309,8 @@ export const Home: React.FC<HomeProps> = ({
           {/* Role Duties Checklist */}
           <div className="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm space-y-4">
             <div className="flex items-center gap-2 border-b border-slate-100 pb-3">
-              <div className="w-7 h-7 bg-emerald-50 rounded-lg flex items-center justify-center">
-                <CheckSquare className="w-4 h-4 text-emerald-600" />
+              <div className="w-7 h-7 bg-accent-50 rounded-lg flex items-center justify-center">
+                <CheckSquare className="w-4 h-4 text-accent-600" />
               </div>
               <div>
                 <h3 className="font-extrabold text-slate-800 text-sm">Role Directives & Checklist</h3>
@@ -321,7 +321,7 @@ export const Home: React.FC<HomeProps> = ({
             <div className="space-y-3">
               {checklist.map((item, idx) => (
                 <div key={idx} className="flex items-start gap-3 p-3 rounded-xl bg-slate-50/60 border border-slate-100 text-xs">
-                  <span className="w-5 h-5 rounded-md bg-emerald-100 text-emerald-700 flex items-center justify-center text-xs font-bold shrink-0">
+                  <span className="w-5 h-5 rounded-md bg-accent-100 text-accent-700 flex items-center justify-center text-xs font-bold shrink-0">
                     {idx + 1}
                   </span>
                   <p className="text-slate-600 leading-normal font-medium mt-0.5">{item}</p>
@@ -337,11 +337,11 @@ export const Home: React.FC<HomeProps> = ({
 
           {/* Sustainability & Environmental Impact */}
           <div className="bg-gradient-to-b from-[#111e15] to-[#09100b] rounded-3xl p-6 text-white shadow-xl shadow-slate-900/10 border border-white/5 space-y-5 relative overflow-hidden">
-            <div className="absolute -right-16 -bottom-16 w-36 h-36 rounded-full bg-emerald-500/5 blur-3xl pointer-events-none" />
+            <div className="absolute -right-16 -bottom-16 w-36 h-36 rounded-full bg-accent-500/5 blur-3xl pointer-events-none" />
             
             <div className="flex items-center gap-2 border-b border-white/10 pb-3">
-              <div className="w-7 h-7 bg-emerald-500/10 rounded-lg flex items-center justify-center border border-emerald-500/20">
-                <Leaf className="w-4 h-4 text-emerald-400" />
+              <div className="w-7 h-7 bg-accent-500/10 rounded-lg flex items-center justify-center border border-accent-500/20">
+                <Leaf className="w-4 h-4 text-accent-400" />
               </div>
               <div>
                 <h3 className="font-extrabold text-white text-sm">Sustainability Impact</h3>
@@ -352,7 +352,7 @@ export const Home: React.FC<HomeProps> = ({
             {/* Metric widgets */}
             <div className="space-y-4">
               <div className="p-3 bg-white/5 rounded-2xl border border-white/5">
-                <div className="text-xs text-emerald-400 font-bold uppercase tracking-wider">Estimated Water Saved</div>
+                <div className="text-xs text-accent-400 font-bold uppercase tracking-wider">Estimated Water Saved</div>
                 <div className="text-2xl font-black mt-1 font-mono">{waterSavedLiters.toLocaleString('en-IN')} L</div>
                 <p className="text-xs text-slate-400 mt-1 leading-relaxed">
                   Calculated based on {totalAcres.toFixed(1)} active acres managed with a {personalComplianceRate}% AWD follow-through rate.
@@ -380,8 +380,8 @@ export const Home: React.FC<HomeProps> = ({
           {/* Quick System Info / Announcement */}
           <div className="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm space-y-4">
             <div className="flex items-center gap-2 border-b border-slate-100 pb-3">
-              <div className="w-7 h-7 bg-emerald-50 rounded-lg flex items-center justify-center">
-                <Clock className="w-4 h-4 text-emerald-600" />
+              <div className="w-7 h-7 bg-accent-50 rounded-lg flex items-center justify-center">
+                <Clock className="w-4 h-4 text-accent-600" />
               </div>
               <div>
                 <h3 className="font-extrabold text-slate-800 text-sm">System Guidelines</h3>
@@ -391,15 +391,15 @@ export const Home: React.FC<HomeProps> = ({
 
             <div className="text-xs text-slate-500 space-y-3 leading-relaxed">
               <div className="flex gap-2.5">
-                <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
+                <CheckCircle2 className="w-4 h-4 text-accent-500 shrink-0 mt-0.5" />
                 <p>Ensure your mobile GPS is enabled before starting pipe registrations.</p>
               </div>
               <div className="flex gap-2.5">
-                <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
+                <CheckCircle2 className="w-4 h-4 text-accent-500 shrink-0 mt-0.5" />
                 <p>If camera output remains blank on desktop browsers, verify camera permission settings for localhost/Render domain name.</p>
               </div>
               <div className="flex gap-2.5">
-                <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
+                <CheckCircle2 className="w-4 h-4 text-accent-500 shrink-0 mt-0.5" />
                 <p>Weekly summaries are exported automatically to Google Sheets at midnight.</p>
               </div>
             </div>

@@ -143,7 +143,7 @@ export const Navbar: React.FC<NavbarProps> = ({
     <>
       {/* ── TOP HEADER ── */}
       <header
-        className={`sticky top-0 z-40 transition-all duration-300 bg-[#060b08]/90 backdrop-blur-xl border-b ${
+        className={`sticky top-0 z-40 transition-all duration-300 bg-[color:var(--color-shell)]/90 backdrop-blur-xl border-b ${
           scrolled
             ? 'shadow-2xl shadow-black/70 border-emerald-500/20'
             : 'border-white/[0.08]'
@@ -163,11 +163,11 @@ export const Navbar: React.FC<NavbarProps> = ({
             >
               <div className="relative shrink-0">
                 <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-tr from-emerald-600 via-teal-500 to-lime-400 p-[1.5px] shadow-lg shadow-emerald-950/60 group-hover:shadow-emerald-500/30 transition-all duration-300 group-hover:scale-105">
-                  <div className="w-full h-full bg-[#09120e] rounded-[10.5px] flex items-center justify-center">
+                  <div className="w-full h-full bg-[color:var(--color-shell-alt)] rounded-[10.5px] flex items-center justify-center">
                     <Sprout className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-400 group-hover:text-emerald-300 transition-colors" />
                   </div>
                 </div>
-                <span className="absolute -top-0.5 -right-0.5 w-2 h-2 sm:w-2.5 sm:h-2.5 bg-emerald-400 rounded-full border-2 border-[#060b08] animate-pulse shadow-sm shadow-emerald-400" />
+                <span className="absolute -top-0.5 -right-0.5 w-2 h-2 sm:w-2.5 sm:h-2.5 bg-emerald-400 rounded-full border-2 border-[color:var(--color-shell)] animate-pulse shadow-sm shadow-emerald-400" />
               </div>
               <div className="leading-tight shrink-0">
                 <div className="font-black text-xs sm:text-base tracking-tight text-white flex items-center gap-1 sm:gap-1.5">
@@ -237,7 +237,7 @@ export const Navbar: React.FC<NavbarProps> = ({
 
                     {/* Popover Card */}
                     {managementDropdownOpen && (
-                      <div className="absolute top-full right-0 mt-2 w-64 bg-[#09120e] border border-emerald-500/30 rounded-2xl p-2 shadow-2xl shadow-black/90 backdrop-blur-2xl animate-fadeIn z-50">
+                      <div className="absolute top-full right-0 mt-2 w-64 bg-[color:var(--color-shell-alt)] border border-emerald-500/30 rounded-2xl p-2 shadow-2xl shadow-black/90 backdrop-blur-2xl animate-fadeIn z-50">
                         <div className="text-[10px] font-black uppercase tracking-widest text-emerald-400/80 px-3 py-1.5 border-b border-white/5 flex items-center justify-between">
                           <span>Workspace Modules</span>
                           <Sparkles className="w-3 h-3 text-emerald-400" />
@@ -353,7 +353,7 @@ export const Navbar: React.FC<NavbarProps> = ({
 
         {/* ── Mobile Drawer for Overflow Items ── */}
         {mobileMenuOpen && mobileOverflowItems.length > 0 && (
-          <div className="lg:hidden border-t border-white/10 py-3 px-4 animate-fadeIn bg-[#070e0a]/95 backdrop-blur-2xl">
+          <div className="lg:hidden border-t border-white/10 py-3 px-4 animate-fadeIn bg-[color:var(--color-shell-border)]/95 backdrop-blur-2xl">
             <div className="text-[10px] font-black uppercase tracking-widest text-emerald-400/80 mb-2 px-1">
               More Modules
             </div>
@@ -390,39 +390,35 @@ export const Navbar: React.FC<NavbarProps> = ({
         )}
       </header>
 
-      {/* ── MOBILE BOTTOM TAB BAR (visible only on mobile/tablet < lg) ── */}
+      {/* ── MOBILE BOTTOM TAB BAR (visible only on mobile/tablet < lg) ──
+          Flush, solid-fill-when-active pattern from the AWD Field design
+          prototype: no gradients/glow, just a filled chip on the active tab. */}
       <nav
-        className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-[#060b08]/95 backdrop-blur-2xl border-t border-white/10 shadow-2xl shadow-black"
+        className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-[color:var(--color-shell)]/95 backdrop-blur-2xl border-t border-white/10 shadow-2xl shadow-black"
         style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
       >
         <div className="flex items-stretch max-w-lg mx-auto">
           {mobileBottomItems.map((item) => {
             const Icon = item.icon;
             const isActive = activeTab === item.id;
-            const theme = TAB_THEMES[item.color ?? 'emerald'];
 
             return (
               <button
                 key={item.id}
                 onClick={() => handleTab(item.id)}
-                className={`flex-1 flex flex-col items-center justify-center gap-0.5 py-1.5 transition-all cursor-pointer relative min-h-[54px] min-w-0 ${
-                  isActive ? 'opacity-100' : 'opacity-70 hover:opacity-100 hover:bg-white/[0.04]'
-                }`}
+                className="flex-1 flex flex-col items-center justify-center gap-1 py-2 transition-colors cursor-pointer relative min-h-[54px] min-w-0"
               >
-                {isActive && (
-                  <span className={`absolute top-0 inset-x-2 h-0.5 rounded-b-full bg-gradient-to-r ${theme.glow}`} />
-                )}
-                <div className={`relative p-1 rounded-xl transition-transform duration-200 ${
-                  isActive ? `${theme.bg} ${theme.text} scale-105` : 'text-slate-400'
+                <div className={`relative flex items-center justify-center w-9 h-9 rounded-lg transition-colors duration-150 ${
+                  isActive ? 'bg-accent-500 text-white' : 'text-white/55'
                 }`}>
-                  <Icon className="w-5 h-5" />
+                  <Icon className="w-[18px] h-[18px]" />
                   {item.badge && (
-                    <span className="absolute -top-1 -right-1.5 w-3.5 h-3.5 bg-emerald-400 text-slate-950 rounded-full text-[8px] font-black flex items-center justify-center shadow-xs">
+                    <span className="absolute -top-1 -right-1.5 w-3.5 h-3.5 bg-accent-400 text-[#0a1206] rounded-full text-[8px] font-black flex items-center justify-center">
                       {item.badge.length > 3 ? '…' : item.badge}
                     </span>
                   )}
                 </div>
-                <span className={`text-[10px] font-extrabold tracking-tight truncate w-full text-center px-0.5 ${isActive ? theme.text : 'text-slate-400'}`}>
+                <span className={`text-[10px] font-bold tracking-tight truncate w-full text-center px-0.5 ${isActive ? 'text-white' : 'text-white/55'}`}>
                   {item.label}
                 </span>
               </button>
@@ -435,14 +431,16 @@ export const Navbar: React.FC<NavbarProps> = ({
               onClick={() => setMobileMenuOpen(v => !v)}
               aria-label={mobileMenuOpen ? 'Close more navigation' : 'Show more navigation'}
               aria-expanded={mobileMenuOpen}
-              className={`flex-1 flex flex-col items-center justify-center gap-0.5 py-1.5 transition-all cursor-pointer min-h-[54px] min-w-0 focus-visible:outline-2 focus-visible:outline-emerald-500 ${
-                mobileMenuOpen || mobileOverflowItems.some(i => i.id === activeTab) ? 'opacity-100' : 'opacity-70 hover:opacity-100 hover:bg-white/[0.04]'
-              }`}
+              className="flex-1 flex flex-col items-center justify-center gap-1 py-2 transition-colors cursor-pointer min-h-[54px] min-w-0 focus-visible:outline-2 focus-visible:outline-accent-500"
             >
-              <div className={`p-1 rounded-xl ${mobileMenuOpen ? 'bg-slate-800 text-white' : 'text-slate-400'}`}>
-                {mobileMenuOpen ? <X className="w-5 h-5" aria-hidden="true" /> : <Menu className="w-5 h-5" aria-hidden="true" />}
+              <div className={`flex items-center justify-center w-9 h-9 rounded-lg transition-colors duration-150 ${
+                mobileMenuOpen || mobileOverflowItems.some(i => i.id === activeTab) ? 'bg-accent-500 text-white' : 'text-white/55'
+              }`}>
+                {mobileMenuOpen ? <X className="w-[18px] h-[18px]" aria-hidden="true" /> : <Menu className="w-[18px] h-[18px]" aria-hidden="true" />}
               </div>
-              <span className="text-[10px] font-extrabold tracking-tight text-slate-400 truncate w-full text-center px-0.5" aria-hidden="true">More</span>
+              <span className={`text-[10px] font-bold tracking-tight truncate w-full text-center px-0.5 ${
+                mobileMenuOpen || mobileOverflowItems.some(i => i.id === activeTab) ? 'text-white' : 'text-white/55'
+              }`} aria-hidden="true">More</span>
             </button>
           )}
         </div>
