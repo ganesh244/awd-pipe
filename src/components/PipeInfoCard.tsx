@@ -22,7 +22,7 @@ interface PipeInfoCardProps {
 
 function Field({ label, value }: { label: string; value: React.ReactNode }) {
   return (
-    <div className="flex items-center justify-between py-2 text-xs" style={{ borderTop: '2px solid var(--color-border-light)' }}>
+    <div className="flex items-center justify-between py-2 text-xs" style={{ borderTop: '1px solid var(--color-border-light)' }}>
       <span style={{ color: 'var(--color-text-muted)' }}>{label}</span>
       <span className="font-bold text-right">{value}</span>
     </div>
@@ -101,7 +101,7 @@ export const PipeInfoCard: React.FC<PipeInfoCardProps> = ({
       )}
 
       {/* Header — mono pipe ID, status tag */}
-      <div className="p-4" style={{ background: 'var(--color-surface)', borderBottom: '2px solid var(--color-border-light)' }}>
+      <div className="p-4" style={{ background: 'var(--color-surface)', borderBottom: '1px solid var(--color-border-light)' }}>
         <div className="awd-kicker">AWD Pipe ID</div>
         <div className="flex items-center justify-between mt-0.5">
           <h2 className="awd-mono font-black" style={{ fontSize: 24 }}>{pipe.Pipe_ID}</h2>
@@ -118,13 +118,13 @@ export const PipeInfoCard: React.FC<PipeInfoCardProps> = ({
       </div>
 
       {/* Privacy notice */}
-      <div className="flex items-center gap-2 px-4 py-2.5 text-xs" style={{ background: '#FFFBEB', borderBottom: '2px solid var(--color-border-light)', color: '#92400E' }}>
+      <div className="flex items-center gap-2 px-4 py-2.5 text-xs" style={{ background: '#FFFBEB', borderBottom: '1px solid var(--color-border-light)', color: '#92400E' }}>
         <ShieldAlert className="w-4 h-4 shrink-0" />
         Farmer contact details are masked for privacy compliance.
       </div>
 
       {farmerPipes.length > 1 && (
-        <div className="p-4" style={{ borderBottom: '2px solid var(--color-border-light)' }}>
+        <div className="p-4" style={{ borderBottom: '1px solid var(--color-border-light)' }}>
           <div className="text-xs font-bold mb-1.5">{farmerPipes.length} pipes registered to {installation.Farmer_Name}</div>
           <div className="flex flex-wrap gap-1.5">
             {farmerPipes.map((fp) => (
@@ -189,7 +189,7 @@ export const PipeInfoCard: React.FC<PipeInfoCardProps> = ({
       {(installation.Photo_URL !== undefined || photoUrl !== null) && (
         <div className="px-4 pt-2 pb-4">
           <div className="awd-kicker mb-1.5 flex items-center gap-1"><Camera className="w-3 h-3" /> Installation photo</div>
-          <button type="button" onClick={handlePhotoClick} className="w-full relative overflow-hidden cursor-pointer" style={{ border: '2px solid var(--color-border-light)', background: 'var(--color-shell)' }}>
+          <button type="button" onClick={handlePhotoClick} className="w-full relative overflow-hidden cursor-pointer" style={{ border: '1px solid var(--color-border-light)', background: 'var(--color-shell)' }}>
             <div className="w-full flex items-center justify-center" style={{ minHeight: 140, maxHeight: 192 }}>
               {photoLoading ? (
                 <div className="flex flex-col items-center gap-2 text-white/60"><Loader2 className="w-6 h-6 animate-spin" /><span className="text-xs">Loading photo…</span></div>
@@ -204,8 +204,8 @@ export const PipeInfoCard: React.FC<PipeInfoCardProps> = ({
       )}
 
       {/* Action buttons */}
-      <div className="grid grid-cols-2 gap-0 mx-4 mb-4" style={{ border: '2px solid var(--color-border-light)' }}>
-        <a href={installation.Location_Link} target="_blank" rel="noopener noreferrer" className="awd-btn-secondary justify-center" style={{ border: 0, borderRight: '2px solid var(--color-border-light)' }}>
+      <div className="grid grid-cols-2 gap-0 mx-4 mb-4" style={{ border: '1px solid var(--color-border-light)' }}>
+        <a href={installation.Location_Link} target="_blank" rel="noopener noreferrer" className="awd-btn-secondary justify-center" style={{ border: 0, borderRight: '1px solid var(--color-border-light)' }}>
           <MapPin className="w-4 h-4" />View on map
         </a>
         <button onClick={onOpenMonitoringModal} className="awd-btn-primary justify-center" style={{ border: 0 }}>
@@ -226,7 +226,7 @@ export const PipeInfoCard: React.FC<PipeInfoCardProps> = ({
       ) : (
         <div className="awd-card" style={{ borderLeft: 0, borderRight: 0, borderBottom: 0 }}>
           {pipeMonitoring.map((visit, idx) => (
-            <div key={idx} className="p-3 text-xs" style={{ borderTop: idx === 0 ? 'none' : '2px solid var(--color-border-light)' }}>
+            <div key={idx} className="p-3 text-xs" style={{ borderTop: idx === 0 ? 'none' : '1px solid var(--color-border-light)' }}>
               <div className="flex items-center justify-between">
                 <span className="font-bold flex items-center gap-1"><Calendar className="w-3 h-3" />{visit.Visit_Date}</span>
                 <span className={`awd-tag ${
@@ -247,7 +247,7 @@ export const PipeInfoCard: React.FC<PipeInfoCardProps> = ({
                   type="button"
                   onClick={() => openLightbox(visit.Photo_URL!, `Visit Photo — ${visit.Visit_Date} · ${pipe.Pipe_ID}`)}
                   className="w-full mt-1.5 cursor-pointer"
-                  style={{ border: '2px solid var(--color-border-light)' }}
+                  style={{ border: '1px solid var(--color-border-light)' }}
                 >
                   <div className="flex items-center gap-1 text-[10px] font-bold uppercase px-2 pt-1.5 pb-1" style={{ color: 'var(--color-text-muted)' }}>
                     <Camera className="w-3 h-3" /> Visit photo <ZoomIn className="w-3 h-3 ml-auto" />

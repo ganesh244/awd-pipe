@@ -204,7 +204,7 @@ export const InteractiveFieldMap: React.FC<InteractiveFieldMapProps> = ({
       });
 
       marker.bindTooltip(`
-        <div style="font-family: inherit; padding: 6px 8px; min-width: 160px; background: var(--color-surface); color: var(--color-text-primary); border: 2px solid var(--color-border-light); border-radius: 0;">
+        <div style="font-family: inherit; padding: 6px 8px; min-width: 160px; background: var(--color-surface); color: var(--color-text-primary); border: 1px solid var(--color-border-light); border-radius: 0;">
           <div style="font-size: 11px; font-weight: 800; color: ${pinColor};">${pipe.Pipe_ID} · ${statusLabel}</div>
           <div style="font-size: 11px; font-weight: 700; margin-top: 2px;">${farmerName}</div>
           <div style="font-size: 10px; color: var(--color-text-secondary);">${village}</div>
@@ -269,7 +269,7 @@ export const InteractiveFieldMap: React.FC<InteractiveFieldMapProps> = ({
     <div>
       {/* ── HEADER CONTROLS ── */}
       <div className="awd-card" style={{ padding: 16 }}>
-        <div className="flex items-center gap-2.5 pb-3" style={{ borderBottom: '2px solid var(--color-border-light)' }}>
+        <div className="flex items-center gap-2.5 pb-3" style={{ borderBottom: '1px solid var(--color-border-light)' }}>
           <div className="w-9 h-9 flex items-center justify-center" style={{ background: 'var(--color-accent-500)', color: '#fff' }}>
             <Compass className="w-4 h-4" />
           </div>
@@ -295,7 +295,7 @@ export const InteractiveFieldMap: React.FC<InteractiveFieldMapProps> = ({
               onChange={(e) => setSearchTerm(e.target.value)}
               placeholder="Search Farmer, Pipe ID, Village…"
               className="w-full pl-9 pr-3 py-2 text-xs font-semibold outline-none"
-              style={{ background: 'var(--color-surface-alt)', border: '2px solid var(--color-border-light)', borderRadius: 0 }}
+              style={{ background: 'var(--color-surface-alt)', border: '1px solid var(--color-border-light)', borderRadius: 0 }}
             />
           </div>
 
@@ -303,7 +303,7 @@ export const InteractiveFieldMap: React.FC<InteractiveFieldMapProps> = ({
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value as any)}
             className="w-full p-2 text-xs font-bold outline-none cursor-pointer"
-            style={{ background: 'var(--color-surface-alt)', border: '2px solid var(--color-border-light)', borderRadius: 0 }}
+            style={{ background: 'var(--color-surface-alt)', border: '1px solid var(--color-border-light)', borderRadius: 0 }}
           >
             <option value="All">All Statuses</option>
             <option value="Installed">Installed Only</option>
@@ -315,7 +315,7 @@ export const InteractiveFieldMap: React.FC<InteractiveFieldMapProps> = ({
             value={villageFilter}
             onChange={(e) => setVillageFilter(e.target.value)}
             className="w-full p-2 text-xs font-bold outline-none cursor-pointer"
-            style={{ background: 'var(--color-surface-alt)', border: '2px solid var(--color-border-light)', borderRadius: 0 }}
+            style={{ background: 'var(--color-surface-alt)', border: '1px solid var(--color-border-light)', borderRadius: 0 }}
           >
             <option value="All">All Villages ({villages.length})</option>
             {villages.map((v) => (
@@ -350,7 +350,7 @@ export const InteractiveFieldMap: React.FC<InteractiveFieldMapProps> = ({
       </div>
 
       {/* ── MAP CANVAS ── */}
-      <div className="relative w-full mapwrap" style={{ height: 620, border: '2px solid var(--color-border-light)', borderTop: 0, background: 'var(--color-surface-alt)' }}>
+      <div className="relative w-full mapwrap" style={{ height: 620, border: '1px solid var(--color-border-light)', borderTop: 0, background: 'var(--color-surface-alt)' }}>
         <div ref={mapContainerRef} className="w-full h-full z-10" />
 
         {/* Legend */}
@@ -359,7 +359,7 @@ export const InteractiveFieldMap: React.FC<InteractiveFieldMapProps> = ({
           <span className="flex items-center gap-1.5"><span className="w-3 h-3" style={{ background: 'var(--color-text-muted)' }} /> Available</span>
           <span className="flex items-center gap-1.5"><span className="w-3 h-3" style={{ background: 'var(--color-danger)' }} /> Damaged</span>
           {showBoundaries && (
-            <span className="flex items-center gap-1.5" style={{ borderLeft: '2px solid var(--color-border-light)', paddingLeft: 10 }}>
+            <span className="flex items-center gap-1.5" style={{ borderLeft: '1px solid var(--color-border-light)', paddingLeft: 10 }}>
               <Hexagon className="w-3 h-3" /> Plot boundary
             </span>
           )}
@@ -418,7 +418,7 @@ export const InteractiveFieldMap: React.FC<InteractiveFieldMapProps> = ({
                   </div>
 
                   {selectedPipeDetails.installation.Photo_URL && (
-                    <img src={selectedPipeDetails.installation.Photo_URL} alt="Installation" className="w-full object-cover" style={{ maxHeight: 140, border: '2px solid var(--color-border-light)' }} />
+                    <img src={selectedPipeDetails.installation.Photo_URL} alt="Installation" className="w-full object-cover" style={{ maxHeight: 140, border: '1px solid var(--color-border-light)' }} />
                   )}
 
                   {selectedPipeDetails.lastMonitoring && (
@@ -434,7 +434,7 @@ export const InteractiveFieldMap: React.FC<InteractiveFieldMapProps> = ({
                     </div>
                   )}
 
-                  <div className="flex items-center justify-between pt-2" style={{ borderTop: '2px solid var(--color-border-light)' }}>
+                  <div className="flex items-center justify-between pt-2" style={{ borderTop: '1px solid var(--color-border-light)' }}>
                     <span className="awd-mono" style={{ color: 'var(--color-text-muted)', fontSize: 11 }}>
                       {selectedPipeDetails.installation.Latitude.toFixed(4)}, {selectedPipeDetails.installation.Longitude.toFixed(4)}
                     </span>

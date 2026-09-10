@@ -582,9 +582,9 @@ export const MobileRegistrationApp: React.FC<MobileRegistrationAppProps> = ({
           <p className="font-semibold mt-1" style={{ color: 'var(--color-accent-700)' }}>Pipe {successRecord.Pipe_ID} has been assigned.</p>
 
           <div className="awd-card mt-5 p-4 text-sm text-left">
-            <div className="flex justify-between py-1.5" style={{ borderBottom: '2px solid var(--color-border-light)' }}><span style={{ color: 'var(--color-text-muted)' }}>Farmer</span><strong>{successRecord.Farmer_Name}</strong></div>
-            <div className="flex justify-between py-1.5" style={{ borderBottom: '2px solid var(--color-border-light)' }}><span style={{ color: 'var(--color-text-muted)' }}>Mobile</span><strong>{successRecord.Mobile}</strong></div>
-            <div className="flex justify-between py-1.5" style={{ borderBottom: '2px solid var(--color-border-light)' }}><span style={{ color: 'var(--color-text-muted)' }}>Village / Mandal</span><strong>{successRecord.Village}, {successRecord.Mandal}</strong></div>
+            <div className="flex justify-between py-1.5" style={{ borderBottom: '1px solid var(--color-border-light)' }}><span style={{ color: 'var(--color-text-muted)' }}>Farmer</span><strong>{successRecord.Farmer_Name}</strong></div>
+            <div className="flex justify-between py-1.5" style={{ borderBottom: '1px solid var(--color-border-light)' }}><span style={{ color: 'var(--color-text-muted)' }}>Mobile</span><strong>{successRecord.Mobile}</strong></div>
+            <div className="flex justify-between py-1.5" style={{ borderBottom: '1px solid var(--color-border-light)' }}><span style={{ color: 'var(--color-text-muted)' }}>Village / Mandal</span><strong>{successRecord.Village}, {successRecord.Mandal}</strong></div>
             <div className="flex justify-between py-1.5"><span style={{ color: 'var(--color-text-muted)' }}>Plot size</span><strong>{successRecord.Plot_Size} {successRecord.Plot_Size_Unit}</strong></div>
           </div>
 
@@ -631,7 +631,7 @@ export const MobileRegistrationApp: React.FC<MobileRegistrationAppProps> = ({
             <QrCode className="w-5 h-5" /> Scan now
           </button>
 
-          <div className="mt-6 pt-6 text-left" style={{ borderTop: '2px solid var(--color-border-light)' }}>
+          <div className="mt-6 pt-6 text-left" style={{ borderTop: '1px solid var(--color-border-light)' }}>
             <p className="text-sm mb-2" style={{ color: 'var(--color-text-muted)' }}>Can't scan the QR? Enter Pipe ID manually</p>
             <div className="flex gap-2">
               <input
@@ -672,7 +672,7 @@ export const MobileRegistrationApp: React.FC<MobileRegistrationAppProps> = ({
                   }
                 }}
                 className="flex-1 awd-mono font-bold uppercase outline-none px-3 py-2.5 text-sm"
-                style={{ background: 'var(--color-surface-alt)', border: '2px solid var(--color-border-light)' }}
+                style={{ background: 'var(--color-surface-alt)', border: '1px solid var(--color-border-light)' }}
               />
               <button
                 type="button"
@@ -729,7 +729,7 @@ export const MobileRegistrationApp: React.FC<MobileRegistrationAppProps> = ({
         /* UNREGISTERED PIPE REGISTRATION FORM */
         <div className="relative">
           {/* COMPACT STICKY PIPE CONTEXT BAR */}
-          <div className="sticky top-0 z-30 px-4 py-3 flex items-center justify-between" style={{ background: 'var(--color-accent-100)', borderBottom: '2px solid var(--color-border-light)' }}>
+          <div className="sticky top-0 z-30 px-4 py-3 flex items-center justify-between" style={{ background: 'var(--color-accent-100)', borderBottom: '1px solid var(--color-border-light)' }}>
             <div className="flex items-center gap-2">
               <CheckCircle2 className="w-5 h-5" style={{ color: 'var(--color-accent-600)' }} />
               <div className="flex flex-col">
@@ -748,7 +748,7 @@ export const MobileRegistrationApp: React.FC<MobileRegistrationAppProps> = ({
           <form onSubmit={handleSubmitRegistration} className="pb-4">
 
             {/* Step indicator — numbered 01-04 bar, matching the design prototype */}
-            <div className="sticky top-[52px] z-20 grid grid-cols-4" style={{ background: 'var(--color-surface)', borderBottom: '2px solid var(--color-border-light)' }}>
+            <div className="sticky top-[52px] z-20 grid grid-cols-4" style={{ background: 'var(--color-surface)', borderBottom: '1px solid var(--color-border-light)' }}>
               {[
                 { num: 1, label: 'Location' },
                 { num: 2, label: 'Farmer' },
@@ -762,7 +762,7 @@ export const MobileRegistrationApp: React.FC<MobileRegistrationAppProps> = ({
                     key={step.num}
                     className="px-2 py-2.5 text-center"
                     style={{
-                      borderLeft: idx === 0 ? 'none' : '2px solid var(--color-border-light)',
+                      borderLeft: idx === 0 ? 'none' : '1px solid var(--color-border-light)',
                       background: isCurrent ? 'var(--color-accent-500)' : isDone ? 'var(--color-accent-100)' : 'transparent',
                     }}
                   >
@@ -1271,7 +1271,7 @@ export const MobileRegistrationApp: React.FC<MobileRegistrationAppProps> = ({
             </div>
 
             {/* STICKY BOTTOM ACTION BAR */}
-            <div className="fixed bottom-0 left-0 right-0 z-40 sm:sticky sm:bottom-0" style={{ background: 'var(--color-surface)', borderTop: '2px solid var(--color-border-light)', paddingBottom: 'calc(1rem + env(safe-area-inset-bottom))' }}>
+            <div className="fixed bottom-0 left-0 right-0 z-40 sm:sticky sm:bottom-0" style={{ background: 'var(--color-surface)', borderTop: '1px solid var(--color-border-light)', paddingBottom: 'calc(1rem + env(safe-area-inset-bottom))' }}>
               <div className="flex items-center gap-2 p-3">
                 {currentStep > 1 && (
                   <button type="button" onClick={handlePrevStep} className="awd-btn-secondary justify-center" style={{ flex: '0 0 33%' }}>

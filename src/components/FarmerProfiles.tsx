@@ -1079,7 +1079,7 @@ export const FarmerProfiles: React.FC<FarmerProfilesProps> = ({
       ) : (
         <>
           {/* ── HEADER ── */}
-          <div className="px-4 pt-4 pb-3" style={{ borderBottom: '2px solid var(--color-border-light)' }}>
+          <div className="px-4 pt-4 pb-3" style={{ borderBottom: '1px solid var(--color-border-light)' }}>
             <div className="awd-kicker">{currentUser.role} view</div>
             <h1 className="font-extrabold" style={{ fontSize: 18 }}>Installations directory</h1>
             <p className="text-xs mt-0.5" style={{ color: 'var(--color-text-muted)' }}>
@@ -1090,7 +1090,7 @@ export const FarmerProfiles: React.FC<FarmerProfilesProps> = ({
           </div>
 
           {/* Search */}
-          <div className="relative px-4 py-3" style={{ borderBottom: '2px solid var(--color-border-light)' }}>
+          <div className="relative px-4 py-3" style={{ borderBottom: '1px solid var(--color-border-light)' }}>
             <Search className="w-4 h-4 absolute left-7 top-1/2 -translate-y-1/2" style={{ color: 'var(--color-text-muted)' }} />
             <input
               type="text"
@@ -1108,7 +1108,7 @@ export const FarmerProfiles: React.FC<FarmerProfilesProps> = ({
           </div>
 
           {/* Location / officer filters */}
-          <div className="px-4 py-3" style={{ borderBottom: '2px solid var(--color-border-light)' }}>
+          <div className="px-4 py-3" style={{ borderBottom: '1px solid var(--color-border-light)' }}>
             <div className="flex items-center justify-between pb-2">
               <div className="flex items-center gap-1.5 awd-kicker" style={{ color: 'var(--color-text-secondary)' }}>
                 <Filter className="w-3.5 h-3.5" />Filter by location &amp; officer

@@ -135,7 +135,7 @@ export const Home: React.FC<HomeProps> = ({
           </div>
 
           <div className="grid grid-cols-2 awd-card" style={{ borderTop: 0 }}>
-            <button onClick={openRegister} className="awd-btn-secondary" style={{ border: 0, borderRight: '2px solid var(--color-border-light)' }}>
+            <button onClick={openRegister} className="awd-btn-secondary" style={{ border: 0, borderRight: '1px solid var(--color-border-light)' }}>
               <ScanLine className="w-5 h-5 shrink-0" />Scan a QR
             </button>
             <button onClick={openRegister} className="awd-btn-secondary" style={{ border: 0 }}>
@@ -193,7 +193,7 @@ export const Home: React.FC<HomeProps> = ({
       {/* ══════════════════ Area Manager ══════════════════ */}
       {isArea && (
         <div>
-          <div className="px-4 py-4" style={{ borderBottom: '2px solid var(--color-border-light)' }}>
+          <div className="px-4 py-4" style={{ borderBottom: '1px solid var(--color-border-light)' }}>
             <div className="text-xs" style={{ color: 'var(--color-text-secondary)' }}>
               {currentUser.areaName || 'Your area'} · {villageCount} village{villageCount === 1 ? '' : 's'}
             </div>
@@ -242,7 +242,7 @@ export const Home: React.FC<HomeProps> = ({
       {/* ══════════════════ District / State Manager ══════════════════ */}
       {isMgr && (
         <div>
-          <div className="px-4 py-4" style={{ borderBottom: '2px solid var(--color-border-light)' }}>
+          <div className="px-4 py-4" style={{ borderBottom: '1px solid var(--color-border-light)' }}>
             <div className="text-xs" style={{ color: 'var(--color-text-secondary)' }}>
               {role === 'State Manager' ? (currentUser.state || 'Your state') : (currentUser.district || 'Your district')}
             </div>

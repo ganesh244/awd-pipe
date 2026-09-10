@@ -1,10 +1,13 @@
-/* ── Google Fonts: Outfit ── */
 /* @import "@fontsource-variable/geist/index.css"; */
 /* @import "@fontsource-variable/geist-mono/index.css"; */
+/* @import "@fontsource-variable/outfit"; -- replaced by Archivo below to match
+   the AWD Field design system (--font-heading/--font-body: "Archivo", weight 800
+   headings), confirmed by rendering the actual .dc.html prototype and reading
+   its styles.css — not a guess. */
 @import "tailwindcss";
 /* Self-hosted variable font: one origin, one file, no render-blocking third-party
    stylesheet. font-display: swap is set by the package. */
-@import "@fontsource-variable/outfit";
+@import "@fontsource-variable/archivo";
 /* Leaflet CSS moved into the three map components so it ships with their lazy
    chunks instead of every page load. */
 
@@ -35,14 +38,23 @@
   --color-danger-100: #FEE2E2;
   --color-danger-800: #991B1B;
 
-  --color-background: #F8F9FA; /* Softer, slightly warmer neutral */
-  --color-surface: #FFFFFF;
-  --color-surface-alt: #F1F3F5; /* Subtle off-white for depth */
-  --color-text-primary: #111827; /* Richer charcoal, avoiding pure black */
-  --color-text-secondary: #4B5563;
-  --color-text-muted: #9CA3AF;
-  --color-border-light: #E5E7EB;
-  --color-border-strong: #D1D5DB;
+  /* Neutral palette — the design prototype's own <style> block overrides
+     ONLY --color-accent*; bg/surface/text/divider are the base "modernist"
+     design system's values (confirmed by rendering the prototype and
+     reading its styles.css directly, not inferred). Warm off-white/near-
+     black ink, not the cool slate/white this app used before. */
+  --color-background: #F3F2F2;
+  --color-surface: #EAE9E9;
+  --color-surface-alt: #F8F4F4;
+  --color-text-primary: #201E1D;
+  --color-text-secondary: color-mix(in srgb, #201E1D 70%, transparent);
+  --color-text-muted: color-mix(in srgb, #201E1D 55%, transparent);
+  /* This is literally --color-divider from the design system — one line
+     color at 40% ink, used at 1px for rows/inputs/buttons and 2px for major
+     section rules. Keeping the two token names this codebase already had
+     call sites for, but both now resolve to the real divider color. */
+  --color-border-light: color-mix(in srgb, #201E1D 40%, transparent);
+  --color-border-strong: color-mix(in srgb, #201E1D 55%, transparent);
   --color-focus-ring: var(--color-accent-500);
 
   /* Dark app-shell chrome (nav, safe-area filler) — matches manifest
@@ -60,10 +72,16 @@
 }
 
 html {
-  font-family: 'Outfit Variable', 'Outfit', system-ui, sans-serif;
+  font-family: 'Archivo Variable', 'Archivo', system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   scroll-behavior: smooth;
+}
+
+/* Headings use the design system's heading weight (800), matching h1-h6
+   in the prototype's stylesheet exactly. */
+h1, h2, h3, h4, h5, h6 {
+  font-weight: 800;
 }
 
 body {
@@ -305,90 +323,103 @@ a:focus:not(:focus-visible) {
   font-weight: 700;
 }
 
-/* Flat surface block, 2px rule border, no radius, no shadow */
+/* Flat surface block — the real .card component has NO border, it separates
+   from the page background purely by the bg→surface tint step (confirmed in
+   styles.css: .card { background: var(--color-surface) }, no border rule). */
 .awd-card {
   background: var(--color-surface);
-  border: 2px solid var(--color-border-light);
   border-radius: 0;
 }
 
-/* Strong 2px divider between sections inside a flat card/list */
+/* Strong 2px divider — matches the real system's .hr and major section
+   rules (header/hero boundaries use 2px; row-level dividers use 1px, see
+   .awd-row below). */
 .awd-hr { border: none; border-top: 2px solid var(--color-border-light); margin: 0; }
 
-/* Tappable list row */
+/* Tappable list row — 1px divider, matching the prototype's row markup
+   (`border-top:1px solid var(--color-divider)`), not the page-level 2px. */
 .awd-row {
   display: flex;
   align-items: center;
   gap: 12px;
   padding: 12px 16px;
-  border-top: 2px solid var(--color-border-light);
+  border-top: 1px solid var(--color-border-light);
   cursor: pointer;
   transition: background-color 0.15s;
 }
 .awd-row:first-child { border-top: none; }
 .awd-row:active { background: var(--color-accent-50); }
 
-/* Status/state tag */
+/* Status/state tag — matches .tag in styles.css exactly (11px, 3px/10px pad) */
 .awd-tag {
   display: inline-flex;
   align-items: center;
   flex: none;
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 800;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  padding: 3px 8px;
-  border-radius: 2px;
+  letter-spacing: 0.02em;
+  padding: 3px 10px;
+  border-radius: 0;
 }
 .awd-tag-accent  { background: var(--color-accent-100); color: var(--color-accent-800); }
 .awd-tag-neutral { background: var(--color-surface-alt); color: var(--color-text-secondary); }
 .awd-tag-warning { background: #FEF3C7; color: #92400E; }
 .awd-tag-danger  { background: var(--color-danger-100); color: var(--color-danger-800); }
 
-/* Big flush primary action (fills the accent, square corners) */
+/* Buttons — matches .btn/.btn-primary/.btn-secondary in styles.css exactly:
+   Archivo 800 14px, padding var(--space-2) calc(var(--space-3)*1.2) = 8px
+   14.4px, 1px border (not 2px), no radius. */
 .awd-btn-primary {
   display: flex;
   align-items: center;
   justify-content: flex-start;
-  gap: 10px;
-  padding: 16px;
+  gap: 6px;
+  padding: 8px 14.4px;
   background: var(--color-accent-500);
-  color: #fff;
-  border: none;
+  color: var(--color-background);
+  border: 1px solid transparent;
   border-radius: 0;
-  font-weight: 700;
-  font-size: 13px;
+  font-weight: 800;
+  font-size: 14px;
   cursor: pointer;
   transition: background-color 0.15s;
 }
-.awd-btn-primary:active { background: var(--color-accent-600); }
+.awd-btn-primary:hover { background: var(--color-accent-600); }
+.awd-btn-primary:active { background: var(--color-accent-700); }
 
 .awd-btn-secondary {
   display: flex;
   align-items: center;
   justify-content: flex-start;
-  gap: 10px;
-  padding: 16px;
-  background: var(--color-surface);
+  gap: 6px;
+  padding: 8px 14.4px;
+  background: transparent;
   color: var(--color-text-primary);
-  border: 2px solid var(--color-border-light);
+  border: 1px solid var(--color-border-light);
   border-radius: 0;
-  font-weight: 700;
-  font-size: 13px;
+  font-weight: 800;
+  font-size: 14px;
   cursor: pointer;
   transition: background-color 0.15s;
 }
-.awd-btn-secondary:active { background: var(--color-surface-alt); }
+.awd-btn-secondary:hover { background: color-mix(in srgb, var(--color-text-primary) 7%, transparent); }
+.awd-btn-secondary:active { background: color-mix(in srgb, var(--color-text-primary) 14%, transparent); }
 
+/* Inputs — matches .input in styles.css: 36px min-height, 6px/10px padding,
+   surface background, 1px divider border. */
 .awd-input {
   width: 100%;
-  border: 2px solid var(--color-border-light);
+  min-height: 36px;
+  border: 1px solid var(--color-border-light);
   background: var(--color-surface);
-  padding: 8px 12px;
-  font-size: 13px;
+  padding: 6px 10px;
+  font-size: 14px;
+  font-family: inherit;
+  color: var(--color-text-primary);
   outline: none;
   border-radius: 0;
 }
+.awd-input:hover { border-color: var(--color-border-strong); }
 .awd-input:focus { border-color: var(--color-accent-500); }
 .awd-input:disabled { background: var(--color-surface-alt); opacity: 0.6; }
 
