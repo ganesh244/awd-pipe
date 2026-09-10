@@ -1,0 +1,31 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Phases harness</title>
+<body style="background:#f8fafc">
+  <div id="root"></div>
+<script type="module">
+import React from 'react';
+import { createRoot } from 'react-dom/client';
+import '/src/index.css';
+import { Dashboard } from '/src/components/Dashboard.tsx';
+
+const h = React.createElement;
+window.__saved = null;
+const inst = (id, method='Manual Transplanting') => ({ Pipe_ID:id, Farmer_Name:'F'+id, Village:'Kandi', Mandal:'Kandi', District:'Sangareddy', Plot_Size:2, Plot_Size_Unit:'Acres', Crop:'Paddy', Establishment_Method:method, Installation_Date:'2026-08-01', Latitude:17.5, Longitude:78.1, GPS_Accuracy:5, Location_Link:'', Installed_By:'CF', Timestamp:'2026-08-01T00:00:00Z', Sowing_Transplantation_Date:'2026-07-01', Irrigation_Source:'Borewell', Mobile:'9' });
+// 1500 installations to land in Phase 2 (current)
+const installations = Array.from({length:1500},(_,i)=>inst('AWD-'+i));
+const pipes = Array.from({length:3000},(_,i)=>({ Pipe_ID:'AWD-'+i, Batch_No:'B', QR_URL:'', Status: i<1500?'Installed':'Available' }));
+const phases = [
+  { id:'phase-1', name:'Phase 1', target:1000 },
+  { id:'phase-2', name:'Phase 2', target:1500 },
+  { id:'phase-3', name:'Phase 3', target:2000 },
+];
+const onUpdatePhases = async (p) => { window.__saved = p; return { ok:true }; };
+
+createRoot(document.getElementById('root')).render(
+  h(Dashboard, { pipes, installations, monitoringList:[], currentUser:{ id:'usr-admin', role:'Admin', name:'Admin' }, phases, onUpdatePhases })
+);
+window.__ready = true;
+</script>
+</body>

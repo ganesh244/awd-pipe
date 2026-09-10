@@ -1,3 +1,10 @@
+export interface Phase {
+  id: string;
+  name: string;
+  /** Installations to complete in this phase (incremental, cumulative across phases). */
+  target: number;
+}
+
 export type PipeStatus = 'Available' | 'Installed' | 'Damaged' | 'Removed' | 'Replaced';
 
 export type EstablishmentMethod = 'Dry DSR' | 'Wet DSR' | 'TPR';

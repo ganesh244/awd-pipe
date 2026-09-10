@@ -49,6 +49,29 @@ let inMemoryData = {
   pipes: [...INITIAL_PIPES],
   installations: [...INITIAL_INSTALLATIONS],
   monitoringList: [...INITIAL_MONITORING],
+  settings: { phases: [
+    { id: 'phase-1', name: 'Phase 1', target: 1000 },
+    { id: 'phase-2', name: 'Phase 2', target: 1000 },
+    { id: 'phase-3', name: 'Phase 3', target: 1000 },
+  ] },
+};
+
+// Program rollout phases (cumulative install milestones). Editable by Admins via
+// PUT /api/settings/phases; served in /api/init. This default is used until an
+// Admin saves their own.
+const DEFAULT_PHASES = [
+  { id: 'phase-1', name: 'Phase 1', target: 1000 },
+  { id: 'phase-2', name: 'Phase 2', target: 1000 },
+  { id: 'phase-3', name: 'Phase 3', target: 1000 },
+];
+const sanitizePhases = (raw) => {
+  if (!Array.isArray(raw) || raw.length === 0) return null;
+  const clean = raw.slice(0, 12).map((p, i) => ({
+    id: String((p && p.id) || `phase-${i + 1}`),
+    name: (String((p && p.name) || `Phase ${i + 1}`).trim().slice(0, 40)) || `Phase ${i + 1}`,
+    target: Math.max(1, Math.min(1000000, Math.round(Number(p && p.target) || 0))),
+  })).filter((p) => p.target >= 1);
+  return clean.length ? clean : null;
 };
 
 let isMongoConnected = false;
@@ -178,6 +201,12 @@ const AreaNode = mongoose.model('AreaNode', AreaSchema);
 const Pipe = mongoose.model('Pipe', PipeSchema);
 const Installation = mongoose.model('Installation', InstallationSchema);
 const MonitoringRecord = mongoose.model('MonitoringRecord', MonitoringSchema);
+
+const SettingSchema = new mongoose.Schema({
+  key: { type: String, required: true, unique: true },
+  phases: { type: Array, default: undefined },
+}, { timestamps: true, strict: false });
+const Setting = mongoose.model('Setting', SettingSchema);
 
 // Connect to MongoDB Atlas
 // ─── Index management ────────────────────────────────────────────────────────
@@ -790,6 +819,9 @@ app.get('/api/init', authenticateToken, async (req, res) => {
       const visibleDistricts = dropDangling(cleanDistricts, cleanStates, 'stateId');
       const visibleAreas = dropDangling(cleanAreas, visibleDistricts, 'districtId');
 
+      const settingsDoc = await db.collection('settings').findOne({ key: 'phaseConfig' }).catch(() => null);
+      const phases = sanitizePhases(settingsDoc && settingsDoc.phases) || DEFAULT_PHASES;
+
       const payload = {
         dbStatus: 'cloud',
         users: cleanUsers,
@@ -799,6 +831,7 @@ app.get('/api/init', authenticateToken, async (req, res) => {
         states: cleanStates,
         districts: visibleDistricts,
         areas: visibleAreas,
+        settings: { phases },
       };
 
       // Cache the result for 30s
@@ -822,6 +855,7 @@ app.get('/api/init', authenticateToken, async (req, res) => {
         states: inMemoryData.states,
         districts: inMemoryData.districts,
         areas: inMemoryData.areas,
+        settings: { phases: (inMemoryData.settings && inMemoryData.settings.phases) || DEFAULT_PHASES },
       });
     }
   } catch (err) {
@@ -953,6 +987,29 @@ app.post('/api/pipes/replace', authenticateToken, async (req, res) => {
   } catch (err) {
     console.error('Error replacing pipe:', err);
     res.status(500).json({ error: 'Failed to replace pipe' });
+  }
+});
+
+// 1c. PUT /api/settings/phases -> Admin edits the rollout phases + targets.
+app.put('/api/settings/phases', authenticateToken, async (req, res) => {
+  if (req.user.role !== 'Admin') return res.status(403).json({ error: 'Admin only' });
+  const clean = sanitizePhases(req.body && req.body.phases);
+  if (!clean) return res.status(400).json({ error: 'phases must be a non-empty list with valid targets' });
+  try {
+    if (isDbReady()) {
+      await getDb().collection('settings').updateOne(
+        { key: 'phaseConfig' },
+        { $set: { key: 'phaseConfig', phases: clean, updatedAt: new Date() } },
+        { upsert: true }
+      );
+    } else {
+      inMemoryData.settings = { phases: clean };
+    }
+    invalidateInitCache();
+    res.json({ success: true, phases: clean, dbStatus: isMongoConnected ? 'cloud' : 'local' });
+  } catch (err) {
+    console.error('Error saving phases:', err);
+    res.status(500).json({ error: 'Failed to save phases' });
   }
 });
 

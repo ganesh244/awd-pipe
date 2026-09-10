@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
-import { AWDPipe, Installation, MonitoringRecord, User } from '../types';
+import { AWDPipe, Installation, MonitoringRecord, User, Phase } from '../types';
+import { PhasesEditorModal } from './PhasesEditorModal';
 import { toAcres } from '../utils/plotUtils';
 import { ComposedChart, Bar, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend } from 'recharts';
 import {
@@ -7,10 +8,9 @@ import {
   PieChart, Layers, Droplets, TrendingUp, AlertTriangle,
   BarChart3, Calendar, Wheat, Pipette, Target, Flame,
   ArrowUpRight, ArrowDownRight, Minus, ClipboardList, MapPin,
-  Zap, Filter, Clock, X, Trophy, Lightbulb
+  Zap, Filter, Clock, X, Trophy, Lightbulb, Pencil, Lock
 } from 'lucide-react';
 
-const REGISTRATION_TARGET = 1000; // TODO: Make configurable
 
 // The establishment-method breakdown groups installations by this exact string,
 // so a typo or casing variant ("Manual transplating", "manual transplanting")
@@ -37,6 +37,8 @@ interface DashboardProps {
   installations: Installation[];
   monitoringList: MonitoringRecord[];
   currentUser?: User;
+  phases?: Phase[];
+  onUpdatePhases?: (phases: Phase[]) => Promise<{ ok: boolean; error?: string }>;
 }
 
 // ── Tiny bar helpers ────────────────────────────────────────────────────────
@@ -97,8 +99,11 @@ const SectionTitle: React.FC<{ icon: React.FC<any>; title: string; sub?: string 
   </div>
 );
 
-export const Dashboard: React.FC<DashboardProps> = ({ pipes, installations, monitoringList, currentUser }) => {
+export const Dashboard: React.FC<DashboardProps> = ({ pipes, installations, monitoringList, currentUser, phases, onUpdatePhases }) => {
   const [districtFilter, setDistrictFilter] = useState<string>('All');
+  const [editingPhases, setEditingPhases] = useState(false);
+  const canEditPhases = currentUser?.role === 'Admin' && !!onUpdatePhases;
+  const phaseList: Phase[] = (phases && phases.length ? phases : [{ id: 'phase-1', name: 'Phase 1', target: 1000 }]);
 
   const scopeLabel = useMemo(() => {
     if (!currentUser) return 'All Regions';
@@ -378,25 +383,77 @@ export const Dashboard: React.FC<DashboardProps> = ({ pipes, installations, moni
           </div>
         </div>
 
-        {/* ── Target Progress Bar ── */}
-        <div className="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm flex flex-col md:flex-row items-center gap-4">
-          <div className="flex items-center gap-3 shrink-0">
-            <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center">
-              <Target className="w-5 h-5 text-slate-500" />
+        {/* ── Rollout Phases (cumulative milestones) ── */}
+        {(() => {
+          const totalTarget = phaseList.reduce((s, p) => s + p.target, 0);
+          let cumStart = 0;
+          const rows = phaseList.map((ph) => {
+            const start = cumStart;
+            const end = start + ph.target;
+            cumStart = end;
+            const inPhase = Math.max(0, Math.min(ph.target, totalInstalled - start));
+            const pct = ph.target > 0 ? Math.round((inPhase / ph.target) * 100) : 0;
+            const status = totalInstalled >= end ? 'done' : totalInstalled >= start ? 'current' : 'upcoming';
+            return { ph, start, end, inPhase, pct, status };
+          });
+          const current = rows.find((r) => r.status === 'current') || rows[rows.length - 1];
+          return (
+            <div className="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm space-y-4">
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center">
+                    <Target className="w-5 h-5 text-slate-500" />
+                  </div>
+                  <div>
+                    <div className="text-xs font-bold text-slate-600 uppercase tracking-wider">Registration Phases</div>
+                    <div className="text-lg font-black text-slate-800 tabular-nums">
+                      {totalInstalled} <span className="text-sm font-bold text-slate-400">/ {totalTarget} pipes</span>
+                      <span className="text-xs font-bold text-emerald-600 ml-2">{current ? current.ph.name : ''}</span>
+                    </div>
+                  </div>
+                </div>
+                {canEditPhases && (
+                  <button
+                    type="button" onClick={() => setEditingPhases(true)}
+                    className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-600 hover:text-emerald-700 bg-slate-50 hover:bg-emerald-50 border border-slate-200 rounded-xl px-3 min-h-[40px] transition"
+                  >
+                    <Pencil className="w-3.5 h-3.5" /> Edit
+                  </button>
+                )}
+              </div>
+
+              <div className="space-y-3">
+                {rows.map(({ ph, inPhase, pct, status }) => (
+                  <div key={ph.id} className="space-y-1.5">
+                    <div className="flex justify-between items-center text-xs font-semibold">
+                      <span className="flex items-center gap-1.5">
+                        <span className={`w-2.5 h-2.5 rounded-full ${status === 'done' ? 'bg-emerald-500' : status === 'current' ? 'bg-emerald-500 ring-2 ring-emerald-200' : 'bg-slate-200'}`} />
+                        <span className={status === 'upcoming' ? 'text-slate-400' : 'text-slate-800'}>{ph.name}</span>
+                        {status === 'done' && <span className="text-[10px] font-extrabold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded px-1.5 py-0.5">Done</span>}
+                        {status === 'current' && <span className="text-[10px] font-extrabold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded px-1.5 py-0.5">Current</span>}
+                      </span>
+                      <span className={`tabular-nums ${status === 'upcoming' ? 'text-slate-400' : 'text-slate-500'}`}>
+                        {inPhase} / {ph.target} · <span className={`font-bold ${status === 'upcoming' ? 'text-slate-300' : 'text-slate-800'}`}>{pct}%</span>
+                      </span>
+                    </div>
+                    <ProgressBar pct={pct} color={status === 'upcoming' ? 'bg-slate-100' : 'bg-emerald-500'} />
+                  </div>
+                ))}
+              </div>
+              {!canEditPhases && currentUser?.role !== 'Admin' && (
+                <p className="text-[11px] text-slate-400 flex items-center gap-1"><Lock className="w-3 h-3" /> Targets are set by an Admin.</p>
+              )}
             </div>
-            <div>
-              <div className="text-xs font-bold text-slate-600 uppercase tracking-wider">Phase Registration Target</div>
-              <div className="text-lg font-black text-slate-800">{totalInstalled} <span className="text-sm font-bold text-slate-400">/ {REGISTRATION_TARGET} pipes</span></div>
-            </div>
-          </div>
-          <div className="flex-1 w-full">
-            <div className="flex justify-between text-xs font-bold mb-1.5">
-              <span className="text-slate-500">Progress</span>
-              <span className="text-emerald-600">{Math.round((totalInstalled / REGISTRATION_TARGET) * 100)}% Complete</span>
-            </div>
-            <ProgressBar pct={(totalInstalled / REGISTRATION_TARGET) * 100} color="bg-emerald-500" />
-          </div>
-        </div>
+          );
+        })()}
+
+        {editingPhases && onUpdatePhases && (
+          <PhasesEditorModal
+            phases={phaseList}
+            onClose={() => setEditingPhases(false)}
+            onSave={onUpdatePhases}
+          />
+        )}
 
         {/* ── KPI Row ── */}
         <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3">

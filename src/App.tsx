@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { BarChart3, FileDown, Box, Printer } from 'lucide-react';
-import { AWDPipe, Installation, MonitoringRecord, User, StateNode, DistrictNode, AreaNode, OfflineQueueItem } from './types';
+import { AWDPipe, Installation, MonitoringRecord, User, StateNode, DistrictNode, AreaNode, OfflineQueueItem, Phase } from './types';
 import { INITIAL_PIPES, INITIAL_INSTALLATIONS, INITIAL_MONITORING } from './data/initialData';
 import { loadDataSnapshot, saveDataSnapshot, clearDataSnapshot, preserveOnDegraded } from './utils/offlineSnapshot';
 import { INITIAL_STATES, INITIAL_DISTRICTS, INITIAL_AREAS, INITIAL_USERS } from './data/hierarchyData';
@@ -221,6 +221,12 @@ export default function App() {
   const [pipes, setPipes] = useState<AWDPipe[]>(() => loadDataSnapshot(loadPersistedCurrentUser()?.id)?.pipes ?? INITIAL_PIPES);
   const [installations, setInstallations] = useState<Installation[]>(() => loadDataSnapshot(loadPersistedCurrentUser()?.id)?.installations ?? INITIAL_INSTALLATIONS);
   const [monitoringList, setMonitoringList] = useState<MonitoringRecord[]>(() => loadDataSnapshot(loadPersistedCurrentUser()?.id)?.monitoringList ?? INITIAL_MONITORING);
+  const DEFAULT_PHASES: Phase[] = [
+    { id: 'phase-1', name: 'Phase 1', target: 1000 },
+    { id: 'phase-2', name: 'Phase 2', target: 1000 },
+    { id: 'phase-3', name: 'Phase 3', target: 1000 },
+  ];
+  const [phases, setPhases] = useState<Phase[]>(DEFAULT_PHASES);
 
   // Hierarchy Data States
   const [states, setStates] = useState<StateNode[]>(persistedHierarchy?.states || INITIAL_STATES);
@@ -393,6 +399,7 @@ export default function App() {
     if (Array.isArray(data.pipes)) setPipes((prev) => preserveOnDegraded(data.pipes, prev, degraded));
     if (Array.isArray(data.installations)) setInstallations((prev) => preserveOnDegraded(data.installations, prev, degraded));
     if (Array.isArray(data.monitoringList)) setMonitoringList((prev) => preserveOnDegraded(data.monitoringList, prev, degraded));
+    if (data.settings && Array.isArray(data.settings.phases) && data.settings.phases.length) setPhases(data.settings.phases);
 
     setDbStatus(data.dbStatus || 'local');
     return data;
@@ -758,6 +765,26 @@ export default function App() {
       return { ok: true };
     } catch (err) {
       console.error('Replace pipe failed:', err);
+      return { ok: false, error: 'Network error — please try again.' };
+    }
+  };
+
+  // Admin edits the rollout phases + targets. Optimistic; server authoritative.
+  const handleUpdatePhases = async (next: Phase[]): Promise<{ ok: boolean; error?: string }> => {
+    const prev = phases;
+    setPhases(next);
+    try {
+      const res = await apiFetch('/api/settings/phases', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phases: next }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data?.success) { setPhases(prev); return { ok: false, error: data?.error || 'Failed to save' }; }
+      if (Array.isArray(data.phases)) setPhases(data.phases);
+      return { ok: true };
+    } catch (err) {
+      setPhases(prev);
       return { ok: false, error: 'Network error — please try again.' };
     }
   };
@@ -1489,6 +1516,8 @@ export default function App() {
                     installations={scopedInstallations}
                     monitoringList={scopedMonitoringList}
                     currentUser={currentUser}
+                    phases={phases}
+                    onUpdatePhases={handleUpdatePhases}
                   />
                 )}
                 {subTab === 'reports' && (
