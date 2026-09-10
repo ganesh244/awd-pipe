@@ -3,8 +3,8 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { AWDPipe, Installation, MonitoringRecord } from '../types';
 import {
-  MapPin, Search, Layers, ShieldCheck, Filter, Smartphone, ExternalLink,
-  Calendar, Sprout, UserCheck, Eye, Compass, RefreshCw, Sparkles, Navigation, CheckCircle2, AlertTriangle, Droplet, Hexagon
+  MapPin, Search, Layers, Smartphone, ExternalLink,
+  Calendar, Sprout, UserCheck, Compass, RefreshCw, Droplet, Hexagon, X,
 } from 'lucide-react';
 
 interface InteractiveFieldMapProps {
@@ -157,7 +157,9 @@ export const InteractiveFieldMap: React.FC<InteractiveFieldMapProps> = ({
     }).addTo(map);
   }, [tileType]);
 
-  // Render & update markers whenever filteredPipes changes
+  // Render & update markers whenever filteredPipes changes.
+  // Pin shape/colors follow the design prototype's flat-square-pin language
+  // (real PipeStatus values, not the prototype's mock Verified/Unverified).
   useEffect(() => {
     if (!mapInstanceRef.current || !markersGroupRef.current) return;
 
@@ -171,35 +173,28 @@ export const InteractiveFieldMap: React.FC<InteractiveFieldMapProps> = ({
     filteredPipes.forEach((item) => {
       const { pipe, installation, lastMonitoring, latitude, longitude } = item;
 
-      let pinColor = '#10b981'; // Emerald
-      let pulseColor = 'rgba(16, 185, 129, 0.35)';
+      let pinColor = 'var(--color-accent-500)';
       let statusLabel = 'Installed';
 
       if (pipe.Status === 'Available') {
-        pinColor = '#f59e0b'; // Amber
-        pulseColor = 'rgba(245, 158, 11, 0.35)';
+        pinColor = 'var(--color-text-muted)';
         statusLabel = 'Available';
       } else if (pipe.Status === 'Damaged') {
-        pinColor = '#ef4444'; // Red
-        pulseColor = 'rgba(239, 68, 68, 0.35)';
+        pinColor = 'var(--color-danger)';
         statusLabel = 'Damaged';
       }
 
       const farmerName = installation?.Farmer_Name || pipe.Farmer_Name || 'Unassigned Field';
       const village = installation?.Village || pipe.Village || 'Central Depot';
 
+      // Flush 14×14 square pin (matches the design prototype's `.pin` marker)
       const customIcon = L.divIcon({
         className: 'custom-field-pin',
         html: `
-          <div style="position: relative; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; cursor: pointer;">
-            <div style="position: absolute; width: 36px; height: 36px; border-radius: 50%; background-color: ${pulseColor}; animation: ping 2s cubic-bezier(0, 0, 0.2, 1) infinite;"></div>
-            <div style="width: 26px; height: 26px; border-radius: 50%; background-color: ${pinColor}; border: 3px solid #ffffff; box-shadow: 0 4px 12px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center; z-index: 10;">
-              <span style="color: white; font-size: 11px; font-weight: 900;">📍</span>
-            </div>
-          </div>
+          <div style="width: 16px; height: 16px; background-color: ${pinColor}; border: 2px solid #fff; box-shadow: 0 1px 4px rgba(0,0,0,0.35); cursor: pointer;"></div>
         `,
-        iconSize: [36, 36],
-        iconAnchor: [18, 18],
+        iconSize: [16, 16],
+        iconAnchor: [8, 8],
       });
 
       const marker = L.marker([latitude, longitude], { icon: customIcon });
@@ -209,11 +204,10 @@ export const InteractiveFieldMap: React.FC<InteractiveFieldMapProps> = ({
       });
 
       marker.bindTooltip(`
-        <div style="font-family: inherit; padding: 6px 8px; min-width: 160px; background: #ffffff; color: #0f172a; border-radius: 10px; border: 1px solid #e2e8f0; box-shadow: 0 10px 25px rgba(0,0,0,0.15);">
-          <div style="font-size: 11px; font-weight: 900; color: #059669;">${pipe.Pipe_ID} (${statusLabel})</div>
-          <div style="font-size: 11px; font-weight: 700; color: #1e293b; margin-top: 2px;">🧑‍🌾 ${farmerName}</div>
-          <div style="font-size: 10px; color: #64748b;">📍 ${village}</div>
-          <div style="font-size: 9px; color: #0284c7; font-weight: 800; margin-top: 4px;">Click pin to view full inspection card →</div>
+        <div style="font-family: inherit; padding: 6px 8px; min-width: 160px; background: var(--color-surface); color: var(--color-text-primary); border: 2px solid var(--color-border-light); border-radius: 0;">
+          <div style="font-size: 11px; font-weight: 800; color: ${pinColor};">${pipe.Pipe_ID} · ${statusLabel}</div>
+          <div style="font-size: 11px; font-weight: 700; margin-top: 2px;">${farmerName}</div>
+          <div style="font-size: 10px; color: var(--color-text-secondary);">${village}</div>
         </div>
       `, {
         direction: 'top',
@@ -225,26 +219,19 @@ export const InteractiveFieldMap: React.FC<InteractiveFieldMapProps> = ({
 
       // ── PLOT BOUNDARY POLYGON ──
       if (showBoundaries && installation?.Plot_Boundary && installation.Plot_Boundary.length >= 3) {
-        let fillColor = '#10b981';
-        let strokeColor = '#059669';
-        if (pipe.Status === 'Available') {
-          fillColor = '#f59e0b'; strokeColor = '#d97706';
-        } else if (pipe.Status === 'Damaged') {
-          fillColor = '#ef4444'; strokeColor = '#dc2626';
-        }
         const polygon = L.polygon(installation.Plot_Boundary as L.LatLngExpression[], {
-          color: strokeColor,
+          color: pipe.Status === 'Damaged' ? '#DC2626' : pipe.Status === 'Available' ? '#94A3B8' : '#3F7D20',
           weight: 2,
-          fillColor: fillColor,
-          fillOpacity: 0.15,
+          fillColor: pipe.Status === 'Damaged' ? '#DC2626' : pipe.Status === 'Available' ? '#94A3B8' : '#3F7D20',
+          fillOpacity: 0.12,
           opacity: 0.7,
         });
         polygon.on('click', () => {
           setSelectedPipeDetails({ pipe, installation, lastMonitoring });
         });
         polygon.bindTooltip(`
-          <div style="font-family: inherit; padding: 4px 6px; font-size: 10px; font-weight: 700; color: #1e293b;">
-            🗺️ ${farmerName}'s Plot — ${pipe.Pipe_ID}
+          <div style="font-family: inherit; padding: 4px 6px; font-size: 10px; font-weight: 700;">
+            ${farmerName}'s Plot — ${pipe.Pipe_ID}
           </div>
         `, { direction: 'center', sticky: true });
         polygon.addTo(polygonsGroupRef.current!);
@@ -268,372 +255,249 @@ export const InteractiveFieldMap: React.FC<InteractiveFieldMapProps> = ({
   const availableCount = pipes.filter((p) => p.Status === 'Available').length;
   const damagedCount = pipes.filter((p) => p.Status === 'Damaged').length;
 
+  const filterChip = (label: string, value: typeof statusFilter, count: number) => (
+    <button
+      onClick={() => setStatusFilter(value)}
+      className={`awd-tag ${statusFilter === value ? 'awd-tag-accent' : 'awd-tag-neutral'}`}
+      style={{ cursor: 'pointer', border: statusFilter === value ? '2px solid var(--color-accent-500)' : '2px solid transparent' }}
+    >
+      {label}: {count}
+    </button>
+  );
+
   return (
-    <div className="space-y-4 animate-fadeIn">
-      {/* ── HEADER CONTROLS BAR (EMERALD AGRICULTURAL LIGHT THEME) ── */}
-      <div className="bg-white text-slate-900 rounded-2xl p-4 sm:p-5 shadow-sm border border-slate-200 space-y-4">
-        
-        {/* Top Title & Metrics Row */}
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 border-b border-slate-100 pb-4">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-600 via-teal-500 to-emerald-500 text-white flex items-center justify-center shadow-md shadow-emerald-900/10">
-              <Compass className="w-5 h-5 text-white animate-spin-slow" />
-            </div>
-            <div>
-              <h1 className="text-base sm:text-lg font-black tracking-wide text-slate-900 flex items-center gap-2">
-                <span>Interactive Field GIS Map</span>
-                <span className="bg-emerald-100 text-emerald-800 text-[10px] font-extrabold px-2.5 py-0.5 rounded-full border border-emerald-300">
-                  GPS Active
-                </span>
-              </h1>
-              <p className="text-xs text-slate-500">
-                Spatial AWD pipe tracking & field plot inspection across paddy sectors
-              </p>
-            </div>
+    <div>
+      {/* ── HEADER CONTROLS ── */}
+      <div className="awd-card" style={{ padding: 16 }}>
+        <div className="flex items-center gap-2.5 pb-3" style={{ borderBottom: '2px solid var(--color-border-light)' }}>
+          <div className="w-9 h-9 flex items-center justify-center" style={{ background: 'var(--color-accent-500)', color: '#fff' }}>
+            <Compass className="w-4 h-4" />
           </div>
-
-          {/* KPI Stat Pills */}
-          <div className="flex flex-wrap items-center gap-2 text-xs font-bold">
-            <button
-              onClick={() => setStatusFilter('Installed')}
-              className={`px-3 py-1.5 rounded-xl border transition-all cursor-pointer flex items-center gap-1.5 ${
-                statusFilter === 'Installed'
-                  ? 'bg-emerald-50 text-emerald-800 border-emerald-300 shadow-xs'
-                  : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
-              }`}
-            >
-              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
-              <span>Installed: <strong>{installedCount}</strong></span>
-            </button>
-
-            <button
-              onClick={() => setStatusFilter('Available')}
-              className={`px-3 py-1.5 rounded-xl border transition-all cursor-pointer flex items-center gap-1.5 ${
-                statusFilter === 'Available'
-                  ? 'bg-amber-50 text-amber-800 border-amber-300 shadow-xs'
-                  : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
-              }`}
-            >
-              <span className="w-2.5 h-2.5 rounded-full bg-amber-500" />
-              <span>Available: <strong>{availableCount}</strong></span>
-            </button>
-
-            <button
-              onClick={() => setStatusFilter('Damaged')}
-              className={`px-3 py-1.5 rounded-xl border transition-all cursor-pointer flex items-center gap-1.5 ${
-                statusFilter === 'Damaged'
-                  ? 'bg-rose-50 text-rose-800 border-rose-300 shadow-xs'
-                  : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
-              }`}
-            >
-              <span className="w-2.5 h-2.5 rounded-full bg-rose-500" />
-              <span>Damaged: <strong>{damagedCount}</strong></span>
-            </button>
-
-            <button
-              onClick={() => setStatusFilter('All')}
-              className={`px-3 py-1.5 rounded-xl border transition-all cursor-pointer ${
-                statusFilter === 'All'
-                  ? 'bg-emerald-600 text-white border-emerald-700 shadow-xs'
-                  : 'bg-slate-50 text-slate-600 border-slate-200 hover:text-slate-900'
-              }`}
-            >
-              Total: <strong>{pipes.length}</strong>
-            </button>
+          <div>
+            <div className="awd-kicker">Field GIS Map</div>
+            <h1 className="font-extrabold text-sm">Installed / Available / Damaged pipe tracking</h1>
           </div>
         </div>
 
-        {/* ── SEARCH & FILTERS ROW ── */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-          
-          {/* Search Box */}
+        <div className="flex flex-wrap items-center gap-2 pt-3 pb-1">
+          {filterChip('Installed', 'Installed', installedCount)}
+          {filterChip('Available', 'Available', availableCount)}
+          {filterChip('Damaged', 'Damaged', damagedCount)}
+          {filterChip('All', 'All', pipes.length)}
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 pt-3">
           <div className="relative">
-            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2" style={{ color: 'var(--color-text-muted)' }} />
             <input
               type="text"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Search Farmer, Pipe ID, Village..."
-              className="w-full pl-9 pr-3 py-2 text-xs font-semibold bg-slate-50 text-slate-900 border border-slate-300 rounded-xl outline-none focus:border-emerald-500 focus:bg-white focus:ring-2 focus:ring-emerald-500/20 transition"
+              placeholder="Search Farmer, Pipe ID, Village…"
+              className="w-full pl-9 pr-3 py-2 text-xs font-semibold outline-none"
+              style={{ background: 'var(--color-surface-alt)', border: '2px solid var(--color-border-light)', borderRadius: 0 }}
             />
           </div>
 
-          {/* Status Filter Dropdown */}
-          <div className="flex items-center gap-1.5">
-            <Filter className="w-4 h-4 text-emerald-600 shrink-0" />
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value as any)}
-              className="w-full p-2 text-xs font-bold bg-slate-50 border border-slate-300 text-slate-800 rounded-xl outline-none focus:border-emerald-500 focus:bg-white transition cursor-pointer"
-            >
-              <option value="All">All Statuses</option>
-              <option value="Installed">🟢 Installed Only</option>
-              <option value="Available">🟡 Available Only</option>
-              <option value="Damaged">🔴 Damaged Only</option>
-            </select>
-          </div>
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value as any)}
+            className="w-full p-2 text-xs font-bold outline-none cursor-pointer"
+            style={{ background: 'var(--color-surface-alt)', border: '2px solid var(--color-border-light)', borderRadius: 0 }}
+          >
+            <option value="All">All Statuses</option>
+            <option value="Installed">Installed Only</option>
+            <option value="Available">Available Only</option>
+            <option value="Damaged">Damaged Only</option>
+          </select>
 
-          {/* Village Filter Dropdown */}
-          <div className="flex items-center gap-1.5">
-            <MapPin className="w-4 h-4 text-teal-600 shrink-0" />
-            <select
-              value={villageFilter}
-              onChange={(e) => setVillageFilter(e.target.value)}
-              className="w-full p-2 text-xs font-bold bg-slate-50 border border-slate-300 text-slate-800 rounded-xl outline-none focus:border-emerald-500 focus:bg-white transition cursor-pointer"
-            >
-              <option value="All">All Villages ({villages.length})</option>
-              {villages.map((v) => (
-                <option key={v} value={v}>
-                  {v}
-                </option>
-              ))}
-            </select>
-          </div>
+          <select
+            value={villageFilter}
+            onChange={(e) => setVillageFilter(e.target.value)}
+            className="w-full p-2 text-xs font-bold outline-none cursor-pointer"
+            style={{ background: 'var(--color-surface-alt)', border: '2px solid var(--color-border-light)', borderRadius: 0 }}
+          >
+            <option value="All">All Villages ({villages.length})</option>
+            {villages.map((v) => (
+              <option key={v} value={v}>{v}</option>
+            ))}
+          </select>
 
-          {/* Map Layer Switcher & Bounds Reset */}
           <div className="flex items-center gap-2">
             <button
               type="button"
               onClick={() => setTileType(tileType === 'streets' ? 'satellite' : 'streets')}
-              className="flex-1 bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-500 hover:from-emerald-700 hover:to-teal-700 text-white font-extrabold text-xs py-2 px-3 rounded-xl transition flex items-center justify-center gap-1.5 shadow-sm border border-emerald-400/30 cursor-pointer"
+              className="awd-btn-primary flex-1 justify-center"
+              style={{ padding: '8px 10px', fontSize: 12 }}
             >
-              <Layers className="w-4 h-4 text-emerald-100" />
-              <span>{tileType === 'streets' ? 'Satellite View' : 'Street Map'}</span>
+              <Layers className="w-4 h-4" />
+              <span>{tileType === 'streets' ? 'Satellite' : 'Street Map'}</span>
             </button>
-
-            <button
-              type="button"
-              onClick={handleResetBounds}
-              title="Fit map bounds to show all pins"
-              className="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs p-2 rounded-xl transition border border-slate-300 cursor-pointer"
-            >
+            <button type="button" onClick={handleResetBounds} title="Fit map bounds to show all pins" className="awd-btn-secondary" style={{ padding: 8 }}>
               <RefreshCw className="w-4 h-4" />
             </button>
-
             <button
               type="button"
               onClick={() => setShowBoundaries(v => !v)}
               title={showBoundaries ? 'Hide plot boundaries' : 'Show plot boundaries'}
-              className={`font-bold text-xs p-2 rounded-xl transition border cursor-pointer flex items-center gap-1.5 ${
-                showBoundaries
-                  ? 'bg-teal-50 text-teal-700 border-teal-300 hover:bg-teal-100'
-                  : 'bg-slate-100 text-slate-500 border-slate-300 hover:bg-slate-200'
-              }`}
+              className="awd-btn-secondary"
+              style={{ padding: 8, background: showBoundaries ? 'var(--color-accent-100)' : undefined }}
             >
               <Hexagon className="w-4 h-4" />
-              <span className="hidden sm:inline">Plots</span>
             </button>
           </div>
         </div>
       </div>
 
-      {/* ── MAP CANVAS CONTAINER & DETAILED POPUP OVERLAY ── */}
-      <div className="relative w-full h-[620px] rounded-2xl overflow-hidden shadow-sm border border-slate-300 bg-slate-100">
-        
-        {/* Leaflet DOM Canvas Element */}
+      {/* ── MAP CANVAS ── */}
+      <div className="relative w-full mapwrap" style={{ height: 620, border: '2px solid var(--color-border-light)', borderTop: 0, background: 'var(--color-surface-alt)' }}>
         <div ref={mapContainerRef} className="w-full h-full z-10" />
 
-        {/* Map Legend Overlay */}
-        <div className="absolute bottom-4 left-4 z-20 bg-white/95 backdrop-blur-md border border-slate-200 rounded-xl px-3.5 py-2 text-xs font-bold text-slate-800 shadow-md flex items-center gap-3 flex-wrap">
-          <span className="flex items-center gap-1.5 text-emerald-700"><span className="w-2.5 h-2.5 rounded-full bg-emerald-500" /> Installed</span>
-          <span className="flex items-center gap-1.5 text-amber-700"><span className="w-2.5 h-2.5 rounded-full bg-amber-500" /> Available</span>
-          <span className="flex items-center gap-1.5 text-rose-700"><span className="w-2.5 h-2.5 rounded-full bg-rose-500" /> Damaged</span>
+        {/* Legend */}
+        <div className="absolute bottom-4 left-4 z-20 flex items-center gap-3 flex-wrap awd-card" style={{ padding: '8px 14px', fontSize: 11, fontWeight: 700 }}>
+          <span className="flex items-center gap-1.5"><span className="w-3 h-3" style={{ background: 'var(--color-accent-500)' }} /> Installed</span>
+          <span className="flex items-center gap-1.5"><span className="w-3 h-3" style={{ background: 'var(--color-text-muted)' }} /> Available</span>
+          <span className="flex items-center gap-1.5"><span className="w-3 h-3" style={{ background: 'var(--color-danger)' }} /> Damaged</span>
           {showBoundaries && (
-            <span className="flex items-center gap-1.5 text-teal-700 border-l border-slate-200 pl-3">
-              <Hexagon className="w-3 h-3 text-teal-500" /> Plot Boundary
+            <span className="flex items-center gap-1.5" style={{ borderLeft: '2px solid var(--color-border-light)', paddingLeft: 10 }}>
+              <Hexagon className="w-3 h-3" /> Plot boundary
             </span>
           )}
         </div>
 
-        {/* ── FLOATING INSPECTION CARD (Appears when clicking a field pin) ── */}
+        {/* ── SELECTED PLOT DETAIL CARD ── */}
         {selectedPipeDetails && (
-          <div className="absolute top-4 right-4 z-30 max-w-sm w-full bg-white text-slate-900 rounded-2xl shadow-2xl border-2 border-emerald-500/40 overflow-hidden animate-scaleIn">
-            
-            {/* Card Header */}
-            <div className="bg-gradient-to-r from-emerald-700 via-teal-700 to-emerald-800 text-white p-3.5 flex items-center justify-between border-b border-emerald-600/30">
-              <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-xl bg-white/20 flex items-center justify-center text-white font-extrabold text-sm shadow-xs">
-                  📍
-                </div>
-                <div>
-                  <h3 className="text-sm font-black tracking-wide text-white font-mono flex items-center gap-1.5">
-                    <span>{selectedPipeDetails.pipe.Pipe_ID}</span>
-                  </h3>
-                  <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-full inline-block mt-0.5 ${
-                    selectedPipeDetails.pipe.Status === 'Installed'
-                      ? 'bg-emerald-300 text-emerald-950'
-                      : selectedPipeDetails.pipe.Status === 'Available'
-                      ? 'bg-amber-300 text-amber-950'
-                      : 'bg-rose-400 text-white'
-                  }`}>
-                    {selectedPipeDetails.pipe.Status}
-                  </span>
-                </div>
+          <div className="absolute top-4 right-4 z-30 max-w-sm w-full awd-card" style={{ boxShadow: '0 12px 28px rgba(0,0,0,0.25)', maxHeight: '90%', display: 'flex', flexDirection: 'column' }}>
+            <div className="flex items-center justify-between p-3.5 text-white shrink-0" style={{ background: 'var(--color-shell)' }}>
+              <div>
+                <div className="awd-mono font-black text-sm">{selectedPipeDetails.pipe.Pipe_ID}</div>
+                <span className={`awd-tag mt-1 ${
+                  selectedPipeDetails.pipe.Status === 'Installed' ? 'awd-tag-accent' :
+                  selectedPipeDetails.pipe.Status === 'Damaged' ? 'awd-tag-danger' : 'awd-tag-neutral'
+                }`}>
+                  {selectedPipeDetails.pipe.Status}
+                </span>
               </div>
-
-              <button
-                type="button"
-                onClick={() => setSelectedPipeDetails(null)}
-                className="text-white/70 hover:text-white p-1 rounded-lg hover:bg-white/10 transition cursor-pointer"
-              >
-                ✕
+              <button type="button" onClick={() => setSelectedPipeDetails(null)} className="text-white/70 hover:text-white cursor-pointer" aria-label="Close">
+                <X className="w-4 h-4" />
               </button>
             </div>
 
-            {/* Card Content Body */}
-            <div className="p-4 space-y-3 text-xs text-slate-700 max-h-[460px] overflow-y-auto">
-              
+            <div className="p-4 space-y-3 text-xs overflow-y-auto">
               {selectedPipeDetails.installation ? (
                 <>
-                  {/* Farmer Overview */}
-                  <div className="bg-slate-50 p-3 rounded-xl border border-slate-200 space-y-1.5">
-                    <div className="flex justify-between items-center">
-                      <span className="text-slate-500 font-semibold">Farmer Name:</span>
-                      <strong className="text-slate-900 font-bold">{selectedPipeDetails.installation.Farmer_Name}</strong>
+                  <div className="awd-card" style={{ padding: 12, fontSize: 12 }}>
+                    <div className="flex justify-between py-1"><span style={{ color: 'var(--color-text-muted)' }}>Farmer</span><strong>{selectedPipeDetails.installation.Farmer_Name}</strong></div>
+                    <div className="flex justify-between py-1 awd-hr"><span style={{ color: 'var(--color-text-muted)' }}>Mobile</span><span className="awd-mono">{selectedPipeDetails.installation.Mobile}</span></div>
+                    <div className="flex justify-between py-1 awd-hr"><span style={{ color: 'var(--color-text-muted)' }}>Location</span><strong>{selectedPipeDetails.installation.Village}, {selectedPipeDetails.installation.Mandal}</strong></div>
+                    <div className="flex justify-between py-1 awd-hr"><span style={{ color: 'var(--color-text-muted)' }}>Plot size</span><strong>{selectedPipeDetails.installation.Plot_Size} {selectedPipeDetails.installation.Plot_Size_Unit}</strong></div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="awd-card" style={{ padding: 10 }}>
+                      <div className="flex items-center gap-1 font-bold mb-0.5"><Sprout className="w-3.5 h-3.5" style={{ color: 'var(--color-accent-600)' }} />Crop</div>
+                      <div className="font-bold">{selectedPipeDetails.installation.Crop}</div>
+                      <div style={{ color: 'var(--color-text-muted)', fontSize: 10 }}>{selectedPipeDetails.installation.Variety || '—'}</div>
                     </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-slate-500 font-semibold">Mobile:</span>
-                      <span className="font-mono text-emerald-700 font-bold">{selectedPipeDetails.installation.Mobile}</span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-slate-500 font-semibold">Location:</span>
-                      <strong className="text-slate-800">
-                        {selectedPipeDetails.installation.Village}, {selectedPipeDetails.installation.Mandal}
-                      </strong>
-                    </div>
-                    <div className="flex justify-between items-center border-t border-slate-200 pt-1.5 mt-1">
-                      <span className="text-slate-500 font-semibold">Plot Size:</span>
-                      <div className="flex items-center gap-1.5">
-                        <strong className="text-emerald-800 font-black">
-                          {selectedPipeDetails.installation.Plot_Size} {selectedPipeDetails.installation.Plot_Size_Unit}
-                        </strong>
-                        {selectedPipeDetails.installation.Plot_Boundary && selectedPipeDetails.installation.Plot_Boundary.length >= 3 && (
-                          <span className="text-[9px] font-bold bg-teal-100 text-teal-800 px-1.5 py-0.5 rounded-full border border-teal-200 flex items-center gap-0.5">
-                            <Hexagon className="w-2.5 h-2.5" /> Mapped
-                          </span>
-                        )}
-                      </div>
+                    <div className="awd-card" style={{ padding: 10 }}>
+                      <div className="flex items-center gap-1 font-bold mb-0.5"><Droplet className="w-3.5 h-3.5" style={{ color: 'var(--color-accent-600)' }} />Method</div>
+                      <div className="font-bold">{selectedPipeDetails.installation.Establishment_Method}</div>
+                      <div style={{ color: 'var(--color-text-muted)', fontSize: 10 }}>{selectedPipeDetails.installation.Irrigation_Source || '—'}</div>
                     </div>
                   </div>
 
-                  {/* Field Crop Info */}
-                  <div className="grid grid-cols-2 gap-2 text-xs">
-                    <div className="bg-emerald-50/80 p-2.5 rounded-xl border border-emerald-200">
-                      <span className="text-emerald-800 font-bold block mb-0.5 flex items-center gap-1">
-                        <Sprout className="w-3.5 h-3.5 text-emerald-600" /> Crop / Variety
-                      </span>
-                      <span className="font-bold text-slate-900">{selectedPipeDetails.installation.Crop}</span>
-                      <span className="text-[10px] text-slate-500 block">{selectedPipeDetails.installation.Variety || 'Local'}</span>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="awd-card" style={{ padding: 10 }}>
+                      <div className="flex items-center gap-1 font-bold mb-0.5"><Calendar className="w-3.5 h-3.5" />Installed on</div>
+                      <div className="awd-mono font-bold">{selectedPipeDetails.installation.Installation_Date || '—'}</div>
                     </div>
-                    <div className="bg-teal-50/80 p-2.5 rounded-xl border border-teal-200">
-                      <span className="text-teal-800 font-bold block mb-0.5 flex items-center gap-1">
-                        <Droplet className="w-3.5 h-3.5 text-teal-600" /> Method
-                      </span>
-                      <span className="font-bold text-slate-900">{selectedPipeDetails.installation.Establishment_Method}</span>
-                      <span className="text-[10px] text-slate-500 block">{selectedPipeDetails.installation.Irrigation_Source || 'Borewell'}</span>
+                    <div className="awd-card" style={{ padding: 10 }}>
+                      <div className="flex items-center gap-1 font-bold mb-0.5"><UserCheck className="w-3.5 h-3.5" />Installed by</div>
+                      <div className="font-bold truncate">{selectedPipeDetails.installation.Installed_By || '—'}</div>
                     </div>
                   </div>
 
-                  {/* Installation Date & Installed By */}
-                  <div className="grid grid-cols-2 gap-2 text-xs">
-                    <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-200">
-                      <span className="text-slate-600 font-bold block mb-0.5 flex items-center gap-1">
-                        <Calendar className="w-3.5 h-3.5 text-slate-500" /> Installed On
-                      </span>
-                      <span className="font-bold text-slate-900 tabular-nums">{selectedPipeDetails.installation.Installation_Date || '—'}</span>
-                    </div>
-                    <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-200">
-                      <span className="text-slate-600 font-bold block mb-0.5 flex items-center gap-1">
-                        <UserCheck className="w-3.5 h-3.5 text-slate-500" /> Installed By
-                      </span>
-                      <span className="font-bold text-slate-900 truncate block">{selectedPipeDetails.installation.Installed_By || '—'}</span>
-                    </div>
-                  </div>
-
-                  {/* Captured Field Installation Photo */}
                   {selectedPipeDetails.installation.Photo_URL && (
-                    <div className="space-y-1">
-                      <span className="text-slate-500 text-[10px] font-bold uppercase tracking-wider block">
-                        Field Installation Photo
-                      </span>
-                      <div className="w-full bg-slate-900 rounded-xl p-1 flex items-center justify-center border border-slate-200 overflow-hidden">
-                        <img
-                          src={selectedPipeDetails.installation.Photo_URL}
-                          alt="Installed Pipe Field Photo"
-                          className="max-h-36 max-w-full w-auto object-cover rounded-lg shadow-sm"
-                        />
-                      </div>
-                    </div>
+                    <img src={selectedPipeDetails.installation.Photo_URL} alt="Installation" className="w-full object-cover" style={{ maxHeight: 140, border: '2px solid var(--color-border-light)' }} />
                   )}
 
-                  {/* Latest Inspection Visit */}
                   {selectedPipeDetails.lastMonitoring && (
-                    <div className="bg-blue-50/80 border border-blue-200 rounded-xl p-3 space-y-1.5">
-                      <span className="text-blue-900 font-bold text-[10px] uppercase tracking-wider block flex items-center justify-between">
-                        <span>Latest Water Inspection</span>
-                        <span className="font-mono text-[9px] text-blue-700">{selectedPipeDetails.lastMonitoring.Date}</span>
-                      </span>
-                      <div className="flex justify-between items-center">
-                        <span className="text-slate-600">Water Depth:</span>
-                        <strong className="text-blue-900 font-mono text-xs">{selectedPipeDetails.lastMonitoring.Water_Level}</strong>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-slate-600">AWD Followed:</span>
-                        <span className={`text-[10px] font-black px-2 py-0.5 rounded-md ${
-                          selectedPipeDetails.lastMonitoring.AWD_Followed === 'Yes'
-                            ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
-                            : 'bg-amber-100 text-amber-800 border border-amber-300'
-                        }`}>
+                    <div className="awd-card" style={{ padding: 12 }}>
+                      <div className="awd-kicker">Latest water inspection · {selectedPipeDetails.lastMonitoring.Date}</div>
+                      <div className="flex justify-between mt-1"><span>Water depth</span><strong className="awd-mono">{selectedPipeDetails.lastMonitoring.Water_Level}</strong></div>
+                      <div className="flex justify-between mt-1">
+                        <span>AWD followed</span>
+                        <span className={`awd-tag ${selectedPipeDetails.lastMonitoring.AWD_Followed === 'Yes' ? 'awd-tag-accent' : 'awd-tag-warning'}`}>
                           {selectedPipeDetails.lastMonitoring.AWD_Followed}
                         </span>
                       </div>
                     </div>
                   )}
 
-                  {/* Coordinates & Google Maps Link */}
-                  <div className="flex items-center justify-between pt-2 border-t border-slate-200 text-xs">
-                    <span className="font-mono text-slate-500 text-[11px]">
-                      GPS: {selectedPipeDetails.installation.Latitude.toFixed(4)}, {selectedPipeDetails.installation.Longitude.toFixed(4)}
+                  <div className="flex items-center justify-between pt-2" style={{ borderTop: '2px solid var(--color-border-light)' }}>
+                    <span className="awd-mono" style={{ color: 'var(--color-text-muted)', fontSize: 11 }}>
+                      {selectedPipeDetails.installation.Latitude.toFixed(4)}, {selectedPipeDetails.installation.Longitude.toFixed(4)}
                     </span>
                     <a
                       href={`https://www.google.com/maps?q=${selectedPipeDetails.installation.Latitude},${selectedPipeDetails.installation.Longitude}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-emerald-700 font-extrabold hover:underline flex items-center gap-1 text-[11px]"
+                      target="_blank" rel="noopener noreferrer"
+                      className="flex items-center gap-1 font-bold"
+                      style={{ color: 'var(--color-accent-700)' }}
                     >
-                      <span>Google Maps</span>
-                      <ExternalLink className="w-3 h-3" />
+                      Google Maps<ExternalLink className="w-3 h-3" />
                     </a>
                   </div>
                 </>
               ) : (
-                <div className="text-center py-6 space-y-2">
-                  <p className="text-slate-700 font-medium">
-                    This pipe is currently <strong className="text-amber-700 font-bold">Unassigned / Available</strong>.
-                  </p>
-                  <p className="text-slate-500 text-xs">
-                    Ready to be scanned and registered to a farmer's plot in the Field Mobile App.
-                  </p>
+                <div className="text-center py-6">
+                  <p className="font-semibold">This pipe is currently <strong style={{ color: 'var(--color-warning)' }}>Available / unassigned</strong>.</p>
+                  <p style={{ color: 'var(--color-text-muted)' }} className="mt-1">Ready to be scanned and registered to a farmer's plot.</p>
                 </div>
               )}
 
-              {/* Action Button */}
               <button
                 type="button"
                 onClick={() => {
                   onSelectPipeForMobile(selectedPipeDetails.pipe.Pipe_ID);
                   setSelectedPipeDetails(null);
                 }}
-                className="w-full bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-500 hover:from-emerald-700 hover:to-teal-700 text-white font-black py-2.5 px-3 rounded-xl transition shadow-md flex items-center justify-center gap-2 uppercase tracking-wider text-xs border-b-2 border-emerald-900/20 cursor-pointer active:scale-95 mt-2"
+                className="awd-btn-primary w-full justify-center mt-1"
               >
-                <Smartphone className="w-4 h-4 text-white" />
-                <span>Open Pipe in Mobile App</span>
+                <Smartphone className="w-4 h-4" />
+                Open pipe in mobile app
               </button>
-
             </div>
           </div>
         )}
+      </div>
 
+      {/* ── RESULTS LIST ── */}
+      <div className="flex items-baseline justify-between px-1 pt-4 pb-1.5">
+        <h3 className="font-extrabold text-sm">{filteredPipes.length} plot{filteredPipes.length === 1 ? '' : 's'} in view</h3>
+        <span className="text-[11px]" style={{ color: 'var(--color-text-muted)' }}>Tap a row to open on the map</span>
+      </div>
+      <div className="awd-card">
+        {filteredPipes.slice(0, 50).map(({ pipe, installation }) => (
+          <div
+            key={pipe.Pipe_ID}
+            className="awd-row"
+            onClick={() => setSelectedPipeDetails({ pipe, installation, lastMonitoring: monitoringList.filter(m => m.Pipe_ID === pipe.Pipe_ID).sort((a, b) => new Date(b.Timestamp).getTime() - new Date(a.Timestamp).getTime())[0] })}
+          >
+            <span className="w-3.5 h-3.5 flex-none" style={{
+              background: pipe.Status === 'Installed' ? 'var(--color-accent-500)' : pipe.Status === 'Damaged' ? 'var(--color-danger)' : 'var(--color-text-muted)'
+            }} />
+            <div className="flex-1 min-w-0">
+              <div className="awd-mono font-extrabold" style={{ fontSize: 12.5 }}>{pipe.Pipe_ID}</div>
+              <div className="text-xs truncate" style={{ color: 'var(--color-text-secondary)' }}>
+                {installation?.Farmer_Name || pipe.Farmer_Name || '—'} · {installation?.Village || pipe.Village || '—'}
+              </div>
+            </div>
+            <MapPin className="w-4 h-4 flex-none" style={{ color: 'var(--color-text-muted)' }} />
+          </div>
+        ))}
+        {filteredPipes.length === 0 && (
+          <div className="px-4 py-6 text-xs text-center" style={{ color: 'var(--color-text-muted)' }}>No plots match the current filters.</div>
+        )}
       </div>
     </div>
   );

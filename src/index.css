@@ -31,6 +31,9 @@
   --color-accent: var(--color-accent-500);
 
   --color-warning: #B45309;
+  --color-danger: #DC2626;
+  --color-danger-100: #FEE2E2;
+  --color-danger-800: #991B1B;
 
   --color-background: #F8F9FA; /* Softer, slightly warmer neutral */
   --color-surface: #FFFFFF;
@@ -340,7 +343,7 @@ a:focus:not(:focus-visible) {
 .awd-tag-accent  { background: var(--color-accent-100); color: var(--color-accent-800); }
 .awd-tag-neutral { background: var(--color-surface-alt); color: var(--color-text-secondary); }
 .awd-tag-warning { background: #FEF3C7; color: #92400E; }
-.awd-tag-danger  { background: #FEE2E2; color: #991B1B; }
+.awd-tag-danger  { background: var(--color-danger-100); color: var(--color-danger-800); }
 
 /* Big flush primary action (fills the accent, square corners) */
 .awd-btn-primary {
@@ -376,6 +379,12 @@ a:focus:not(:focus-visible) {
   transition: background-color 0.15s;
 }
 .awd-btn-secondary:active { background: var(--color-surface-alt); }
+
+/* Map tiles desaturated to match the design prototype's mono aesthetic,
+   pins/legend stay full accent color for contrast. */
+.mapwrap .leaflet-tile-pane { filter: grayscale(1) contrast(1.06); }
+.mapwrap .leaflet-control-attribution { font-size: 8px; background: rgba(243,242,242,.8); }
+.mapwrap .leaflet-bar, .mapwrap .leaflet-bar a { border-radius: 0 !important; border-color: var(--color-border-light) !important; }
 
 /* ── Badge styles ── */
 .badge { display: inline-flex; align-items: center; gap: 0.25rem; font-size: 0.6875rem; font-weight: 700; padding: 0.2rem 0.5rem; border-radius: 999px; }
