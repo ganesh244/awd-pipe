@@ -561,7 +561,7 @@ export const MobileRegistrationApp: React.FC<MobileRegistrationAppProps> = ({
   };
   if (pipes.length === 0) {
     return (
-      <div className="max-w-md mx-auto my-8 p-6 bg-white rounded-3xl shadow-xl text-center">
+      <div className="max-w-md mx-auto my-8 p-6 bg-white   text-center">
         <AlertTriangle className="w-12 h-12 text-amber-500 mx-auto mb-4" />
         <h2 className="text-xl font-bold text-slate-800 mb-2">No Pipes Available</h2>
         <p className="text-slate-600 text-xs mb-6">
@@ -572,25 +572,23 @@ export const MobileRegistrationApp: React.FC<MobileRegistrationAppProps> = ({
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6 animate-fadeIn">
+    <div>
       {successRecord ? (
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-8 text-center space-y-6 animate-fadeIn max-w-2xl mx-auto">
-          <div className="w-20 h-20 bg-emerald-100 rounded-full flex items-center justify-center mx-auto animate-bounce shadow-inner">
-            <ShieldCheck className="w-10 h-10 text-emerald-600" />
+        <div className="p-6 text-center max-w-lg mx-auto mt-6">
+          <div className="w-16 h-16 flex items-center justify-center mx-auto" style={{ background: 'var(--color-accent-100)' }}>
+            <ShieldCheck className="w-8 h-8" style={{ color: 'var(--color-accent-600)' }} />
           </div>
-          <div>
-            <h2 className="text-2xl font-black text-slate-800 tracking-tight">Registration Successful!</h2>
-            <p className="text-emerald-700 font-semibold mt-1">Pipe {successRecord.Pipe_ID} has been successfully assigned.</p>
+          <h2 className="font-black mt-4" style={{ fontSize: 22 }}>Registration successful</h2>
+          <p className="font-semibold mt-1" style={{ color: 'var(--color-accent-700)' }}>Pipe {successRecord.Pipe_ID} has been assigned.</p>
+
+          <div className="awd-card mt-5 p-4 text-sm text-left">
+            <div className="flex justify-between py-1.5" style={{ borderBottom: '2px solid var(--color-border-light)' }}><span style={{ color: 'var(--color-text-muted)' }}>Farmer</span><strong>{successRecord.Farmer_Name}</strong></div>
+            <div className="flex justify-between py-1.5" style={{ borderBottom: '2px solid var(--color-border-light)' }}><span style={{ color: 'var(--color-text-muted)' }}>Mobile</span><strong>{successRecord.Mobile}</strong></div>
+            <div className="flex justify-between py-1.5" style={{ borderBottom: '2px solid var(--color-border-light)' }}><span style={{ color: 'var(--color-text-muted)' }}>Village / Mandal</span><strong>{successRecord.Village}, {successRecord.Mandal}</strong></div>
+            <div className="flex justify-between py-1.5"><span style={{ color: 'var(--color-text-muted)' }}>Plot size</span><strong>{successRecord.Plot_Size} {successRecord.Plot_Size_Unit}</strong></div>
           </div>
 
-          <div className="bg-slate-50 rounded-xl p-6 text-sm text-left max-w-sm mx-auto border border-slate-100 space-y-3 shadow-xs">
-            <div className="flex justify-between py-1 border-b"><span className="text-slate-500">Farmer</span><strong className="text-slate-800">{successRecord.Farmer_Name}</strong></div>
-            <div className="flex justify-between py-1 border-b"><span className="text-slate-500">Mobile</span><strong className="text-slate-800">{successRecord.Mobile}</strong></div>
-            <div className="flex justify-between py-1 border-b"><span className="text-slate-500">Village / Mandal</span><strong className="text-slate-800">{successRecord.Village}, {successRecord.Mandal}</strong></div>
-            <div className="flex justify-between py-1"><span className="text-slate-500">Plot Size</span><strong className="text-slate-800">{successRecord.Plot_Size} {successRecord.Plot_Size_Unit}</strong></div>
-          </div>
-
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-4">
+          <div className="flex flex-col gap-2 pt-5">
             <button
               type="button"
               onClick={() => {
@@ -598,9 +596,9 @@ export const MobileRegistrationApp: React.FC<MobileRegistrationAppProps> = ({
                 setActivePipeId('');
                 resetRegistrationSession();
               }}
-              className="w-full sm:w-auto px-8 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl transition flex items-center justify-center gap-2 shadow-md active:scale-95 min-h-[44px]"
+              className="awd-btn-primary justify-center"
             >
-              <QrCode className="w-5 h-5" /> Register Another Pipe
+              <QrCode className="w-5 h-5" /> Register another pipe
             </button>
             <button
               type="button"
@@ -609,33 +607,32 @@ export const MobileRegistrationApp: React.FC<MobileRegistrationAppProps> = ({
                 setActivePipeId(successRecord.Pipe_ID);
                 setSuccessRecord(null);
               }}
-              className="w-full sm:w-auto px-8 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl transition flex items-center justify-center gap-2 shadow-sm active:scale-95 min-h-[44px]"
+              className="awd-btn-secondary justify-center"
             >
-              <ClipboardCheck className="w-5 h-5" /> View Record
+              <ClipboardCheck className="w-5 h-5" /> View record
             </button>
           </div>
         </div>
       ) : !activePipeId ? (
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 sm:p-10 space-y-8 animate-fadeIn text-center max-w-lg mx-auto mt-4 sm:mt-12">
-          <div className="w-20 h-20 bg-emerald-100 rounded-full flex items-center justify-center mx-auto shadow-inner">
-            <QrCode className="w-10 h-10 text-emerald-600" />
+        <div className="p-6 sm:p-10 text-center max-w-lg mx-auto mt-4">
+          <div className="w-16 h-16 flex items-center justify-center mx-auto" style={{ background: 'var(--color-accent-100)' }}>
+            <QrCode className="w-8 h-8" style={{ color: 'var(--color-accent-600)' }} />
           </div>
-          <div className="space-y-3">
-            <h2 className="text-2xl font-black text-slate-800 tracking-tight">Scan Pipe QR</h2>
-            <p className="text-sm text-slate-500 max-w-sm mx-auto">
-              Scan the QR code on the AWD pipe to verify its identity and begin the registration workflow.
-            </p>
-          </div>
+          <h2 className="font-black mt-4" style={{ fontSize: 22 }}>Scan pipe QR</h2>
+          <p className="text-sm mt-2" style={{ color: 'var(--color-text-muted)' }}>
+            Scan the QR code on the AWD pipe to verify its identity and begin the registration workflow.
+          </p>
           <button
             type="button"
             onClick={() => setIsQrScannerOpen(true)}
-            className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold py-4 px-6 rounded-xl text-lg transition-all shadow-md active:scale-95 flex items-center justify-center gap-3 min-h-[56px]"
+            className="awd-btn-primary justify-center w-full mt-6"
+            style={{ padding: '16px 20px', fontSize: 14 }}
           >
-            <QrCode className="w-6 h-6" /> Scan Now
+            <QrCode className="w-5 h-5" /> Scan now
           </button>
 
-          <div className="pt-6 border-t border-slate-100">
-            <p className="text-sm text-slate-500 mb-3 text-left">Can't scan the QR? Enter Pipe ID manually</p>
+          <div className="mt-6 pt-6 text-left" style={{ borderTop: '2px solid var(--color-border-light)' }}>
+            <p className="text-sm mb-2" style={{ color: 'var(--color-text-muted)' }}>Can't scan the QR? Enter Pipe ID manually</p>
             <div className="flex gap-2">
               <input
                 type="text"
@@ -674,7 +671,8 @@ export const MobileRegistrationApp: React.FC<MobileRegistrationAppProps> = ({
                     setManualPipeId('');
                   }
                 }}
-                className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 font-mono font-bold text-slate-800 uppercase focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                className="flex-1 awd-mono font-bold uppercase outline-none px-3 py-2.5 text-sm"
+                style={{ background: 'var(--color-surface-alt)', border: '2px solid var(--color-border-light)' }}
               />
               <button
                 type="button"
@@ -705,13 +703,14 @@ export const MobileRegistrationApp: React.FC<MobileRegistrationAppProps> = ({
                   setManualPipeId('');
                 }}
                 disabled={!manualPipeId.trim()}
-                className="bg-slate-800 hover:bg-slate-900 disabled:bg-slate-300 text-white font-bold px-6 py-3 rounded-xl transition-all shadow-sm active:scale-95"
+                className="awd-btn-primary"
+                style={{ opacity: manualPipeId.trim() ? 1 : 0.4 }}
               >
                 Verify
               </button>
             </div>
             {manualError && (
-              <p className="text-red-500 text-xs text-left mt-2 font-semibold flex items-center gap-1 animate-fadeIn">
+              <p className="text-xs mt-2 font-semibold flex items-center gap-1" style={{ color: 'var(--color-danger)' }}>
                 <AlertTriangle className="w-3 h-3" /> {manualError}
               </p>
             )}
@@ -730,59 +729,58 @@ export const MobileRegistrationApp: React.FC<MobileRegistrationAppProps> = ({
         /* UNREGISTERED PIPE REGISTRATION FORM */
         <div className="relative">
           {/* COMPACT STICKY PIPE CONTEXT BAR */}
-          <div className="sticky top-0 z-30 bg-emerald-50 border-b border-emerald-200 px-4 py-3 flex items-center justify-between shadow-sm sm:rounded-t-2xl">
+          <div className="sticky top-0 z-30 px-4 py-3 flex items-center justify-between" style={{ background: 'var(--color-accent-100)', borderBottom: '2px solid var(--color-border-light)' }}>
             <div className="flex items-center gap-2">
-              <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+              <CheckCircle2 className="w-5 h-5" style={{ color: 'var(--color-accent-600)' }} />
               <div className="flex flex-col">
-                <span className="text-[10px] text-emerald-700 font-bold uppercase leading-tight">Selected Pipe</span>
+                <span className="text-[10px] font-bold uppercase leading-tight" style={{ color: 'var(--color-accent-700)' }}>Selected pipe</span>
                 <div className="flex items-center gap-2">
-                  <span className="font-mono text-emerald-900 font-black text-sm">{selectedPipe?.Pipe_ID}</span>
-                  <span className="text-[10px] bg-emerald-200 text-emerald-900 px-1.5 py-0.5 rounded shadow-xs font-bold flex items-center gap-1"><QrCode className="w-3 h-3" /> Verified</span>
+                  <span className="awd-mono font-black text-sm">{selectedPipe?.Pipe_ID}</span>
+                  <span className="awd-tag awd-tag-accent"><QrCode className="w-3 h-3" /> Verified</span>
                 </div>
               </div>
             </div>
-            <button
-              type="button"
-              onClick={() => setIsQrScannerOpen(true)}
-              className="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-lg shadow-sm active:scale-95 transition-all flex items-center justify-center text-xs font-bold gap-1 min-h-[44px]"
-            >
+            <button type="button" onClick={() => setIsQrScannerOpen(true)} className="awd-btn-primary" style={{ padding: '8px 12px', fontSize: 12 }}>
               <QrCode className="w-4 h-4" /> Rescan
             </button>
           </div>
 
-          <form onSubmit={handleSubmitRegistration} className="bg-white sm:rounded-b-2xl sm:shadow-lg sm:border sm:border-slate-200 space-y-4 pb-4">
+          <form onSubmit={handleSubmitRegistration} className="pb-4">
 
-            {/* STICKY STEP INDICATOR (Fix overlap by placing it relatively or moving top-[64px]) */}
-            <div className="sticky top-[64px] sm:top-[68px] z-20 bg-white border-b border-slate-100 px-4 py-3 flex items-center justify-between shadow-[0_4px_6px_-1px_rgba(0,0,0,0.05)]">
+            {/* Step indicator — numbered 01-04 bar, matching the design prototype */}
+            <div className="sticky top-[52px] z-20 grid grid-cols-4" style={{ background: 'var(--color-surface)', borderBottom: '2px solid var(--color-border-light)' }}>
               {[
                 { num: 1, label: 'Location' },
                 { num: 2, label: 'Farmer' },
-                { num: 3, label: 'Plot' },
+                { num: 3, label: 'Plot & crop' },
                 { num: 4, label: 'Review' }
-              ].map((step, idx) => (
-                <div key={step.num} className="flex flex-col items-center gap-1 flex-1 relative">
-                  <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold z-10 transition-colors ${currentStep === step.num ? 'bg-emerald-600 text-white ring-4 ring-emerald-100' :
-                    currentStep > step.num ? 'bg-emerald-200 text-emerald-800' :
-                      'bg-slate-100 text-slate-400'
-                    }`}>
-                    {currentStep > step.num ? <CheckCircle2 className="w-4 h-4" /> : step.num}
+              ].map((step, idx) => {
+                const isCurrent = currentStep === step.num;
+                const isDone = currentStep > step.num;
+                return (
+                  <div
+                    key={step.num}
+                    className="px-2 py-2.5 text-center"
+                    style={{
+                      borderLeft: idx === 0 ? 'none' : '2px solid var(--color-border-light)',
+                      background: isCurrent ? 'var(--color-accent-500)' : isDone ? 'var(--color-accent-100)' : 'transparent',
+                    }}
+                  >
+                    <div className="awd-mono font-black" style={{ fontSize: 11, color: isCurrent ? '#fff' : isDone ? 'var(--color-accent-700)' : 'var(--color-text-muted)' }}>
+                      {String(step.num).padStart(2, '0')}
+                    </div>
+                    <div className="text-[9.5px] font-bold uppercase tracking-wide mt-0.5" style={{ color: isCurrent ? '#fff' : isDone ? 'var(--color-accent-700)' : 'var(--color-text-muted)' }}>
+                      {step.label}
+                    </div>
                   </div>
-                  <span className={`text-[10px] font-bold ${currentStep === step.num ? 'text-emerald-700' :
-                    currentStep > step.num ? 'text-emerald-600' :
-                      'text-slate-400'
-                    }`}>{step.label}</span>
-                  {idx < 3 && (
-                    <div className={`absolute top-3.5 left-1/2 w-full h-0.5 -z-0 ${currentStep > step.num ? 'bg-emerald-200' : 'bg-slate-100'
-                      }`} />
-                  )}
-                </div>
-              ))}
+                );
+              })}
             </div>
 
             <div className="px-4 py-2">
               {formError && (
-                <div role="alert" className="bg-red-50 border border-red-200 text-red-700 rounded-xl p-3.5 text-xs flex items-center gap-2 font-semibold mb-4 animate-fadeIn">
-                  <AlertTriangle className="w-4 h-4 shrink-0 text-red-600" />
+                <div role="alert" className="p-3.5 text-xs flex items-center gap-2 font-semibold mb-4" style={{ background: 'var(--color-danger-100)', color: 'var(--color-danger-800)', border: '2px solid var(--color-danger-100)' }}>
+                  <AlertTriangle className="w-4 h-4 shrink-0" />
                   <span>{formError}</span>
                 </div>
               )}
@@ -790,34 +788,34 @@ export const MobileRegistrationApp: React.FC<MobileRegistrationAppProps> = ({
               <div className="space-y-4">
                 {/* STEP 1: LOCATION (GPS & Village) */}
                 {currentStep === 1 && (
-                  <div className="animate-fadeIn space-y-3.5 bg-slate-50/70 p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-xs">
+                  <div className="animate-fadeIn space-y-3.5 bg-slate-50/70 p-4 sm:p-5  border border-slate-200 ">
                     <h3 className="text-xs font-extrabold text-slate-800 uppercase tracking-wider flex items-center gap-2 border-b pb-1.5">
-                      <span className="w-5 h-5 bg-emerald-600 text-white rounded-full flex items-center justify-center text-xs">1</span>
+                      <span className="w-5 h-5 bg-accent-600 text-white rounded-full flex items-center justify-center text-xs">1</span>
                       Location & GPS
                     </h3>
 
-                    <div className="bg-white p-3 rounded-xl border border-slate-200 shadow-xs">
+                    <div className="bg-white p-3  border border-slate-200 ">
                       {gpsData ? (
                         <div className="space-y-3">
                           <div className="flex items-center justify-between">
-                            <span className="flex items-center gap-1.5 text-xs font-bold text-emerald-700">
+                            <span className="flex items-center gap-1.5 text-xs font-bold text-accent-700">
                               <CheckCircle2 className="w-4 h-4" /> GPS Captured
                             </span>
                             <button
                               type="button"
                               onClick={handleCaptureGPS}
-                              className="text-xs font-bold text-slate-500 underline hover:text-emerald-600 transition min-h-[44px] px-2"
+                              className="text-xs font-bold text-slate-500 underline hover:text-accent-600 transition min-h-[44px] px-2"
                             >
                               Retake
                             </button>
                           </div>
-                          <div className="grid grid-cols-2 gap-2 text-xs font-mono tabular-nums bg-emerald-50 p-2 rounded-lg border border-emerald-100">
+                          <div className="grid grid-cols-2 gap-2 text-xs font-mono tabular-nums bg-accent-50 p-2  border border-accent-100">
                             <div><span className="text-slate-500">Lat:</span> {gpsData.latitude.toFixed(6)}</div>
                             <div><span className="text-slate-500">Lng:</span> {gpsData.longitude.toFixed(6)}</div>
                             <div className="col-span-2 text-slate-500">Accuracy: ±{Math.round(gpsData.accuracy)}m</div>
                           </div>
                           {gpsIsFallback && (
-                            <div className="flex items-center gap-1.5 text-xs bg-amber-50 border border-amber-200 text-amber-800 rounded-lg p-2">
+                            <div className="flex items-center gap-1.5 text-xs bg-amber-50 border border-amber-200 text-amber-800  p-2">
                               <AlertTriangle className="w-3.5 h-3.5 shrink-0 text-amber-600" />
                               <span><strong>Approximate location</strong> — laptop/Wi-Fi GPS detected. Use a phone for precise field coordinates.</span>
                             </div>
@@ -829,7 +827,7 @@ export const MobileRegistrationApp: React.FC<MobileRegistrationAppProps> = ({
                             type="button"
                             onClick={handleCaptureGPS}
                             disabled={isLocating}
-                            className={`btn-press w-full py-3 px-4 rounded-xl font-bold flex items-center justify-center gap-2 shadow-sm transition min-h-[44px] ${isLocating ? 'bg-slate-100 text-slate-500 cursor-not-allowed' : 'bg-slate-800 text-white hover:bg-slate-700'
+                            className={`btn-press w-full py-3 px-4  font-bold flex items-center justify-center gap-2  transition min-h-[44px] ${isLocating ? 'bg-slate-100 text-slate-500 cursor-not-allowed' : 'bg-slate-800 text-white hover:bg-slate-700'
                               }`}
                           >
                             {isLocating ? (
@@ -865,46 +863,46 @@ export const MobileRegistrationApp: React.FC<MobileRegistrationAppProps> = ({
                     {/* Auto-filled Location Details */}
                     <div className="space-y-3 pt-2">
                       {geoAutoFilledNotice && (
-                        <div className="text-xs font-bold text-emerald-700 bg-emerald-50 p-2 rounded-lg border border-emerald-200 flex items-center gap-1.5 animate-fadeIn">
-                          <Sparkles className="w-4 h-4 text-emerald-500" />
+                        <div className="text-xs font-bold text-accent-700 bg-accent-50 p-2  border border-accent-200 flex items-center gap-1.5 animate-fadeIn">
+                          <Sparkles className="w-4 h-4 text-accent-500" />
                           Location auto-filled via GPS
                         </div>
                       )}
                       <div className="grid grid-cols-2 gap-3">
                         <div className="min-w-0">
                           <label className="text-xs font-semibold text-slate-700 mb-1 flex items-center gap-1">
-                            Village * {geoAutoFilledNotice && <span className="text-[9px] bg-emerald-100 text-emerald-700 px-1 py-0.5 rounded font-bold">✓ GPS</span>}
+                            Village * {geoAutoFilledNotice && <span className="text-[9px] bg-accent-100 text-accent-700 px-1 py-0.5 rounded font-bold">✓ GPS</span>}
                           </label>
                           <input
                             type="text"
                             value={village}
                             onChange={(e) => setVillage(e.target.value)}
                             placeholder="Village Name"
-                            className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none min-h-[44px] transition"
+                            className="awd-input min-h-[44px]"
                           />
                         </div>
                         <div className="min-w-0">
                           <label className="text-xs font-semibold text-slate-700 mb-1 flex items-center gap-1">
-                            Mandal * {geoAutoFilledNotice && <span className="text-[9px] bg-emerald-100 text-emerald-700 px-1 py-0.5 rounded font-bold">✓ GPS</span>}
+                            Mandal * {geoAutoFilledNotice && <span className="text-[9px] bg-accent-100 text-accent-700 px-1 py-0.5 rounded font-bold">✓ GPS</span>}
                           </label>
                           <input
                             type="text"
                             value={mandal}
                             onChange={(e) => setMandal(e.target.value)}
                             placeholder="Mandal Name"
-                            className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none min-h-[44px] transition"
+                            className="awd-input min-h-[44px]"
                           />
                         </div>
                         <div className="col-span-2">
                           <label className="text-xs font-semibold text-slate-700 mb-1 flex items-center gap-1">
-                            District * {geoAutoFilledNotice && <span className="text-[9px] bg-emerald-100 text-emerald-700 px-1 py-0.5 rounded font-bold">✓ GPS</span>}
+                            District * {geoAutoFilledNotice && <span className="text-[9px] bg-accent-100 text-accent-700 px-1 py-0.5 rounded font-bold">✓ GPS</span>}
                           </label>
                           <input
                             type="text"
                             value={district}
                             onChange={(e) => setDistrict(e.target.value)}
                             placeholder="District Name"
-                            className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none min-h-[44px] transition"
+                            className="awd-input min-h-[44px]"
                           />
                         </div>
                       </div>
@@ -914,14 +912,14 @@ export const MobileRegistrationApp: React.FC<MobileRegistrationAppProps> = ({
 
                 {/* STEP 2: FARMER */}
                 {currentStep === 2 && (
-                  <div className="animate-fadeIn space-y-3.5 bg-slate-50/70 p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-xs">
+                  <div className="animate-fadeIn space-y-3.5 bg-slate-50/70 p-4 sm:p-5  border border-slate-200 ">
                     <h3 className="text-xs font-extrabold text-slate-800 uppercase tracking-wider flex items-center gap-2 border-b pb-1.5">
-                      <span className="w-5 h-5 bg-emerald-600 text-white rounded-full flex items-center justify-center text-xs">2</span>
+                      <span className="w-5 h-5 bg-accent-600 text-white rounded-full flex items-center justify-center text-xs">2</span>
                       Farmer Details
                     </h3>
 
                     {/* Farmer Mode Selection Toggle */}
-                    <div className="grid grid-cols-2 gap-2 p-1 bg-slate-100 rounded-xl border border-slate-200 text-xs font-bold">
+                    <div className="grid grid-cols-2 gap-2 p-1 bg-slate-100  border border-slate-200 text-xs font-bold">
                       <button
                         type="button"
                         onClick={() => {
@@ -931,8 +929,8 @@ export const MobileRegistrationApp: React.FC<MobileRegistrationAppProps> = ({
                           // Do NOT clear village/mandal/district because GPS provided them!
                           setFarmerId('');
                         }}
-                        className={`py-2 px-2 rounded-lg flex items-center justify-center gap-1 active:scale-[0.97] transition-all ${farmerSelectionMode === 'new'
-                          ? 'bg-emerald-700 text-white shadow-xs'
+                        className={`py-2 px-2  flex items-center justify-center gap-1 active:scale-[0.97] transition-all ${farmerSelectionMode === 'new'
+                          ? 'bg-accent-700 text-white '
                           : 'text-slate-600 hover:text-slate-900'
                           }`}
                       >
@@ -943,8 +941,8 @@ export const MobileRegistrationApp: React.FC<MobileRegistrationAppProps> = ({
                       <button
                         type="button"
                         onClick={() => setFarmerSelectionMode('existing')}
-                        className={`py-2 px-2 rounded-lg flex items-center justify-center gap-1 active:scale-[0.97] transition-all ${farmerSelectionMode === 'existing'
-                          ? 'bg-emerald-700 text-white shadow-xs'
+                        className={`py-2 px-2  flex items-center justify-center gap-1 active:scale-[0.97] transition-all ${farmerSelectionMode === 'existing'
+                          ? 'bg-accent-700 text-white '
                           : 'text-slate-600 hover:text-slate-900'
                           }`}
                       >
@@ -955,9 +953,9 @@ export const MobileRegistrationApp: React.FC<MobileRegistrationAppProps> = ({
 
                     {/* Live Search for Existing Farmer by name or mobile */}
                     {farmerSelectionMode === 'existing' && registeredFarmersList.length > 0 && (
-                      <div className="bg-emerald-50/90 border border-emerald-300 rounded-xl p-3 space-y-2 animate-fadeIn shadow-xs">
-                        <label className="block text-xs font-bold text-emerald-950 flex items-center gap-1">
-                          <UserCheck className="w-4 h-4 text-emerald-700" />
+                      <div className="bg-accent-50/90 border border-accent-300  p-3 space-y-2 animate-fadeIn ">
+                        <label className="block text-xs font-bold text-accent-950 flex items-center gap-1">
+                          <UserCheck className="w-4 h-4 text-accent-700" />
                           Search Registered Farmer
                         </label>
                         <div className="relative">
@@ -967,7 +965,7 @@ export const MobileRegistrationApp: React.FC<MobileRegistrationAppProps> = ({
                             value={farmerSearch}
                             onChange={(e) => setFarmerSearch(e.target.value)}
                             placeholder="Type name or mobile number..."
-                            className="w-full pl-8 pr-3 py-2 text-xs border border-emerald-300 rounded-xl bg-white focus:ring-2 focus:ring-emerald-500 outline-none min-h-[44px]"
+                            className="w-full pl-8 pr-3 py-2 text-xs border border-accent-300  bg-white focus:ring-2 focus:ring-accent-500 outline-none min-h-[44px]"
                           />
                         </div>
                         {/* Filtered results */}
@@ -982,7 +980,7 @@ export const MobileRegistrationApp: React.FC<MobileRegistrationAppProps> = ({
                           return results.length === 0 ? (
                             <div className="text-xs text-slate-500 text-center py-2">No farmers found matching "{farmerSearch}"</div>
                           ) : (
-                            <div className="max-h-48 overflow-y-auto rounded-xl border border-emerald-200 bg-white divide-y divide-slate-100">
+                            <div className="max-h-48 overflow-y-auto  border border-accent-200 bg-white divide-y divide-slate-100">
                               {results.map((f) => {
                                 const pipeCount = installations.filter((i) => i.Farmer_Name === f.Farmer_Name).length;
                                 return (
@@ -993,12 +991,12 @@ export const MobileRegistrationApp: React.FC<MobileRegistrationAppProps> = ({
                                       handleSelectExistingFarmer(f.Farmer_Name);
                                       setFarmerSearch(f.Farmer_Name);
                                     }}
-                                    className="w-full text-left px-3 py-2.5 hover:bg-emerald-50 transition text-xs active:bg-emerald-100 active:opacity-70 min-h-[44px]"
+                                    className="w-full text-left px-3 py-2.5 hover:bg-accent-50 transition text-xs active:bg-accent-100 active:opacity-70 min-h-[44px]"
                                   >
                                     <div className="font-bold text-slate-800"><UserCheck className="w-4 h-4 inline mr-1" /> {f.Farmer_Name}</div>
                                     <div className="text-slate-500 flex items-center gap-3 mt-0.5">
                                       <span><Smartphone className="w-3.5 h-3.5 inline mr-1" /> {f.Mobile}</span>
-                                      <span className="text-emerald-700 font-semibold">{pipeCount} pipe{pipeCount > 1 ? 's' : ''}</span>
+                                      <span className="text-accent-700 font-semibold">{pipeCount} pipe{pipeCount > 1 ? 's' : ''}</span>
                                     </div>
                                   </button>
                                 );
@@ -1018,7 +1016,7 @@ export const MobileRegistrationApp: React.FC<MobileRegistrationAppProps> = ({
                           onChange={(e) => setFarmerName(e.target.value)}
                           placeholder="Full Name"
                           disabled={farmerSelectionMode === 'existing'}
-                          className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none disabled:bg-slate-100 min-h-[44px] transition"
+                          className="awd-input min-h-[44px]"
                         />
                       </div>
                       <div className="min-w-0">
@@ -1029,7 +1027,7 @@ export const MobileRegistrationApp: React.FC<MobileRegistrationAppProps> = ({
                           onChange={(e) => setMobile(e.target.value.replace(/\D/g, '').substring(0, 10))}
                           placeholder="10-digit mobile"
                           disabled={farmerSelectionMode === 'existing'}
-                          className="tabular-nums w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none disabled:bg-slate-100 min-h-[44px] transition"
+                          className="awd-input awd-mono min-h-[44px]"
                         />
                       </div>
                       <div className="min-w-0">
@@ -1040,7 +1038,7 @@ export const MobileRegistrationApp: React.FC<MobileRegistrationAppProps> = ({
                           onChange={(e) => setFarmerId(e.target.value)}
                           placeholder="State Farmer ID"
                           disabled={farmerSelectionMode === 'existing'}
-                          className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none disabled:bg-slate-100 min-h-[44px] transition"
+                          className="awd-input min-h-[44px]"
                         />
                       </div>
                     </div>
@@ -1049,9 +1047,9 @@ export const MobileRegistrationApp: React.FC<MobileRegistrationAppProps> = ({
 
                 {/* STEP 3: PLOT & CROP */}
                 {currentStep === 3 && (
-                  <div className="animate-fadeIn space-y-3.5 bg-slate-50/70 p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-xs">
+                  <div className="animate-fadeIn space-y-3.5 bg-slate-50/70 p-4 sm:p-5  border border-slate-200 ">
                     <h3 className="text-xs font-extrabold text-slate-800 uppercase tracking-wider flex items-center gap-2 border-b pb-1.5">
-                      <span className="w-5 h-5 bg-emerald-600 text-white rounded-full flex items-center justify-center text-xs">3</span>
+                      <span className="w-5 h-5 bg-accent-600 text-white rounded-full flex items-center justify-center text-xs">3</span>
                       Plot, Crop & Installation
                     </h3>
 
@@ -1063,7 +1061,7 @@ export const MobileRegistrationApp: React.FC<MobileRegistrationAppProps> = ({
                           value={surveyNo}
                           onChange={(e) => setSurveyNo(e.target.value)}
                           placeholder="Survey number"
-                          className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none min-h-[44px] transition"
+                          className="awd-input min-h-[44px]"
                         />
                       </div>
                       <div className="min-w-0">
@@ -1074,7 +1072,7 @@ export const MobileRegistrationApp: React.FC<MobileRegistrationAppProps> = ({
                           onChange={(e) => setPlotSize(e.target.value)}
                           min="0.1"
                           step="0.1"
-                          className="tabular-nums w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none min-h-[44px] transition"
+                          className="awd-input awd-mono min-h-[44px]"
                         />
                       </div>
                       <div className="min-w-0">
@@ -1082,7 +1080,7 @@ export const MobileRegistrationApp: React.FC<MobileRegistrationAppProps> = ({
                         <select
                           value={plotSizeUnit}
                           onChange={(e) => setPlotSizeUnit(e.target.value as PlotUnit)}
-                          className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none min-h-[44px] transition"
+                          className="awd-input min-h-[44px]"
                         >
                           <option value="Acres">Acres</option>
                           <option value="Guntas">Guntas (గుంటలు)</option>
@@ -1099,7 +1097,7 @@ export const MobileRegistrationApp: React.FC<MobileRegistrationAppProps> = ({
                           <div className="space-y-2">
                             <React.Suspense
                               fallback={
-                                <div className="w-full h-56 sm:h-64 rounded-xl border-2 border-slate-200 bg-slate-100 animate-pulse flex items-center justify-center text-xs font-semibold text-slate-500" role="status">
+                                <div className="w-full h-56 sm:h-64  border-2 border-slate-200 bg-slate-100 animate-pulse flex items-center justify-center text-xs font-semibold text-slate-500" role="status">
                                   Loading map…
                                 </div>
                               }
@@ -1114,13 +1112,13 @@ export const MobileRegistrationApp: React.FC<MobileRegistrationAppProps> = ({
                             <button
                               type="button"
                               onClick={() => { setShowBoundaryDraw(false); setPlotBoundary(undefined); }}
-                              className="w-full text-xs font-bold text-slate-600 hover:text-slate-800 py-2 min-h-[44px] rounded-lg border border-slate-200 hover:bg-slate-50 transition"
+                              className="w-full text-xs font-bold text-slate-600 hover:text-slate-800 py-2 min-h-[44px]  border border-slate-200 hover:bg-slate-50 transition"
                             >
                               Skip plot boundary
                             </button>
                           </div>
                         ) : plotBoundary && plotBoundary.length >= 3 ? (
-                          <div className="flex items-center justify-between gap-2 bg-teal-50 border border-teal-200 rounded-xl px-3 py-2.5">
+                          <div className="flex items-center justify-between gap-2 bg-teal-50 border border-teal-200  px-3 py-2.5">
                             <span className="text-xs font-bold text-teal-800 flex items-center gap-1.5">
                               <Hexagon className="w-3.5 h-3.5" />
                               Plot boundary saved · {plotBoundary.length} points
@@ -1137,7 +1135,7 @@ export const MobileRegistrationApp: React.FC<MobileRegistrationAppProps> = ({
                           <button
                             type="button"
                             onClick={() => setShowBoundaryDraw(true)}
-                            className="w-full flex items-center justify-center gap-2 text-xs font-bold text-slate-600 hover:text-emerald-700 bg-slate-50 hover:bg-emerald-50 border border-dashed border-slate-300 hover:border-emerald-300 rounded-xl py-3 min-h-[44px] transition"
+                            className="w-full flex items-center justify-center gap-2 text-xs font-bold text-slate-600 hover:text-accent-700 bg-slate-50 hover:bg-accent-50 border border-dashed border-slate-300 hover:border-accent-300  py-3 min-h-[44px] transition"
                           >
                             <Hexagon className="w-4 h-4" />
                             Add plot boundary
@@ -1151,7 +1149,7 @@ export const MobileRegistrationApp: React.FC<MobileRegistrationAppProps> = ({
                     <div className="space-y-3 pt-2">
                       <div className="flex items-center gap-2">
                         <label className="text-xs font-semibold text-slate-700">Crop</label>
-                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-100 text-emerald-800 text-xs font-bold border border-emerald-300">
+                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-accent-100 text-accent-800 text-xs font-bold border border-accent-300">
                           🌾 Paddy
                         </span>
                         <span className="text-[10px] text-slate-400 italic">(AWD is designed exclusively for Paddy)</span>
@@ -1163,7 +1161,7 @@ export const MobileRegistrationApp: React.FC<MobileRegistrationAppProps> = ({
                           value={variety}
                           onChange={(e) => setVariety(e.target.value)}
                           placeholder="e.g. MTU-1010, BPT-5204, Samba Mahsuri"
-                          className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none min-h-[44px] transition"
+                          className="awd-input min-h-[44px]"
                         />
                       </div>
                     </div>
@@ -1174,7 +1172,7 @@ export const MobileRegistrationApp: React.FC<MobileRegistrationAppProps> = ({
                         <select
                           value={establishmentMethod}
                           onChange={(e) => setEstablishmentMethod(e.target.value as EstablishmentMethod)}
-                          className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none min-h-[44px] transition"
+                          className="awd-input min-h-[44px]"
                         >
                           <option value="Dry DSR">Dry DSR</option>
                           <option value="Wet DSR">Wet DSR</option>
@@ -1189,7 +1187,7 @@ export const MobileRegistrationApp: React.FC<MobileRegistrationAppProps> = ({
                           type="date"
                           value={sowingDate}
                           onChange={(e) => setSowingDate(e.target.value)}
-                          className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none min-h-[44px] transition"
+                          className="awd-input min-h-[44px]"
                         />
                       </div>
                       <div className="min-w-0">
@@ -1197,7 +1195,7 @@ export const MobileRegistrationApp: React.FC<MobileRegistrationAppProps> = ({
                         <select
                           value={irrigationSource}
                           onChange={(e) => setIrrigationSource(e.target.value as IrrigationSource)}
-                          className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none min-h-[44px] transition"
+                          className="awd-input min-h-[44px]"
                         >
                           <option value="Borewell">Borewell</option>
                           <option value="Canal">Canal</option>
@@ -1215,7 +1213,7 @@ export const MobileRegistrationApp: React.FC<MobileRegistrationAppProps> = ({
                           type="date"
                           value={installationDate}
                           onChange={(e) => setInstallationDate(e.target.value)}
-                          className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none min-h-[44px] transition"
+                          className="awd-input min-h-[44px]"
                         />
                       </div>
                       <div className="min-w-0">
@@ -1225,7 +1223,7 @@ export const MobileRegistrationApp: React.FC<MobileRegistrationAppProps> = ({
                           onChange={(e) => setRemarks(e.target.value)}
                           placeholder="Notes about the plot or installation..."
                           rows={2}
-                          className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition resize-none"
+                          className="awd-input" style={{resize:'none'}}
                         />
                       </div>
                     </div>
@@ -1236,15 +1234,15 @@ export const MobileRegistrationApp: React.FC<MobileRegistrationAppProps> = ({
                 {currentStep === 4 && (
                   <div className="animate-fadeIn space-y-4">
                     <h3 className="text-sm font-extrabold text-slate-800 uppercase tracking-wider flex items-center gap-2 border-b pb-2">
-                      <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+                      <CheckCircle2 className="w-5 h-5 text-accent-600" />
                       Review Registration
                     </h3>
 
-                    <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-3 text-sm shadow-xs">
+                    <div className="bg-slate-50 border border-slate-200  p-4 space-y-3 text-sm ">
                       <div className="grid grid-cols-2 gap-x-4 gap-y-2">
                         <div className="col-span-2 text-xs font-bold text-slate-500 uppercase tracking-wider border-b pb-1 mt-2 mb-1">Location</div>
                         <div className="text-slate-500">GPS</div>
-                        <div className="font-semibold text-emerald-700 text-right">{gpsData ? '✓ Captured' : 'No'}</div>
+                        <div className="font-semibold text-accent-700 text-right">{gpsData ? '✓ Captured' : 'No'}</div>
                         <div className="text-slate-500">Village/Mandal</div>
                         <div className="font-semibold text-slate-800 text-right">{village}, {mandal}</div>
                         <div className="text-slate-500">District</div>
@@ -1273,34 +1271,24 @@ export const MobileRegistrationApp: React.FC<MobileRegistrationAppProps> = ({
             </div>
 
             {/* STICKY BOTTOM ACTION BAR */}
-            <div className="fixed bottom-0 left-0 right-0 p-4 bg-white border-t border-slate-200 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] z-40 sm:sticky sm:bottom-0 sm:rounded-b-2xl" style={{ paddingBottom: 'calc(1rem + env(safe-area-inset-bottom))' }}>
-              <div className="flex items-center gap-3 max-w-7xl mx-auto">
+            <div className="fixed bottom-0 left-0 right-0 z-40 sm:sticky sm:bottom-0" style={{ background: 'var(--color-surface)', borderTop: '2px solid var(--color-border-light)', paddingBottom: 'calc(1rem + env(safe-area-inset-bottom))' }}>
+              <div className="flex items-center gap-2 p-3">
                 {currentStep > 1 && (
-                  <button
-                    type="button"
-                    onClick={handlePrevStep}
-                    className="btn-press w-1/3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-3 rounded-lg text-sm transition shadow-sm flex items-center justify-center min-h-[44px]"
-                  >
+                  <button type="button" onClick={handlePrevStep} className="awd-btn-secondary justify-center" style={{ flex: '0 0 33%' }}>
                     Back
                   </button>
                 )}
 
                 {currentStep < 4 ? (
-                  <button
-                    type="button"
-                    onClick={handleNextStep}
-                    className={`btn-press ${currentStep > 1 ? 'w-2/3' : 'w-full'} bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-lg text-sm transition shadow-sm flex items-center justify-center gap-2 min-h-[44px]`}
-                  >
+                  <button type="button" onClick={handleNextStep} className="awd-btn-primary justify-center" style={{ flex: 1 }}>
                     {currentStep === 3 ? 'Review' : 'Next'} <ArrowRight className="w-4 h-4" />
                   </button>
                 ) : (
                   <button
                     type="submit"
                     disabled={isSubmitting}
-                    className={`btn-press w-2/3 font-extrabold rounded-lg text-sm py-3 transition shadow-md flex items-center justify-center gap-2 min-h-[44px] ${isSubmitting
-                      ? 'bg-slate-400 text-white cursor-not-allowed'
-                      : 'bg-emerald-600 hover:bg-emerald-700 text-white'
-                      }`}
+                    className="awd-btn-primary justify-center"
+                    style={{ flex: 1, opacity: isSubmitting ? 0.6 : 1, cursor: isSubmitting ? 'not-allowed' : 'pointer' }}
                   >
                     {isSubmitting ? (
                       <>

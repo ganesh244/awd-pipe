@@ -380,6 +380,18 @@ a:focus:not(:focus-visible) {
 }
 .awd-btn-secondary:active { background: var(--color-surface-alt); }
 
+.awd-input {
+  width: 100%;
+  border: 2px solid var(--color-border-light);
+  background: var(--color-surface);
+  padding: 8px 12px;
+  font-size: 13px;
+  outline: none;
+  border-radius: 0;
+}
+.awd-input:focus { border-color: var(--color-accent-500); }
+.awd-input:disabled { background: var(--color-surface-alt); opacity: 0.6; }
+
 /* Map tiles desaturated to match the design prototype's mono aesthetic,
    pins/legend stay full accent color for contrast. */
 .mapwrap .leaflet-tile-pane { filter: grayscale(1) contrast(1.06); }
