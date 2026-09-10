@@ -12,6 +12,26 @@ import {
 
 const REGISTRATION_TARGET = 1000; // TODO: Make configurable
 
+// The establishment-method breakdown groups installations by this exact string,
+// so a typo or casing variant ("Manual transplating", "manual transplanting")
+// used to show as its own row and split the count. Canonicalise before
+// bucketing: trim, collapse whitespace, match the known methods case-insensitively,
+// and fold obvious transplanting/DSR misspellings into the standard label.
+// Genuinely unknown values still pass through (trimmed) so nothing is hidden.
+const CANONICAL_METHODS = ['Dry DSR', 'Wet DSR', 'Machine Transplanting', 'Manual Transplanting', 'Broadcast', 'TPR'];
+const canonicalMethod = (raw?: string): string => {
+  const cleaned = (raw || '').trim().replace(/\s+/g, ' ');
+  if (!cleaned) return 'Unspecified';
+  const key = cleaned.toLowerCase();
+  const exact = CANONICAL_METHODS.find((m) => m.toLowerCase() === key);
+  if (exact) return exact;
+  if (/^manual\s+transpl/.test(key)) return 'Manual Transplanting';
+  if (/^machine\s+transpl/.test(key)) return 'Machine Transplanting';
+  if (/^dry\s+dsr$/.test(key)) return 'Dry DSR';
+  if (/^wet\s+dsr$/.test(key)) return 'Wet DSR';
+  return cleaned;
+};
+
 interface DashboardProps {
   pipes: AWDPipe[];
   installations: Installation[];
@@ -124,13 +144,15 @@ export const Dashboard: React.FC<DashboardProps> = ({ pipes, installations, moni
   // ── Method breakdown ─────────────────────────────────────────────────────
   const methodStats = useMemo(() =>
     filteredInstallations.reduce((acc, i) => {
-      acc[i.Establishment_Method] = (acc[i.Establishment_Method] || 0) + 1;
+      const m = canonicalMethod(i.Establishment_Method);
+      acc[m] = (acc[m] || 0) + 1;
       return acc;
     }, {} as Record<string, number>), [filteredInstallations]);
 
   const methodAcres = useMemo(() =>
     filteredInstallations.reduce((acc, i) => {
-      acc[i.Establishment_Method] = (acc[i.Establishment_Method] || 0) + toAcres(Number(i.Plot_Size) || 0, i.Plot_Size_Unit);
+      const m = canonicalMethod(i.Establishment_Method);
+      acc[m] = (acc[m] || 0) + toAcres(Number(i.Plot_Size) || 0, i.Plot_Size_Unit);
       return acc;
     }, {} as Record<string, number>), [filteredInstallations]);
 
@@ -466,7 +488,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ pipes, installations, moni
             <SectionTitle icon={PieChart} title="Establishment Methods" sub="By pipe count and acreage" />
             <div className="space-y-3 mt-1">
               {(() => {
-                const ALL_METHODS = ['Dry DSR', 'Wet DSR', 'Machine Transplanting', 'Manual Transplanting', 'Broadcast', 'TPR'];
+                const ALL_METHODS = CANONICAL_METHODS;
                 // Also include any unexpected method values that appear in real data
                 const extraMethods = Object.keys(methodStats).filter(m => !ALL_METHODS.includes(m));
                 const methods = [...ALL_METHODS, ...extraMethods];
