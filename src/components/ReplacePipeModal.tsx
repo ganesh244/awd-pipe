@@ -1,8 +1,9 @@
 import React, { useMemo, useState } from 'react';
 import ReactDOM from 'react-dom';
 import { AWDPipe, Installation } from '../types';
-import { X, Search, AlertTriangle, ArrowRight, ShieldAlert, PackageX, Check } from 'lucide-react';
+import { X, Search, AlertTriangle, ArrowRight, ShieldAlert, PackageX, Check, QrCode } from 'lucide-react';
 import { useDialog } from '../hooks/useDialog';
+import { QrCodeScannerModal } from './QrCodeScannerModal';
 
 interface ReplacePipeModalProps {
   oldPipe: AWDPipe;
@@ -24,6 +25,7 @@ export const ReplacePipeModal: React.FC<ReplacePipeModalProps> = ({ oldPipe, ins
   const [chosen, setChosen] = useState<string>('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [scanning, setScanning] = useState(false);
 
   const matches = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -43,7 +45,21 @@ export const ReplacePipeModal: React.FC<ReplacePipeModalProps> = ({ oldPipe, ins
   const btn = 'inline-flex items-center justify-center gap-1.5 font-bold transition active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/50 disabled:opacity-40 disabled:cursor-not-allowed rounded-xl min-h-[44px] text-sm px-4';
 
   return ReactDOM.createPortal(
-    <div className="fixed inset-0 z-[70] bg-slate-900/60 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4" onClick={onClose}>
+    <>
+    {scanning && (
+      <QrCodeScannerModal
+        isOpen={scanning}
+        pipes={availablePipes}
+        installations={[]}
+        onSelectPipe={(id) => { setChosen(id); setQuery(''); setScanning(false); }}
+        onClose={() => setScanning(false)}
+      />
+    )}
+    <div
+      className="fixed inset-0 z-[70] bg-slate-900/60 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4"
+      onClick={onClose}
+      style={scanning ? { display: 'none' } : undefined}
+    >
       <div
         {...dialogProps}
         onClick={(e) => e.stopPropagation()}
@@ -98,13 +114,21 @@ export const ReplacePipeModal: React.FC<ReplacePipeModalProps> = ({ oldPipe, ins
               </div>
             ) : (
               <>
-                <div className="relative mb-2">
-                  <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-                  <input
-                    type="text" value={query} onChange={(e) => setQuery(e.target.value.toUpperCase())}
-                    placeholder="Search Pipe ID (e.g. AWD-…)" autoCapitalize="characters" autoCorrect="off" spellCheck={false}
-                    className="w-full border border-slate-200 rounded-xl pl-9 pr-3 py-2.5 text-sm bg-white text-slate-900 min-h-[44px] focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 outline-none"
-                  />
+                <div className="flex gap-2 mb-2">
+                  <div className="relative flex-1">
+                    <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                    <input
+                      type="text" value={query} onChange={(e) => setQuery(e.target.value.toUpperCase())}
+                      placeholder="Search Pipe ID (e.g. AWD-…)" autoCapitalize="characters" autoCorrect="off" spellCheck={false}
+                      className="w-full border border-slate-200 rounded-xl pl-9 pr-3 py-2.5 text-sm bg-white text-slate-900 min-h-[44px] focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 outline-none"
+                    />
+                  </div>
+                  <button
+                    type="button" onClick={() => { setError(null); setScanning(true); }}
+                    className="shrink-0 inline-flex items-center gap-1.5 font-bold rounded-xl min-h-[44px] px-3 text-sm bg-emerald-700 hover:bg-emerald-800 text-white transition active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/50"
+                  >
+                    <QrCode className="w-4 h-4" /> Scan
+                  </button>
                 </div>
                 <div className="max-h-48 overflow-y-auto rounded-xl border border-slate-200 divide-y divide-slate-100">
                   {matches.length === 0 ? (
@@ -144,7 +168,8 @@ export const ReplacePipeModal: React.FC<ReplacePipeModalProps> = ({ oldPipe, ins
           </div>
         </div>
       </div>
-    </div>,
+    </div>
+    </>,
     document.body,
   );
 };
