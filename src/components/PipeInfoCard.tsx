@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { AWDPipe, Installation, MonitoringRecord } from '../types';
-import { MapPin, Plus, CheckCircle2, UserCheck, ShieldAlert, History, Calendar, Sprout, Phone, ZoomIn, Camera, X, Loader2, Hexagon } from 'lucide-react';
+import { MapPin, Plus, ShieldAlert, Calendar, Phone, ZoomIn, Camera, X, Loader2, Hexagon } from 'lucide-react';
 import { PhotoLightbox } from './PhotoLightbox';
+import { GpsFieldMiniMap } from './GpsFieldMiniMap';
 
 const apiFetch = (url: RequestInfo | URL, options?: RequestInit) => {
   const token = localStorage.getItem('awd_auth_token');
@@ -19,6 +20,15 @@ interface PipeInfoCardProps {
   onClose?: () => void;
 }
 
+function Field({ label, value }: { label: string; value: React.ReactNode }) {
+  return (
+    <div className="flex items-center justify-between py-2 text-xs" style={{ borderTop: '2px solid var(--color-border-light)' }}>
+      <span style={{ color: 'var(--color-text-muted)' }}>{label}</span>
+      <span className="font-bold text-right">{value}</span>
+    </div>
+  );
+}
+
 export const PipeInfoCard: React.FC<PipeInfoCardProps> = ({
   pipe,
   installation,
@@ -33,13 +43,11 @@ export const PipeInfoCard: React.FC<PipeInfoCardProps> = ({
   const [photoLoading, setPhotoLoading] = useState(false);
 
   const handlePhotoClick = async () => {
-    // If already fetched or loading, open lightbox directly
     if (photoLoading) return;
     if (photoUrl !== undefined) {
       if (photoUrl) openLightbox(photoUrl, `Installation Photo — ${pipe.Pipe_ID}`);
       return;
     }
-    // Lazy-fetch the photo on first click
     setPhotoLoading(true);
     try {
       const res = await apiFetch(`/api/installations/${encodeURIComponent(installation.Pipe_ID)}/photo`);
@@ -57,345 +65,200 @@ export const PipeInfoCard: React.FC<PipeInfoCardProps> = ({
     setLightboxUrl(url);
     setLightboxCaption(caption);
   };
-  // Find all pipes owned by this farmer
+
   const farmerPipes = allInstallations.filter(
     (i) => i.Farmer_Name.toLowerCase() === installation.Farmer_Name.toLowerCase()
   );
-  // Mask sensitive farmer information
+
   const maskPhone = (phone?: string) => {
     if (!phone) return '******';
     const clean = phone.replace(/\D/g, '');
-    if (clean.length >= 10) {
-      return `${clean.substring(0, 2)}******${clean.substring(8)}`;
-    }
+    if (clean.length >= 10) return `${clean.substring(0, 2)}******${clean.substring(8)}`;
     return '******';
   };
 
   const maskFarmerId = (fid?: string) => {
     if (!fid) return 'N/A';
-    if (fid.length > 5) {
-      return `${fid.substring(0, 3)}***${fid.substring(fid.length - 2)}`;
-    }
+    if (fid.length > 5) return `${fid.substring(0, 3)}***${fid.substring(fid.length - 2)}`;
     return '***';
   };
 
   const pipeMonitoring = monitoringList.filter((m) => m.Pipe_ID === pipe.Pipe_ID);
 
   return (
-    <div className="space-y-6">
-      {/* Photo Lightbox */}
+    <div>
       {lightboxUrl && (
-        <PhotoLightbox
-          url={lightboxUrl}
-          caption={lightboxCaption}
-          onClose={() => setLightboxUrl(null)}
-        />
+        <PhotoLightbox url={lightboxUrl} caption={lightboxCaption} onClose={() => setLightboxUrl(null)} />
       )}
 
-      {/* Top Action Bar — sticky, always visible */}
       {onClose && (
-        <div className="sticky top-0 z-20 flex items-center justify-between bg-emerald-700 px-4 py-3 rounded-2xl shadow-lg border border-emerald-600">
-          <button
-            onClick={onClose}
-            className="flex items-center gap-2 text-sm font-extrabold text-white hover:text-emerald-100 transition-colors group"
-          >
-            <X className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" />
-            ← New Registration
+        <div className="sticky top-0 z-20 flex items-center justify-between px-4 py-3 text-white" style={{ background: 'var(--color-shell)' }}>
+          <button onClick={onClose} className="flex items-center gap-2 text-sm font-extrabold cursor-pointer">
+            <X className="w-4 h-4" /> New Registration
           </button>
-          <span className="text-xs text-emerald-200 font-mono font-semibold">{pipe.Pipe_ID}</span>
+          <span className="awd-mono text-xs opacity-80">{pipe.Pipe_ID}</span>
         </div>
       )}
 
-      {/* Privacy Warning Banner */}
-      <div className="bg-amber-500/10 border border-amber-500/30 text-amber-900 rounded-xl p-3 text-xs flex items-center gap-2 shadow-xs">
-        <ShieldAlert className="w-4 h-4 text-amber-600 shrink-0" />
-        <span>
-          <strong>Registered AWD Pipe:</strong> Sensitive farmer contact details are masked for privacy compliance.
-        </span>
+      {/* Header — mono pipe ID, status tag */}
+      <div className="p-4" style={{ background: 'var(--color-surface)', borderBottom: '2px solid var(--color-border-light)' }}>
+        <div className="awd-kicker">AWD Pipe ID</div>
+        <div className="flex items-center justify-between mt-0.5">
+          <h2 className="awd-mono font-black" style={{ fontSize: 24 }}>{pipe.Pipe_ID}</h2>
+          <span className="awd-tag awd-tag-accent">{pipe.Status || 'Installed'}</span>
+        </div>
+        {pipe.Batch_No && <div className="text-xs mt-1" style={{ color: 'var(--color-text-muted)' }}>{pipe.Batch_No}{pipe.Security_Hash ? ` · hash ${pipe.Security_Hash}` : ''}</div>}
       </div>
 
-      {/* Side-by-Side Desktop Grid Container */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        
-        {/* Main Pipe Card (Left Column on Desktop) */}
-        <div className="lg:col-span-7 bg-white rounded-2xl shadow-md border border-slate-200 overflow-hidden">
-          
-          {/* Header Status Bar */}
-          <div className="bg-gradient-to-r from-emerald-800 to-teal-800 text-white p-4 flex items-center justify-between">
-            <div>
-              <span className="text-xs font-bold uppercase tracking-wider text-emerald-200">AWD Pipe ID</span>
-              <h2 className="text-2xl font-black">{pipe.Pipe_ID}</h2>
-            </div>
-            <div className="flex flex-col items-end gap-2">
-              <span className="bg-emerald-500/20 border border-emerald-400/30 text-emerald-100 px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1.5 shadow-sm">
-                <CheckCircle2 className="w-3.5 h-3.5" /> Installed
+      {/* Dark "Installed" summary block */}
+      <div className="p-4 text-white" style={{ background: 'var(--color-shell)' }}>
+        <div className="text-[11px] uppercase tracking-wide opacity-70">Installed {installation.Installation_Date}</div>
+        <div className="font-black mt-1" style={{ fontSize: 20 }}>{installation.Farmer_Name}</div>
+        <div className="text-xs opacity-80 mt-0.5">{installation.Plot_Size} {installation.Plot_Size_Unit} · {installation.Crop} · {installation.Village}</div>
+      </div>
+
+      {/* Privacy notice */}
+      <div className="flex items-center gap-2 px-4 py-2.5 text-xs" style={{ background: '#FFFBEB', borderBottom: '2px solid var(--color-border-light)', color: '#92400E' }}>
+        <ShieldAlert className="w-4 h-4 shrink-0" />
+        Farmer contact details are masked for privacy compliance.
+      </div>
+
+      {farmerPipes.length > 1 && (
+        <div className="p-4" style={{ borderBottom: '2px solid var(--color-border-light)' }}>
+          <div className="text-xs font-bold mb-1.5">{farmerPipes.length} pipes registered to {installation.Farmer_Name}</div>
+          <div className="flex flex-wrap gap-1.5">
+            {farmerPipes.map((fp) => (
+              <span key={fp.Pipe_ID} className={`awd-tag ${fp.Pipe_ID === pipe.Pipe_ID ? 'awd-tag-accent' : 'awd-tag-neutral'}`}>
+                {fp.Pipe_ID}{fp.Pipe_ID === pipe.Pipe_ID ? ' · current' : ''}
               </span>
-              {onClose && (
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Table: Farmer */}
+      <div className="px-4 pt-4 pb-1"><h3 className="awd-kicker">Farmer</h3></div>
+      <div className="px-4">
+        <Field label="Name" value={installation.Farmer_Name} />
+        <Field label={<span className="flex items-center gap-1"><Phone className="w-3 h-3" />Mobile</span>} value={<span className="awd-mono">{maskPhone(installation.Mobile)}</span>} />
+        <Field label="Farmer ID" value={maskFarmerId(installation.Farmer_ID)} />
+      </div>
+
+      {/* Table: Plot & crop */}
+      <div className="px-4 pt-4 pb-1"><h3 className="awd-kicker">Plot &amp; crop</h3></div>
+      <div className="px-4">
+        <Field label="Village / Mandal" value={`${installation.Village}, ${installation.Mandal}`} />
+        <Field label="District / State" value={`${installation.District}${installation.State ? ', ' + installation.State : ''}`} />
+        <Field label="Survey no." value={installation.Survey_No || '—'} />
+        <Field label="Plot size" value={
+          <span className="flex items-center gap-1.5 justify-end">
+            {installation.Plot_Size} {installation.Plot_Size_Unit}
+            {installation.Plot_Boundary && installation.Plot_Boundary.length >= 3 && (
+              <span className="awd-tag awd-tag-neutral"><Hexagon className="w-2.5 h-2.5" /></span>
+            )}
+          </span>
+        } />
+        <Field label="Crop & variety" value={`${installation.Crop} — ${installation.Variety || 'Local'}`} />
+        <Field label="Establishment method" value={installation.Establishment_Method} />
+        <Field label={installation.Establishment_Method === 'TPR' ? 'Transplanting date' : 'Sowing date'} value={installation.Sowing_Transplantation_Date} />
+        {installation.Nursery_Sowing_Date && <Field label="Nursery sowing date" value={installation.Nursery_Sowing_Date} />}
+        <Field label="Irrigation source" value={installation.Irrigation_Source} />
+        <Field label="Installed by" value={installation.Installed_By || '—'} />
+      </div>
+
+      {/* Location & plot boundary */}
+      <div className="px-4 pt-4 pb-1"><h3 className="awd-kicker">Location &amp; plot boundary</h3></div>
+      <div className="px-4 pb-1">
+        <Field label="GPS" value={<span className="awd-mono">{installation.Latitude?.toFixed(5)}, {installation.Longitude?.toFixed(5)} · ±{installation.GPS_Accuracy}m</span>} />
+        {installation.Plot_Boundary && installation.Plot_Boundary.length >= 3 && (
+          <Field label="Boundary" value={`${installation.Plot_Boundary.length} corners walked`} />
+        )}
+      </div>
+      {installation.Latitude && installation.Longitude && (
+        <div className="px-4 pb-4">
+          <GpsFieldMiniMap
+            latitude={installation.Latitude}
+            longitude={installation.Longitude}
+            pipeId={pipe.Pipe_ID}
+            boundary={installation.Plot_Boundary}
+          />
+        </div>
+      )}
+
+      {/* Installation photo */}
+      {(installation.Photo_URL !== undefined || photoUrl !== null) && (
+        <div className="px-4 pt-2 pb-4">
+          <div className="awd-kicker mb-1.5 flex items-center gap-1"><Camera className="w-3 h-3" /> Installation photo</div>
+          <button type="button" onClick={handlePhotoClick} className="w-full relative overflow-hidden cursor-pointer" style={{ border: '2px solid var(--color-border-light)', background: 'var(--color-shell)' }}>
+            <div className="w-full flex items-center justify-center" style={{ minHeight: 140, maxHeight: 192 }}>
+              {photoLoading ? (
+                <div className="flex flex-col items-center gap-2 text-white/60"><Loader2 className="w-6 h-6 animate-spin" /><span className="text-xs">Loading photo…</span></div>
+              ) : (photoUrl || installation.Photo_URL) ? (
+                <img src={photoUrl || installation.Photo_URL} alt={`Installation photo for pipe ${pipe.Pipe_ID}`} loading="lazy" className="max-h-48 max-w-full w-auto object-contain" />
+              ) : (
+                <div className="flex flex-col items-center gap-2 text-white/60"><Camera className="w-6 h-6" /><span className="text-xs">Tap to load photo</span></div>
+              )}
+            </div>
+          </button>
+        </div>
+      )}
+
+      {/* Action buttons */}
+      <div className="grid grid-cols-2 gap-0 mx-4 mb-4" style={{ border: '2px solid var(--color-border-light)' }}>
+        <a href={installation.Location_Link} target="_blank" rel="noopener noreferrer" className="awd-btn-secondary justify-center" style={{ border: 0, borderRight: '2px solid var(--color-border-light)' }}>
+          <MapPin className="w-4 h-4" />View on map
+        </a>
+        <button onClick={onOpenMonitoringModal} className="awd-btn-primary justify-center" style={{ border: 0 }}>
+          <Plus className="w-4 h-4" />Add visit log
+        </button>
+      </div>
+
+      {/* Monitoring visits — this app's real "record trail" */}
+      <div className="flex items-center justify-between px-4 pt-2 pb-1.5">
+        <h3 className="font-extrabold text-sm">Monitoring visits ({pipeMonitoring.length})</h3>
+        <button onClick={onOpenMonitoringModal} className="text-xs font-bold flex items-center gap-1 cursor-pointer" style={{ color: 'var(--color-accent-700)' }}>
+          <Plus className="w-3 h-3" /> New visit
+        </button>
+      </div>
+
+      {pipeMonitoring.length === 0 ? (
+        <div className="px-4 py-6 text-xs text-center" style={{ color: 'var(--color-text-muted)' }}>No monitoring visits recorded yet.</div>
+      ) : (
+        <div className="awd-card" style={{ borderLeft: 0, borderRight: 0, borderBottom: 0 }}>
+          {pipeMonitoring.map((visit, idx) => (
+            <div key={idx} className="p-3 text-xs" style={{ borderTop: idx === 0 ? 'none' : '2px solid var(--color-border-light)' }}>
+              <div className="flex items-center justify-between">
+                <span className="font-bold flex items-center gap-1"><Calendar className="w-3 h-3" />{visit.Visit_Date}</span>
+                <span className={`awd-tag ${
+                  visit.AWD_Followed === 'Yes' ? 'awd-tag-accent' : visit.AWD_Followed === 'Partially' ? 'awd-tag-warning' : 'awd-tag-danger'
+                }`}>AWD: {visit.AWD_Followed}</span>
+              </div>
+              <div className="grid grid-cols-2 gap-1.5 pt-2" style={{ color: 'var(--color-text-secondary)' }}>
+                <div>Water level: <strong>{visit.Water_Level}</strong></div>
+                <div>Crop stage: <strong>{visit.Crop_Stage}</strong></div>
+                <div>Condition: <strong>{visit.Pipe_Condition}</strong></div>
+                <div>Visited by: <strong>{visit.Visited_By}</strong></div>
+              </div>
+              {visit.Remarks && (
+                <div className="mt-1.5 italic" style={{ color: 'var(--color-text-muted)' }}>"{visit.Remarks}"</div>
+              )}
+              {visit.Photo_URL && (
                 <button
-                  onClick={onClose}
-                  className="bg-white/10 hover:bg-white/20 text-white px-3 py-1 rounded-full text-xs font-bold transition-colors flex items-center gap-1"
+                  type="button"
+                  onClick={() => openLightbox(visit.Photo_URL!, `Visit Photo — ${visit.Visit_Date} · ${pipe.Pipe_ID}`)}
+                  className="w-full mt-1.5 cursor-pointer"
+                  style={{ border: '2px solid var(--color-border-light)' }}
                 >
-                  <X className="w-3 h-3" /> Close
+                  <div className="flex items-center gap-1 text-[10px] font-bold uppercase px-2 pt-1.5 pb-1" style={{ color: 'var(--color-text-muted)' }}>
+                    <Camera className="w-3 h-3" /> Visit photo <ZoomIn className="w-3 h-3 ml-auto" />
+                  </div>
+                  <img src={visit.Photo_URL} alt={`Monitoring visit photo for pipe ${pipe.Pipe_ID} on ${visit.Visit_Date}`} loading="lazy" className="w-full object-cover" style={{ height: 128 }} />
                 </button>
               )}
             </div>
-          </div>
-
-          {/* Info Grid */}
-          <div className="p-4 sm:p-5 space-y-4">
-            
-            {/* Farmer & Location Section */}
-            <div>
-              <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                <UserCheck className="w-3.5 h-3.5 text-emerald-600" />
-                Farmer & Plot Overview
-              </h3>
-              <div className="grid grid-cols-2 gap-3 bg-slate-50 p-3 rounded-xl border border-slate-100 text-xs">
-                <div>
-                  <span className="text-slate-400 block text-xs">Farmer Name</span>
-                  <span className="font-bold text-slate-800 text-sm">{installation.Farmer_Name}</span>
-                </div>
-                <div>
-                  <span className="text-slate-400 block text-xs flex items-center gap-0.5">
-                    <Phone className="w-2.5 h-2.5 text-slate-400" /> Mobile (Protected)
-                  </span>
-                  <span className="font-mono font-bold text-slate-600">{maskPhone(installation.Mobile)}</span>
-                </div>
-                <div>
-                  <span className="text-slate-400 block text-xs">Location</span>
-                  <span className="font-semibold text-slate-800">{installation.Village}, {installation.Mandal}</span>
-                </div>
-                <div>
-                  <span className="text-slate-400 block text-xs">District</span>
-                  <span className="font-semibold text-slate-800">{installation.District}</span>
-                </div>
-              </div>
-
-              {farmerPipes.length > 0 && (
-                <div className="mt-2 bg-emerald-50 border border-emerald-200 rounded-xl p-2.5 text-xs text-emerald-900 flex flex-col gap-1">
-                  <div className="font-bold flex items-center justify-between">
-                    <span>🌾 Registered Pipes for {installation.Farmer_Name}:</span>
-                    <span className="bg-emerald-700 text-white font-mono px-2 py-0.5 rounded text-xs">
-                      {farmerPipes.length} Pipe{farmerPipes.length > 1 ? 's' : ''} Assigned
-                    </span>
-                  </div>
-                  <div className="flex flex-wrap gap-1 mt-0.5">
-                    {farmerPipes.map((fp) => (
-                      <span
-                        key={fp.Pipe_ID}
-                        className={`font-mono text-xs font-bold px-2 py-0.5 rounded border ${
-                          fp.Pipe_ID === pipe.Pipe_ID
-                            ? 'bg-emerald-800 text-white border-emerald-900'
-                            : 'bg-white text-emerald-800 border-emerald-300'
-                        }`}
-                      >
-                        {fp.Pipe_ID} {fp.Pipe_ID === pipe.Pipe_ID ? '📍 (Current)' : ''}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Plot & Crop Details */}
-            <div>
-              <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                <Sprout className="w-3.5 h-3.5 text-emerald-600" />
-                Agronomic Parameters
-              </h3>
-              <div className="space-y-2 text-xs">
-                <div className="flex justify-between py-1.5 border-b border-slate-100">
-                  <span className="text-slate-500">Plot Size & Unit</span>
-                  <div className="flex items-center gap-1.5">
-                    <span className="font-bold text-slate-800">{installation.Plot_Size} {installation.Plot_Size_Unit} (Survey: {installation.Survey_No || 'N/A'})</span>
-                    {installation.Plot_Boundary && installation.Plot_Boundary.length >= 3 && (
-                      <span className="text-[9px] font-bold bg-teal-100 text-teal-800 px-1.5 py-0.5 rounded-full border border-teal-200 flex items-center gap-0.5 shrink-0">
-                        <Hexagon className="w-2.5 h-2.5" /> Mapped
-                      </span>
-                    )}
-                  </div>
-                </div>
-                <div className="flex justify-between py-1.5 border-b border-slate-100">
-                  <span className="text-slate-500">Establishment Method</span>
-                  <span className="font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
-                    {installation.Establishment_Method}
-                  </span>
-                </div>
-                <div className="flex justify-between py-1.5 border-b border-slate-100">
-                  <span className="text-slate-500">
-                    {installation.Establishment_Method === 'TPR' ? 'Transplantation Date' : 'Sowing Date'}
-                  </span>
-                  <span className="font-semibold text-slate-800">{installation.Sowing_Transplantation_Date}</span>
-                </div>
-                {installation.Nursery_Sowing_Date && (
-                  <div className="flex justify-between py-1.5 border-b border-slate-100">
-                    <span className="text-slate-500">Nursery Sowing Date</span>
-                    <span className="font-semibold text-slate-800">{installation.Nursery_Sowing_Date}</span>
-                  </div>
-                )}
-                <div className="flex justify-between py-1.5 border-b border-slate-100">
-                  <span className="text-slate-500">Crop & Variety</span>
-                  <span className="font-semibold text-slate-800">{installation.Crop} - {installation.Variety || 'Local'}</span>
-                </div>
-                <div className="flex justify-between py-1.5">
-                  <span className="text-slate-500">Irrigation Source</span>
-                  <span className="font-semibold text-slate-800">{installation.Irrigation_Source}</span>
-                </div>
-                {/* Photo section — lazy-loaded on first click to avoid sending 400KB on startup */}
-                {(installation.Photo_URL !== undefined || photoUrl !== null) && (
-                  <div className="pt-2">
-                    <div className="text-slate-400 text-xs mb-1.5 font-bold uppercase flex items-center gap-1">
-                      <Camera className="w-3 h-3" /> Installation Field Photo
-                      <span className="ml-auto text-slate-300 font-normal flex items-center gap-0.5">
-                        <ZoomIn className="w-3 h-3" /> Click to expand
-                      </span>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={handlePhotoClick}
-                      className="w-full group relative overflow-hidden rounded-xl border border-slate-700 bg-slate-950 p-1.5 shadow-inner hover:border-emerald-400 transition-all cursor-pointer"
-                    >
-                      <div className="w-full flex items-center justify-center min-h-[140px] max-h-48 overflow-hidden bg-slate-900 rounded-lg p-1">
-                        {photoLoading ? (
-                          <div className="flex flex-col items-center gap-2 text-slate-400">
-                            <Loader2 className="w-6 h-6 animate-spin" />
-                            <span className="text-xs">Loading photo...</span>
-                          </div>
-                        ) : photoUrl ? (
-                          <img
-                            src={photoUrl}
-                            alt={`AWD installation field photo for pipe ${pipe.Pipe_ID}`}
-                            loading="lazy"
-                            width="400"
-                            height="176"
-                            className="max-h-44 max-w-full w-auto object-contain rounded group-hover:scale-102 transition-transform duration-300"
-                          />
-                        ) : installation.Photo_URL ? (
-                          <img
-                            src={installation.Photo_URL}
-                            alt={`AWD installation field photo for pipe ${pipe.Pipe_ID}`}
-                            loading="lazy"
-                            width="400"
-                            height="176"
-                            className="max-h-44 max-w-full w-auto object-contain rounded group-hover:scale-102 transition-transform duration-300"
-                          />
-                        ) : (
-                          <div className="flex flex-col items-center gap-2 text-slate-500">
-                            <Camera className="w-6 h-6" />
-                            <span className="text-xs">Tap to load photo</span>
-                          </div>
-                        )}
-                      </div>
-                      <div className="absolute inset-0 bg-slate-950/0 group-hover:bg-slate-950/30 transition-all flex items-center justify-center">
-                        <ZoomIn className="w-7 h-7 text-white opacity-0 group-hover:opacity-100 transition-all drop-shadow-lg" />
-                      </div>
-                    </button>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Action Buttons */}
-            <div className="pt-2 grid grid-cols-2 gap-2">
-              <a
-                href={installation.Location_Link}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-3 px-3 rounded-xl text-xs flex items-center justify-center gap-1.5 transition border border-slate-200"
-              >
-                <MapPin className="w-4 h-4 text-emerald-600" />
-                View GPS Location
-              </a>
-              <button
-                onClick={onOpenMonitoringModal}
-                className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 px-3 rounded-xl text-xs flex items-center justify-center gap-1.5 transition shadow-sm"
-              >
-                <Plus className="w-4 h-4" />
-                Add Visit Log
-              </button>
-            </div>
-
-          </div>
+          ))}
         </div>
-
-        {/* Monitoring Visit Logs Timeline (Right Column on Desktop) */}
-        <div className="lg:col-span-5 bg-white rounded-2xl shadow-sm border border-slate-200 p-4 sm:p-5">
-          <div className="flex items-center justify-between border-b pb-3 mb-3">
-            <h3 className="font-bold text-slate-800 text-sm flex items-center gap-2">
-              <History className="w-4 h-4 text-emerald-600" />
-              Field Monitoring Visits ({pipeMonitoring.length})
-            </h3>
-            <button
-              onClick={onOpenMonitoringModal}
-              className="text-xs text-emerald-700 font-semibold hover:underline flex items-center gap-1"
-            >
-              <Plus className="w-3 h-3" /> New Visit
-            </button>
-          </div>
-
-        {pipeMonitoring.length === 0 ? (
-          <div className="text-center py-6 text-slate-400 text-xs">
-            No monitoring visits recorded yet for this pipe.
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {pipeMonitoring.map((visit, idx) => (
-              <div key={idx} className="bg-slate-50 rounded-xl p-3 border border-slate-200 text-xs space-y-1.5">
-                <div className="flex items-center justify-between">
-                  <span className="font-bold text-emerald-800 flex items-center gap-1">
-                    <Calendar className="w-3 h-3" /> {visit.Visit_Date}
-                  </span>
-                  <span className={`px-2 py-0.5 rounded text-xs font-extrabold ${
-                    visit.AWD_Followed === 'Yes'
-                      ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
-                      : visit.AWD_Followed === 'Partially'
-                      ? 'bg-amber-100 text-amber-800 border border-amber-300'
-                      : 'bg-red-100 text-red-800 border border-red-300'
-                  }`}>
-                    AWD: {visit.AWD_Followed}
-                  </span>
-                </div>
-                <div className="grid grid-cols-2 gap-2 text-slate-600 pt-1">
-                  <div>Water Level: <strong className="text-slate-800">{visit.Water_Level}</strong></div>
-                  <div>Crop Stage: <strong className="text-slate-800">{visit.Crop_Stage}</strong></div>
-                  <div>Pipe Condition: <strong className="text-slate-800">{visit.Pipe_Condition}</strong></div>
-                  <div>Visited By: <strong className="text-slate-800">{visit.Visited_By}</strong></div>
-                </div>
-                {visit.Remarks && (
-                  <div className="text-xs text-slate-500 italic bg-white p-2 rounded border border-slate-100 mt-1">
-                    "{visit.Remarks}"
-                  </div>
-                )}
-                {visit.Photo_URL && (
-                  <div className="mt-1.5">
-                    <button
-                      type="button"
-                      onClick={() => openLightbox(visit.Photo_URL!, `Visit Photo — ${visit.Visit_Date} · ${pipe.Pipe_ID}`)}
-                      className="w-full group relative overflow-hidden rounded-lg border border-slate-200 hover:border-blue-400 transition-all"
-                    >
-                      <div className="flex items-center gap-1 text-xs text-slate-400 font-bold uppercase tracking-wider px-2 pt-1.5 pb-1">
-                        <Camera className="w-3 h-3" /> Visit Photo <ZoomIn className="w-3 h-3 ml-auto" />
-                      </div>
-                      <img
-                        src={visit.Photo_URL}
-                        alt={`Monitoring visit photo for pipe ${pipe.Pipe_ID} on ${visit.Visit_Date}`}
-                        loading="lazy"
-                        width="400"
-                        height="128"
-                        className="w-full h-32 object-cover group-hover:scale-105 transition-transform duration-300"
-                      />
-                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all flex items-center justify-center">
-                        <ZoomIn className="w-6 h-6 text-white opacity-0 group-hover:opacity-100 transition-all drop-shadow-lg" />
-                      </div>
-                    </button>
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-      </div>
+      )}
     </div>
   );
 };
