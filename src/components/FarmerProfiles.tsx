@@ -227,12 +227,12 @@ const formatDate = (d?: string) => {
 };
 
 const AWD_COLOR = (v: string) =>
-  v === 'Yes' ? 'bg-emerald-100 text-emerald-700 border-emerald-300'
+  v === 'Yes' ? 'bg-accent-100 text-accent-700 border-accent-300'
   : v === 'Partially' ? 'bg-amber-100 text-amber-700 border-amber-300'
   : 'bg-red-100 text-red-700 border-red-300';
 
 const COND_COLOR = (v: string) =>
-  v === 'Good' ? 'bg-emerald-100 text-emerald-700 border-emerald-300'
+  v === 'Good' ? 'bg-accent-100 text-accent-700 border-accent-300'
   : v === 'Damaged' ? 'bg-red-100 text-red-700 border-red-300'
   : 'bg-amber-100 text-amber-700 border-amber-300';
 
@@ -254,10 +254,10 @@ const EditFarmerModal: React.FC<{
 
   return ReactDOM.createPortal(
     <div className="fixed inset-0 bg-slate-900/65 backdrop-blur-md z-[9999] flex items-center justify-center p-4 overflow-y-auto" {...dialogProps}>
-      <div className="bg-white rounded-3xl max-w-2xl w-full p-6 space-y-5 shadow-2xl border border-slate-200 my-8">
+      <div className="bg-white  max-w-2xl w-full p-6 space-y-5  border border-slate-200 my-8">
         <div className="flex items-center justify-between border-b pb-3">
           <div className="flex items-center gap-2">
-            <Edit2 className="w-5 h-5 text-emerald-600" />
+            <Edit2 className="w-5 h-5 text-accent-600" />
             <h3 className="text-base font-extrabold text-slate-900">
               Edit Farmer & Field Registration ({inst.Pipe_ID})
             </h3>
@@ -279,7 +279,7 @@ const EditFarmerModal: React.FC<{
                   required
                   value={form.Farmer_Name}
                   onChange={(e) => setForm({ ...form, Farmer_Name: e.target.value })}
-                  className="w-full bg-slate-50 border border-slate-300 rounded-xl p-2.5 text-xs font-semibold"
+                  className="w-full bg-slate-50 border border-slate-300  p-2.5 text-xs font-semibold"
                 />
               </div>
               <div>
@@ -289,7 +289,7 @@ const EditFarmerModal: React.FC<{
                   required
                   value={form.Mobile}
                   onChange={(e) => setForm({ ...form, Mobile: e.target.value })}
-                  className="w-full bg-slate-50 border border-slate-300 rounded-xl p-2.5 text-xs font-semibold"
+                  className="w-full bg-slate-50 border border-slate-300  p-2.5 text-xs font-semibold"
                 />
               </div>
               <div>
@@ -298,7 +298,7 @@ const EditFarmerModal: React.FC<{
                   type="text"
                   value={form.Farmer_ID || ''}
                   onChange={(e) => setForm({ ...form, Farmer_ID: e.target.value })}
-                  className="w-full bg-slate-50 border border-slate-300 rounded-xl p-2.5 text-xs font-semibold"
+                  className="w-full bg-slate-50 border border-slate-300  p-2.5 text-xs font-semibold"
                 />
               </div>
             </div>
@@ -315,7 +315,7 @@ const EditFarmerModal: React.FC<{
                   required
                   value={form.Village}
                   onChange={(e) => setForm({ ...form, Village: e.target.value })}
-                  className="w-full bg-slate-50 border border-slate-300 rounded-xl p-2.5 text-xs font-semibold"
+                  className="w-full bg-slate-50 border border-slate-300  p-2.5 text-xs font-semibold"
                 />
               </div>
               <div>
@@ -325,7 +325,7 @@ const EditFarmerModal: React.FC<{
                   required
                   value={form.Mandal}
                   onChange={(e) => setForm({ ...form, Mandal: e.target.value })}
-                  className="w-full bg-slate-50 border border-slate-300 rounded-xl p-2.5 text-xs font-semibold"
+                  className="w-full bg-slate-50 border border-slate-300  p-2.5 text-xs font-semibold"
                 />
               </div>
               <div>
@@ -335,7 +335,7 @@ const EditFarmerModal: React.FC<{
                   required
                   value={form.District}
                   onChange={(e) => setForm({ ...form, District: e.target.value })}
-                  className="w-full bg-slate-50 border border-slate-300 rounded-xl p-2.5 text-xs font-semibold"
+                  className="w-full bg-slate-50 border border-slate-300  p-2.5 text-xs font-semibold"
                 />
               </div>
               <div>
@@ -344,7 +344,7 @@ const EditFarmerModal: React.FC<{
                   type="text"
                   value={form.State || ''}
                   onChange={(e) => setForm({ ...form, State: e.target.value })}
-                  className="w-full bg-slate-50 border border-slate-300 rounded-xl p-2.5 text-xs font-semibold"
+                  className="w-full bg-slate-50 border border-slate-300  p-2.5 text-xs font-semibold"
                 />
               </div>
             </div>
@@ -360,7 +360,7 @@ const EditFarmerModal: React.FC<{
                   type="text"
                   value={form.Survey_No || ''}
                   onChange={(e) => setForm({ ...form, Survey_No: e.target.value })}
-                  className="w-full bg-slate-50 border border-slate-300 rounded-xl p-2.5 text-xs font-semibold"
+                  className="w-full bg-slate-50 border border-slate-300  p-2.5 text-xs font-semibold"
                 />
               </div>
               <div>
@@ -371,7 +371,7 @@ const EditFarmerModal: React.FC<{
                   required
                   value={form.Plot_Size}
                   onChange={(e) => setForm({ ...form, Plot_Size: parseFloat(e.target.value) || 0 })}
-                  className="w-full bg-slate-50 border border-slate-300 rounded-xl p-2.5 text-xs font-semibold"
+                  className="w-full bg-slate-50 border border-slate-300  p-2.5 text-xs font-semibold"
                 />
               </div>
               <div>
@@ -379,7 +379,7 @@ const EditFarmerModal: React.FC<{
                 <select
                   value={form.Plot_Size_Unit}
                   onChange={(e) => setForm({ ...form, Plot_Size_Unit: e.target.value as any })}
-                  className="w-full bg-slate-50 border border-slate-300 rounded-xl p-2.5 text-xs font-semibold"
+                  className="w-full bg-slate-50 border border-slate-300  p-2.5 text-xs font-semibold"
                 >
                   <option value="Acres">Acres</option>
                   <option value="Guntas">Guntas (గుంటలు)</option>
@@ -393,7 +393,7 @@ const EditFarmerModal: React.FC<{
                   type="text"
                   value={form.Crop}
                   onChange={(e) => setForm({ ...form, Crop: e.target.value })}
-                  className="w-full bg-slate-50 border border-slate-300 rounded-xl p-2.5 text-xs font-semibold"
+                  className="w-full bg-slate-50 border border-slate-300  p-2.5 text-xs font-semibold"
                 />
               </div>
               <div>
@@ -402,7 +402,7 @@ const EditFarmerModal: React.FC<{
                   type="text"
                   value={form.Variety || ''}
                   onChange={(e) => setForm({ ...form, Variety: e.target.value })}
-                  className="w-full bg-slate-50 border border-slate-300 rounded-xl p-2.5 text-xs font-semibold"
+                  className="w-full bg-slate-50 border border-slate-300  p-2.5 text-xs font-semibold"
                 />
               </div>
               <div>
@@ -411,7 +411,7 @@ const EditFarmerModal: React.FC<{
                   type="text"
                   value={form.Establishment_Method}
                   onChange={(e) => setForm({ ...form, Establishment_Method: e.target.value as any })}
-                  className="w-full bg-slate-50 border border-slate-300 rounded-xl p-2.5 text-xs font-semibold"
+                  className="w-full bg-slate-50 border border-slate-300  p-2.5 text-xs font-semibold"
                 />
               </div>
             </div>
@@ -427,7 +427,7 @@ const EditFarmerModal: React.FC<{
                   type="text"
                   value={form.Installed_By}
                   onChange={(e) => setForm({ ...form, Installed_By: e.target.value })}
-                  className="w-full bg-slate-50 border border-slate-300 rounded-xl p-2.5 text-xs font-semibold"
+                  className="w-full bg-slate-50 border border-slate-300  p-2.5 text-xs font-semibold"
                 />
               </div>
               <div>
@@ -436,7 +436,7 @@ const EditFarmerModal: React.FC<{
                   type="date"
                   value={form.Installation_Date}
                   onChange={(e) => setForm({ ...form, Installation_Date: e.target.value })}
-                  className="w-full bg-slate-50 border border-slate-300 rounded-xl p-2.5 text-xs font-semibold"
+                  className="w-full bg-slate-50 border border-slate-300  p-2.5 text-xs font-semibold"
                 />
               </div>
             </div>
@@ -446,13 +446,13 @@ const EditFarmerModal: React.FC<{
             <button
               type="button"
               onClick={onClose}
-              className="px-5 py-2.5 rounded-xl text-xs font-extrabold text-slate-600 hover:bg-slate-100 transition cursor-pointer"
+              className="px-5 py-2.5  text-xs font-extrabold text-slate-600 hover:bg-slate-100 transition cursor-pointer"
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="px-5 py-2.5 rounded-xl text-xs font-extrabold bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg shadow-emerald-900/30 transition cursor-pointer"
+              className="px-5 py-2.5  text-xs font-extrabold bg-accent-600 hover:bg-accent-700 text-white  shadow-accent-900/30 transition cursor-pointer"
             >
               Save Farmer Details
             </button>
@@ -484,7 +484,7 @@ const PipeDetailCard: React.FC<{
   };
 
   return (
-    <div className="border border-slate-200 rounded-2xl overflow-hidden shadow-sm bg-white">
+    <div className="border border-slate-200  overflow-hidden  bg-white">
       {/* Photo Lightbox */}
       {lightboxUrl && (
         <PhotoLightbox
@@ -497,11 +497,11 @@ const PipeDetailCard: React.FC<{
       <button
         type="button"
         onClick={() => setExpanded((v) => !v)}
-        className="w-full flex items-center justify-between px-5 py-4 bg-gradient-to-r from-slate-50 to-white hover:from-emerald-50 transition text-left"
+        className="w-full flex items-center justify-between px-5 py-4 bg-gradient-to-r from-slate-50 to-white hover:from-accent-50 transition text-left"
       >
         <div className="flex items-start gap-4">
           {/* Pipe status dot */}
-          <div className={`mt-0.5 w-3 h-3 rounded-full shrink-0 ${pipe?.Status === 'Installed' ? 'bg-emerald-500' : pipe?.Status === 'Damaged' ? 'bg-red-400' : 'bg-slate-300'}`} />
+          <div className={`mt-0.5 w-3 h-3 rounded-full shrink-0 ${pipe?.Status === 'Installed' ? 'bg-accent-500' : pipe?.Status === 'Damaged' ? 'bg-red-400' : 'bg-slate-300'}`} />
           <div>
             <div className="flex items-center gap-2 flex-wrap">
               <span className="font-mono font-extrabold text-slate-800 text-sm">{inst.Pipe_ID}</span>
@@ -549,7 +549,7 @@ const PipeDetailCard: React.FC<{
               ['Installed By', inst.Installed_By],
               ['Install Date', formatDate(inst.Installation_Date)],
             ].map(([k, v]) => (
-              <div key={k} className="bg-slate-50 rounded-xl p-2.5 border border-slate-100">
+              <div key={k} className="bg-slate-50  p-2.5 border border-slate-100">
                 <div className="text-xs font-bold text-slate-500 uppercase tracking-wider">{k}</div>
                 <div className="text-xs font-bold text-slate-700 mt-0.5 break-words">{v}</div>
               </div>
@@ -563,7 +563,7 @@ const PipeDetailCard: React.FC<{
                 <button
                   type="button"
                   onClick={() => onEdit(inst)}
-                  className="flex items-center gap-1.5 text-xs font-extrabold text-blue-600 bg-blue-50 hover:bg-blue-100 border border-blue-200 px-3 py-1.5 rounded-xl transition cursor-pointer"
+                  className="flex items-center gap-1.5 text-xs font-extrabold text-blue-600 bg-blue-50 hover:bg-blue-100 border border-blue-200 px-3 py-1.5  transition cursor-pointer"
                 >
                   <Edit2 className="w-3.5 h-3.5" /> Edit Farmer Details
                 </button>
@@ -572,7 +572,7 @@ const PipeDetailCard: React.FC<{
                 <button
                   type="button"
                   onClick={() => onDelete(inst.Pipe_ID, inst.Farmer_Name)}
-                  className="flex items-center gap-1.5 text-xs font-extrabold text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 px-3 py-1.5 rounded-xl transition cursor-pointer"
+                  className="flex items-center gap-1.5 text-xs font-extrabold text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 px-3 py-1.5  transition cursor-pointer"
                 >
                   <Trash2 className="w-3.5 h-3.5" /> Remove Installation
                 </button>
@@ -584,7 +584,7 @@ const PipeDetailCard: React.FC<{
                 href={inst.Location_Link}
                 target="_blank"
                 rel="noreferrer"
-                className="flex items-center gap-1.5 text-xs font-semibold text-slate-700 hover:text-blue-600 bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-xl transition"
+                className="flex items-center gap-1.5 text-xs font-semibold text-slate-700 hover:text-blue-600 bg-slate-50 border border-slate-200 px-3 py-1.5  transition"
               >
                 <MapPin className="w-3.5 h-3.5 text-red-500" /> View on Maps
               </a>
@@ -599,26 +599,26 @@ const PipeDetailCard: React.FC<{
             <div>
               <div className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5 flex items-center justify-between">
                 <span className="flex items-center gap-1">
-                  <Camera className="w-3.5 h-3.5 text-emerald-600" /> Installation Photo
+                  <Camera className="w-3.5 h-3.5 text-accent-600" /> Installation Photo
                 </span>
-                <span className="text-xs text-emerald-600 font-extrabold flex items-center gap-0.5 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-md">
+                <span className="text-xs text-accent-600 font-extrabold flex items-center gap-0.5 bg-accent-50 border border-accent-200 px-2 py-0.5 rounded-md">
                   <ZoomIn className="w-3 h-3" /> Click for HD Fullscreen
                 </span>
               </div>
               <button
                 type="button"
                 onClick={() => openLightbox(inst.Photo_URL!, `Installation Photo — ${inst.Pipe_ID}`)}
-                className="w-full group relative overflow-hidden rounded-2xl border border-slate-700 bg-slate-950 p-2 shadow-inner hover:border-emerald-500 transition-all cursor-pointer"
+                className="w-full group relative overflow-hidden  border border-slate-700 bg-slate-950 p-2  hover:border-accent-500 transition-all cursor-pointer"
               >
                 <div className="w-full flex items-center justify-center min-h-[160px] max-h-72 overflow-hidden">
                   <img
                     src={inst.Photo_URL}
                     alt="Field Installation"
-                    className="max-h-64 max-w-full w-auto object-contain rounded-xl group-hover:scale-[1.02] transition-transform duration-300 shadow-xl"
+                    className="max-h-64 max-w-full w-auto object-contain  group-hover:scale-[1.02] transition-transform duration-300 "
                   />
                 </div>
                 <div className="absolute inset-0 bg-slate-950/0 group-hover:bg-slate-950/40 transition-all flex items-center justify-center">
-                  <span className="opacity-0 group-hover:opacity-100 transition-all bg-emerald-600 text-white font-extrabold text-xs px-3.5 py-2 rounded-xl shadow-2xl flex items-center gap-1.5 transform translate-y-2 group-hover:translate-y-0">
+                  <span className="opacity-0 group-hover:opacity-100 transition-all bg-accent-600 text-white font-extrabold text-xs px-3.5 py-2   flex items-center gap-1.5 transform translate-y-2 group-hover:translate-y-0">
                     <ZoomIn className="w-4 h-4" /> Expand Uncropped Image
                   </span>
                 </div>
@@ -632,14 +632,14 @@ const PipeDetailCard: React.FC<{
               <ClipboardList className="w-3.5 h-3.5" /> Monitoring Visits ({visits.length})
             </div>
             {visits.length === 0 ? (
-              <div className="text-center py-6 border border-dashed border-slate-200 rounded-xl text-slate-500 text-xs">
+              <div className="text-center py-6 border border-dashed border-slate-200  text-slate-500 text-xs">
                 <AlertTriangle className="w-5 h-5 mx-auto mb-1 opacity-40" />
                 No monitoring visits recorded for this pipe yet.
               </div>
             ) : (
               <div className="space-y-2">
                 {visits.map((v, i) => (
-                  <div key={i} className="bg-slate-50 border border-slate-100 rounded-xl p-3 space-y-2">
+                  <div key={i} className="bg-slate-50 border border-slate-100  p-3 space-y-2">
                     <div className="flex gap-3 items-start">
                       <div className="w-7 h-7 rounded-full bg-blue-100 text-blue-700 text-xs font-extrabold flex items-center justify-center shrink-0">
                         {i + 1}
@@ -669,14 +669,14 @@ const PipeDetailCard: React.FC<{
                       <button
                         type="button"
                         onClick={() => openLightbox(v.Photo_URL!, `Visit Photo — ${formatDate(v.Visit_Date)} · ${inst.Pipe_ID}`)}
-                        className="w-full group relative overflow-hidden rounded-xl border border-slate-700 bg-slate-950 p-1.5 shadow-inner hover:border-blue-400 transition-all ml-10 mt-1 cursor-pointer"
+                        className="w-full group relative overflow-hidden  border border-slate-700 bg-slate-950 p-1.5  hover:border-blue-400 transition-all ml-10 mt-1 cursor-pointer"
                         style={{ maxWidth: 'calc(100% - 2.5rem)' }}
                       >
                         <div className="flex items-center justify-between text-xs text-slate-600 font-bold uppercase tracking-wider px-2 pt-1 pb-1">
                           <span className="flex items-center gap-1"><Camera className="w-3 h-3 text-blue-400" /> Visit Photo</span>
                           <span className="text-blue-400 font-extrabold flex items-center gap-0.5"><ZoomIn className="w-3 h-3" /> Uncropped HD</span>
                         </div>
-                        <div className="w-full flex items-center justify-center min-h-[120px] max-h-52 overflow-hidden bg-slate-900 rounded-lg p-1">
+                        <div className="w-full flex items-center justify-center min-h-[120px] max-h-52 overflow-hidden bg-slate-900  p-1">
                         <img
                             src={v.Photo_URL}
                             alt={`Field visit photo taken on ${formatDate(v.Visit_Date)} for pipe ${inst.Pipe_ID}`}
@@ -715,8 +715,8 @@ const FarmerFullProfile: React.FC<{
 
   if (farmerInsts.length === 0) {
     return (
-      <div className="bg-white border border-slate-200 rounded-3xl p-10 text-center space-y-4 shadow-sm animate-fadeIn">
-        <div className="w-16 h-16 bg-red-100 text-red-600 rounded-2xl flex items-center justify-center mx-auto text-2xl font-bold shadow-inner">
+      <div className="bg-white border border-slate-200  p-10 text-center space-y-4  animate-fadeIn">
+        <div className="w-16 h-16 bg-red-100 text-red-600  flex items-center justify-center mx-auto text-2xl font-bold ">
           🗑️
         </div>
         <div>
@@ -730,7 +730,7 @@ const FarmerFullProfile: React.FC<{
         <button
           type="button"
           onClick={onBack}
-          className="px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs rounded-xl shadow-lg shadow-emerald-900/30 transition cursor-pointer"
+          className="px-6 py-3 bg-accent-600 hover:bg-accent-700 text-white font-extrabold text-xs   shadow-accent-900/30 transition cursor-pointer"
         >
           ← Back to Farmers Search
         </button>
@@ -765,14 +765,14 @@ const FarmerFullProfile: React.FC<{
         <div className="flex gap-2 sm:ml-auto flex-wrap">
           <button
             onClick={() => downloadFarmerCSV(farmerName, farmerInsts, monitoringList)}
-            className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-3.5 py-2 rounded-xl shadow transition"
+            className="flex items-center gap-2 bg-accent-600 hover:bg-accent-700 text-white text-xs font-bold px-3.5 py-2  shadow transition"
           >
             <ArrowDownToLine className="w-3.5 h-3.5" />
             Download CSV Report
           </button>
           <button
             onClick={() => printFarmerFullReport(farmerName, farmerInsts, monitoringList, totalAcres, awdPct)}
-            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold px-3.5 py-2 rounded-xl shadow transition"
+            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold px-3.5 py-2  shadow transition"
           >
             <Printer className="w-3.5 h-3.5" />
             Print / Save PDF
@@ -781,21 +781,21 @@ const FarmerFullProfile: React.FC<{
       </div>
 
       {/* Profile Header Card */}
-      <div className="bg-gradient-to-br from-emerald-700 to-emerald-900 text-white rounded-2xl p-6 shadow-xl relative overflow-hidden">
+      <div className="bg-gradient-to-br from-accent-700 to-accent-900 text-white  p-6  relative overflow-hidden">
         <div className="absolute right-0 top-0 w-48 h-48 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/4" />
         <div className="absolute left-0 bottom-0 w-32 h-32 bg-white/5 rounded-full translate-y-1/2 -translate-x-1/4" />
         <div className="relative z-10 flex flex-col sm:flex-row sm:items-center gap-4">
-          <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center text-3xl shrink-0">
+          <div className="w-16 h-16 bg-white/20  flex items-center justify-center text-3xl shrink-0">
             🧑‍🌾
           </div>
           <div className="flex-1">
             <h2 className="text-2xl font-extrabold tracking-tight">{farmerName}</h2>
-            <div className="flex flex-wrap gap-2 sm:gap-3 mt-2 text-sm text-emerald-100 items-center">
+            <div className="flex flex-wrap gap-2 sm:gap-3 mt-2 text-sm text-accent-100 items-center">
               <span className="flex items-center gap-1"><Phone className="w-3.5 h-3.5" />{rep.Mobile}</span>
               <span className="flex items-center gap-1"><MapPin className="w-3.5 h-3.5" />{rep.Village}, {rep.Mandal}, {rep.District}</span>
               {rep.Farmer_ID && <span className="flex items-center gap-1">ID: {rep.Farmer_ID}</span>}
-              <span className="flex items-center gap-1 bg-emerald-800/80 px-2.5 py-0.5 rounded-lg text-xs font-bold text-white border border-emerald-400/40">
-                <UserCheck className="w-3.5 h-3.5 text-emerald-300" />
+              <span className="flex items-center gap-1 bg-accent-800/80 px-2.5 py-0.5  text-xs font-bold text-white border border-accent-400/40">
+                <UserCheck className="w-3.5 h-3.5 text-accent-300" />
                 Installed By: {rep.Installed_By || 'CF Officer'}
               </span>
             </div>
@@ -811,8 +811,8 @@ const FarmerFullProfile: React.FC<{
           { icon: ClipboardList, label: 'Field Visits', value: farmerVisits.length, sub: 'total monitoring', color: 'violet' },
           { icon: Droplet, label: 'AWD Compliance', value: awdPct !== null ? `${awdPct}%` : '—', sub: 'visits followed AWD', color: 'teal' },
         ].map(({ icon: Icon, label, value, sub, color }) => (
-          <div key={label} className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
-            <div className={`w-8 h-8 rounded-lg bg-${color}-100 flex items-center justify-center mb-2`}>
+          <div key={label} className="bg-white border border-slate-200  p-4 ">
+            <div className={`w-8 h-8  bg-${color}-100 flex items-center justify-center mb-2`}>
               <Icon className={`w-4 h-4 text-${color}-600`} />
             </div>
             <div className="text-xl font-extrabold text-slate-800">{value}</div>
@@ -825,7 +825,7 @@ const FarmerFullProfile: React.FC<{
       {/* All pipes section */}
       <div>
         <h3 className="text-sm font-extrabold text-slate-700 uppercase tracking-wider mb-3 flex items-center gap-2">
-          <Sprout className="w-4 h-4 text-emerald-600" />
+          <Sprout className="w-4 h-4 text-accent-600" />
           All Registered Plots & Pipes ({farmerInsts.length})
           <span className="text-xs font-normal text-slate-400 normal-case">Click any row to expand</span>
         </h3>
@@ -1012,9 +1012,9 @@ export const FarmerProfiles: React.FC<FarmerProfilesProps> = ({
       {/* Delete Confirmation Modal */}
       {deleteConfirmTarget && ReactDOM.createPortal(
         <div className="fixed inset-0 bg-slate-900/65 backdrop-blur-md z-[10000] flex items-center justify-center p-4" {...deleteDialog.dialogProps}>
-          <div className="bg-white rounded-3xl max-w-md w-full p-6 space-y-5 shadow-2xl border border-slate-200 animate-in fade-in zoom-in duration-150">
+          <div className="bg-white  max-w-md w-full p-6 space-y-5  border border-slate-200 animate-in fade-in zoom-in duration-150">
             <div className="flex items-center gap-3">
-              <div className="p-3 bg-red-100 text-red-600 rounded-2xl">
+              <div className="p-3 bg-red-100 text-red-600 ">
                 <AlertTriangle className="w-6 h-6" />
               </div>
               <div>
@@ -1027,15 +1027,15 @@ export const FarmerProfiles: React.FC<FarmerProfilesProps> = ({
               </div>
             </div>
 
-            <p className="text-xs font-semibold text-slate-700 leading-relaxed bg-slate-50 p-3.5 rounded-2xl border border-slate-200/80">
-              Are you sure you want to permanently delete the field registration for farmer <strong className="text-slate-900">{deleteConfirmTarget.farmerName}</strong> (Pipe ID: <strong className="font-mono text-emerald-600">{deleteConfirmTarget.pipeId}</strong>)? All related monitoring logs will also be removed.
+            <p className="text-xs font-semibold text-slate-700 leading-relaxed bg-slate-50 p-3.5  border border-slate-200/80">
+              Are you sure you want to permanently delete the field registration for farmer <strong className="text-slate-900">{deleteConfirmTarget.farmerName}</strong> (Pipe ID: <strong className="font-mono text-accent-600">{deleteConfirmTarget.pipeId}</strong>)? All related monitoring logs will also be removed.
             </p>
 
             <div className="flex items-center justify-end gap-3 pt-2">
               <button
                 type="button"
                 onClick={() => setDeleteConfirmTarget(null)}
-                className="px-5 py-2.5 rounded-xl text-xs font-extrabold text-slate-600 hover:bg-slate-100 transition cursor-pointer"
+                className="px-5 py-2.5  text-xs font-extrabold text-slate-600 hover:bg-slate-100 transition cursor-pointer"
               >
                 Cancel
               </button>
@@ -1055,7 +1055,7 @@ export const FarmerProfiles: React.FC<FarmerProfilesProps> = ({
                   }
                   setDeleteConfirmTarget(null);
                 }}
-                className="px-5 py-2.5 rounded-xl text-xs font-extrabold bg-red-600 hover:bg-red-700 text-white shadow-lg shadow-red-900/20 transition cursor-pointer flex items-center gap-1.5"
+                className="px-5 py-2.5  text-xs font-extrabold bg-red-600 hover:bg-red-700 text-white  shadow-red-900/20 transition cursor-pointer flex items-center gap-1.5"
               >
                 <Trash2 className="w-3.5 h-3.5" />
                 Yes, Delete Record
@@ -1078,213 +1078,88 @@ export const FarmerProfiles: React.FC<FarmerProfilesProps> = ({
         />
       ) : (
         <>
-          {/* ── HEADER BANNER ── */}
-          <div className="bg-gradient-to-r from-slate-900 via-emerald-950 to-slate-900 text-white rounded-3xl p-6 shadow-xl border border-emerald-500/20 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-2">
-            <div className="space-y-1">
-              <div className="flex items-center gap-2 flex-wrap">
-                <User className="w-5 h-5 sm:w-6 sm:h-6 text-emerald-400 shrink-0" />
-                <h1 className="text-lg sm:text-2xl font-black uppercase tracking-wide">Farmer Profiles</h1>
-                <span className="bg-emerald-500/20 text-emerald-300 text-xs font-bold px-2.5 py-1 rounded-lg border border-emerald-500/30">
-                  {currentUser.role} View
-                </span>
-              </div>
-              <p className="text-xs text-emerald-200">
-                {currentUser.role === 'Admin'
-                  ? `All territories — ${farmerList.length} farmers registered`
-                  : `Scope: ${currentUser.areaName || currentUser.district || currentUser.state || 'Your territory'} — ${farmerList.length} farmers registered`}
-              </p>
-            </div>
-            {/* Search bar inside banner on right */}
-            <div className="relative w-full md:w-80 shrink-0">
-              <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-              <input
-                type="text"
-                placeholder="Search farmer, mobile, village..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-10 py-2.5 bg-white/10 backdrop-blur border border-white/20 rounded-xl text-xs font-semibold text-white placeholder:text-white/50 focus:bg-white/20 focus:ring-2 focus:ring-emerald-400 outline-none transition"
-              />
-              {searchQuery && (
-                <button
-                  onClick={() => setSearchQuery('')}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-white/60 hover:text-white font-bold text-xs"
-                >
-                  ✕
-                </button>
-              )}
-            </div>
+          {/* ── HEADER ── */}
+          <div className="px-4 pt-4 pb-3" style={{ borderBottom: '2px solid var(--color-border-light)' }}>
+            <div className="awd-kicker">{currentUser.role} view</div>
+            <h1 className="font-extrabold" style={{ fontSize: 18 }}>Installations directory</h1>
+            <p className="text-xs mt-0.5" style={{ color: 'var(--color-text-muted)' }}>
+              {currentUser.role === 'Admin'
+                ? `All territories — ${farmerList.length} farmers registered`
+                : `${currentUser.areaName || currentUser.district || currentUser.state || 'Your territory'} — ${farmerList.length} farmers registered`}
+            </p>
           </div>
 
-          {/* ── FILTER CONTROL BAR (State, District, Mandal/Area, CF/JCF Officer) ── */}
-          <div className="bg-white rounded-2xl p-4 border border-slate-200 shadow-xs mb-4 space-y-3">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-2.5 flex-wrap gap-2">
-              <div className="flex items-center gap-2">
-                <Filter className="w-4 h-4 text-emerald-600" />
-                <h2 className="text-xs font-black text-slate-800 uppercase tracking-wider">
-                  Filter Farmers by Location & Field Officer
-                </h2>
+          {/* Search */}
+          <div className="relative px-4 py-3" style={{ borderBottom: '2px solid var(--color-border-light)' }}>
+            <Search className="w-4 h-4 absolute left-7 top-1/2 -translate-y-1/2" style={{ color: 'var(--color-text-muted)' }} />
+            <input
+              type="text"
+              placeholder="Search farmer, mobile, village…"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="awd-input"
+              style={{ paddingLeft: 32 }}
+            />
+            {searchQuery && (
+              <button onClick={() => setSearchQuery('')} className="absolute right-7 top-1/2 -translate-y-1/2 font-bold text-xs cursor-pointer" style={{ color: 'var(--color-text-muted)' }}>
+                ✕
+              </button>
+            )}
+          </div>
+
+          {/* Location / officer filters */}
+          <div className="px-4 py-3" style={{ borderBottom: '2px solid var(--color-border-light)' }}>
+            <div className="flex items-center justify-between pb-2">
+              <div className="flex items-center gap-1.5 awd-kicker" style={{ color: 'var(--color-text-secondary)' }}>
+                <Filter className="w-3.5 h-3.5" />Filter by location &amp; officer
               </div>
-
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-bold text-slate-500">
-                  Showing <strong className="text-emerald-700 font-extrabold">{filteredFarmers.length}</strong> of {farmerList.length} Farmers
-                </span>
-
+              <div className="flex items-center gap-2 text-xs font-bold" style={{ color: 'var(--color-text-muted)' }}>
+                {filteredFarmers.length} of {farmerList.length}
                 {hasActiveFilters && (
-                  <button
-                    type="button"
-                    onClick={resetFilters}
-                    className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-extrabold rounded-lg transition flex items-center gap-1 cursor-pointer"
-                  >
-                    <RotateCcw className="w-3 h-3 text-slate-500" />
-                    Reset Filters
+                  <button type="button" onClick={resetFilters} className="flex items-center gap-1 cursor-pointer" style={{ color: 'var(--color-accent-700)' }}>
+                    <RotateCcw className="w-3 h-3" />Reset
                   </button>
                 )}
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
-              {/* 1. State Filter */}
-              <div>
-                <label className="block text-xs font-extrabold text-slate-500 uppercase tracking-wider mb-1">
-                  State
-                </label>
-                <select
-                  value={filterState}
-                  onChange={(e) => {
-                    setFilterState(e.target.value);
-                    setFilterDistrict('All');
-                    setFilterMandal('All');
-                    setFilterOfficer('All');
-                  }}
-                  className="w-full border border-slate-300 bg-slate-50 rounded-xl p-2 text-xs font-bold text-slate-800 outline-none focus:ring-2 focus:ring-emerald-500"
-                >
-                  <option value="All">All States ({availableStates.length})</option>
-                  {availableStates.map((st) => (
-                    <option key={st} value={st}>
-                      {st}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* 2. District Filter */}
-              <div>
-                <label className="block text-xs font-extrabold text-slate-500 uppercase tracking-wider mb-1">
-                  District
-                </label>
-                <select
-                  value={filterDistrict}
-                  onChange={(e) => {
-                    setFilterDistrict(e.target.value);
-                    setFilterMandal('All');
-                    setFilterOfficer('All');
-                  }}
-                  className="w-full border border-slate-300 bg-slate-50 rounded-xl p-2 text-xs font-bold text-slate-800 outline-none focus:ring-2 focus:ring-emerald-500"
-                >
-                  <option value="All">All Districts ({availableDistricts.length})</option>
-                  {availableDistricts.map((d) => (
-                    <option key={d} value={d}>
-                      {d}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* 3. Mandal / Area Filter */}
-              <div>
-                <label className="block text-xs font-extrabold text-slate-500 uppercase tracking-wider mb-1">
-                  Mandal / Area
-                </label>
-                <select
-                  value={filterMandal}
-                  onChange={(e) => {
-                    setFilterMandal(e.target.value);
-                    setFilterOfficer('All');
-                  }}
-                  className="w-full border border-slate-300 bg-slate-50 rounded-xl p-2 text-xs font-bold text-slate-800 outline-none focus:ring-2 focus:ring-emerald-500"
-                >
-                  <option value="All">All Mandals ({availableMandals.length})</option>
-                  {availableMandals.map((m) => (
-                    <option key={m} value={m}>
-                      {m}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* 4. CF / JCF / Registered By Filter */}
-              <div>
-                <label className="block text-xs font-extrabold text-slate-500 uppercase tracking-wider mb-1">
-                  CF / JCF Field Officer
-                </label>
-                <select
-                  value={filterOfficer}
-                  onChange={(e) => setFilterOfficer(e.target.value)}
-                  className="w-full border border-slate-300 bg-slate-50 rounded-xl p-2 text-xs font-bold text-slate-800 outline-none focus:ring-2 focus:ring-emerald-500"
-                >
-                  <option value="All">All Officers ({availableOfficers.length})</option>
-                  {availableOfficers.map((off) => (
-                    <option key={off} value={off}>
-                      {off}
-                    </option>
-                  ))}
-                </select>
-              </div>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+              <select value={filterState} onChange={(e) => { setFilterState(e.target.value); setFilterDistrict('All'); setFilterMandal('All'); setFilterOfficer('All'); }} className="awd-input">
+                <option value="All">All States ({availableStates.length})</option>
+                {availableStates.map((st) => <option key={st} value={st}>{st}</option>)}
+              </select>
+              <select value={filterDistrict} onChange={(e) => { setFilterDistrict(e.target.value); setFilterMandal('All'); setFilterOfficer('All'); }} className="awd-input">
+                <option value="All">All Districts ({availableDistricts.length})</option>
+                {availableDistricts.map((d) => <option key={d} value={d}>{d}</option>)}
+              </select>
+              <select value={filterMandal} onChange={(e) => { setFilterMandal(e.target.value); setFilterOfficer('All'); }} className="awd-input">
+                <option value="All">All Mandals ({availableMandals.length})</option>
+                {availableMandals.map((m) => <option key={m} value={m}>{m}</option>)}
+              </select>
+              <select value={filterOfficer} onChange={(e) => setFilterOfficer(e.target.value)} className="awd-input">
+                <option value="All">All Officers ({availableOfficers.length})</option>
+                {availableOfficers.map((off) => <option key={off} value={off}>{off}</option>)}
+              </select>
             </div>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+
+          {/* Farmer list — flush tap rows */}
+          <div className="awd-card" style={{ borderLeft: 0, borderRight: 0, borderTop: 0 }}>
+            {filteredFarmers.length === 0 && (
+              <div className="px-4 py-8 text-center text-xs" style={{ color: 'var(--color-text-muted)' }}>No farmers match the current filters.</div>
+            )}
             {filteredFarmers.map((f) => (
-              <div
-                key={f.name}
-                onClick={() => setSelectedFarmer(f.name)}
-                className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm hover:shadow-md hover:border-emerald-300 transition-all cursor-pointer flex flex-col justify-between group"
-              >
-                <div>
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-800 font-extrabold flex items-center justify-center text-lg shrink-0 group-hover:scale-105 transition-transform">
-                        🧑‍🌾
-                      </div>
-                      <div>
-                        <h3 className="font-extrabold text-slate-900 text-sm group-hover:text-emerald-700 transition">
-                          {f.name}
-                        </h3>
-                        <div className="text-xs font-semibold text-slate-600 flex items-center gap-1 mt-0.5">
-                          <Phone className="w-3 h-3 text-slate-400" />
-                          {f.rep.Mobile}
-                        </div>
-                      </div>
-                    </div>
-                    <span className="text-xs font-extrabold px-2.5 py-1 rounded-lg bg-slate-100 text-slate-700 border border-slate-200">
-                      {f.insts.length} Pipe{f.insts.length > 1 ? 's' : ''}
-                    </span>
-                  </div>
-
-                  <div className="mt-4 pt-3 border-t border-slate-100 space-y-1.5 text-xs text-slate-600">
-                    <div className="flex items-center justify-between">
-                      <span className="text-slate-400 font-medium">Location:</span>
-                      <span className="font-bold text-slate-800">{f.rep.Village}, {f.rep.Mandal}</span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-slate-400 font-medium">Installed By (CF):</span>
-                      <span className="font-extrabold text-blue-800 bg-blue-50 px-2 py-0.5 rounded-md border border-blue-200 text-xs">
-                        {f.rep.Installed_By || 'CF Officer'}
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-slate-400 font-medium">Total Plot Area:</span>
-                      <span className="font-extrabold text-emerald-700">{f.totalAcres.toFixed(2)} Acres</span>
-                    </div>
+              <div key={f.name} onClick={() => setSelectedFarmer(f.name)} className="awd-row">
+                <div className="flex-none w-11 h-11 grid place-items-center" style={{ background: 'var(--color-accent-100)', color: 'var(--color-accent-700)' }}>
+                  <User className="w-[18px] h-[18px]" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="font-extrabold text-sm truncate">{f.name}</div>
+                  <div className="text-xs truncate" style={{ color: 'var(--color-text-secondary)' }}>
+                    {f.rep.Village}, {f.rep.Mandal} · {f.totalAcres.toFixed(2)} ac · {f.rep.Mobile}
                   </div>
                 </div>
-
-                <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500 font-medium">
-                  <span>Installed {formatDate(f.latestDate)}</span>
-                  <span className="text-emerald-600 font-bold group-hover:translate-x-1 transition-transform flex items-center gap-1">
-                    View Profile →
-                  </span>
-                </div>
+                <span className="awd-tag awd-tag-neutral flex-none">{f.insts.length} pipe{f.insts.length > 1 ? 's' : ''}</span>
               </div>
             ))}
           </div>
