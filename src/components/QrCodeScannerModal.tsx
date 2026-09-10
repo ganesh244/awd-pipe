@@ -257,10 +257,10 @@ export const QrCodeScannerModal: React.FC<QrCodeScannerModalProps> = ({
   const registeredPipes = pipes.filter((p) => p.Status === 'Installed').slice(0, 3);
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-950/85 backdrop-blur-md animate-fadeIn" {...dialogProps}>
+    <div className="fixed inset-0 z-50 overflow-y-auto" style={{ background: 'rgba(0,0,0,0.7)' }} {...dialogProps}>
       <div className="flex min-h-full items-start justify-center p-4 pt-4 sm:items-center sm:pt-4">
-      <div className="bg-slate-900 border-2 border-emerald-600 text-white rounded-3xl max-w-lg w-full shadow-2xl space-y-0 relative">
-        
+      <div className="max-w-lg w-full relative" style={{ background: 'var(--color-shell)', border: '1px solid rgba(255,255,255,0.15)' }}>
+
         {/* Hidden canvas for video QR frame processing */}
         <canvas ref={canvasRef} className="hidden" />
 
@@ -274,25 +274,10 @@ export const QrCodeScannerModal: React.FC<QrCodeScannerModalProps> = ({
         />
 
         {/* MODAL HEADER */}
-        <div className="bg-[emerald-700] p-4 flex items-center justify-between border-b border-emerald-900/60">
-          <div className="flex items-center gap-2.5">
-            <span className="w-9 h-9 rounded-xl bg-emerald-600 text-slate-950 flex items-center justify-center font-extrabold shadow-md animate-pulse">
-              <QrCode className="w-5 h-5" />
-            </span>
-            <div>
-              <h2 className="text-base font-extrabold uppercase tracking-wide text-white flex items-center gap-2">
-                Scan AWD Pipe QR Code
-                {isCameraActive && (
-                  <span className="flex h-2 w-2 relative">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-                  </span>
-                )}
-              </h2>
-              <p className="text-xs text-emerald-200 font-medium">
-                Live Camera Scanner • Point at physical AWD Pipe Tag
-              </p>
-            </div>
+        <div className="p-4 flex items-center justify-between text-white" style={{ borderBottom: '2px solid rgba(255,255,255,0.12)' }}>
+          <div>
+            <div className="awd-kicker" style={{ color: 'var(--color-accent-400)' }}>Scan a pipe QR</div>
+            <h2 className="font-black" style={{ fontSize: 16 }}>Point at the physical AWD pipe tag</h2>
           </div>
 
           <div className="flex items-center gap-1.5">
@@ -300,28 +285,22 @@ export const QrCodeScannerModal: React.FC<QrCodeScannerModalProps> = ({
               <button
                 type="button"
                 onClick={toggleCamera}
-                title="Switch Front/Rear Camera"
-                className="bg-emerald-800/80 hover:bg-emerald-700 text-emerald-200 p-2 rounded-xl text-xs font-bold transition flex items-center gap-1 border border-emerald-600/40 active:scale-[0.97] transition-transform"
+                title="Switch front/rear camera"
+                className="p-2 text-xs font-bold cursor-pointer flex items-center gap-1"
+                style={{ border: '1px solid rgba(255,255,255,0.2)', color: 'rgba(255,255,255,0.8)' }}
               >
                 <RefreshCw className="w-4 h-4" />
                 <span className="hidden sm:inline">Flip</span>
               </button>
             )}
-            <button
-              onClick={onClose}
-              className="text-slate-300 hover:text-white p-2 rounded-xl hover:bg-white/10 transition active:opacity-70"
-            >
+            <button onClick={onClose} className="p-2 cursor-pointer" style={{ color: 'rgba(255,255,255,0.7)' }}>
               <X className="w-5 h-5" />
             </button>
           </div>
         </div>
 
         {/* CAMERA VIEWPORT */}
-        <div className="relative bg-black h-72 sm:h-80 flex flex-col items-center justify-center overflow-hidden">
-          {/* Animated Background Grid */}
-          <div className="absolute inset-0 bg-[radial-gradient(#10b981_1px,transparent_1px)] [background-size:16px_16px] opacity-20 pointer-events-none" />
-
-          {/* LIVE VIDEO FEED - Rendered unconditionally so videoRef is never null when attaching stream */}
+        <div className="relative h-72 sm:h-80 flex flex-col items-center justify-center overflow-hidden" style={{ background: '#000' }}>
           <video
             ref={videoRef}
             autoPlay
@@ -332,85 +311,62 @@ export const QrCodeScannerModal: React.FC<QrCodeScannerModalProps> = ({
             }`}
           />
 
-          {/* Laser Scanner Line Animation */}
-          {isCameraActive && !scanSuccess && (
-            <div className="absolute top-0 inset-x-0 h-1.5 bg-gradient-to-r from-transparent via-emerald-400 to-transparent shadow-[0_0_20px_#10b981] animate-[bounce_2s_infinite] z-10 pointer-events-none" />
-          )}
-
-          {/* Reticle Framing Box */}
-          <div className={`relative z-10 w-56 h-56 border-2 rounded-3xl flex items-center justify-center transition-all duration-300 shadow-2xl backdrop-blur-[2px] ${
-            scanSuccess ? 'border-emerald-400 bg-emerald-500/30 scale-105' : 'border-emerald-600/90 border-dashed bg-black/10'
-          }`}>
-            {/* Corner Bracket Accents */}
-            <div className="absolute -top-2.5 -left-2.5 w-6 h-6 border-t-4 border-l-4 border-emerald-600 rounded-tl-lg" />
-            <div className="absolute -top-2.5 -right-2.5 w-6 h-6 border-t-4 border-r-4 border-emerald-600 rounded-tr-lg" />
-            <div className="absolute -bottom-2.5 -left-2.5 w-6 h-6 border-b-4 border-l-4 border-emerald-600 rounded-bl-lg" />
-            <div className="absolute -bottom-2.5 -right-2.5 w-6 h-6 border-b-4 border-r-4 border-emerald-600 rounded-br-lg" />
+          {/* Flush corner-bracket reticle — matches the design prototype's viewfinder */}
+          <div className="relative z-10 w-56 h-56 flex items-center justify-center">
+            {(['top-2.5 left-2.5 border-t-2 border-l-2', 'top-2.5 right-2.5 border-t-2 border-r-2', 'bottom-2.5 left-2.5 border-b-2 border-l-2', 'bottom-2.5 right-2.5 border-b-2 border-r-2'] as const).map((pos, i) => (
+              <div
+                key={i}
+                className={`absolute w-6 h-6 ${pos}`}
+                style={{ borderColor: scanSuccess ? 'var(--color-accent-400)' : 'var(--color-accent-500)', borderStyle: 'solid' }}
+              />
+            ))}
 
             {scanSuccess && scannedPipe ? (
-              <div className="text-center space-y-2 animate-scaleIn bg-slate-950/90 p-4 rounded-2xl border border-emerald-400/80 shadow-2xl">
-                <CheckCircle2 className="w-14 h-14 text-emerald-400 mx-auto animate-bounce" />
-                <span className="text-xs font-black text-white uppercase tracking-widest block">QR Verified!</span>
-                <span className="text-xl font-mono font-black text-emerald-600 bg-emerald-950 px-3 py-1 rounded-xl border border-emerald-800 block">
-                  {scannedPipe.Pipe_ID}
-                </span>
+              <div className="text-center p-4" style={{ background: 'var(--color-shell)', border: '1px solid var(--color-accent-500)' }}>
+                <CheckCircle2 className="w-10 h-10 mx-auto" style={{ color: 'var(--color-accent-400)' }} />
+                <div className="text-xs font-black text-white uppercase tracking-widest mt-2">QR verified</div>
+                <div className="awd-mono font-black mt-1" style={{ color: 'var(--color-accent-400)', fontSize: 18 }}>{scannedPipe.Pipe_ID}</div>
               </div>
             ) : isCameraActive ? (
-              <div className="text-center space-y-2 p-2 bg-black/40 rounded-xl backdrop-blur-sm pointer-events-none">
-                <Camera className="w-8 h-8 text-emerald-600 mx-auto animate-pulse" />
-                <span className="text-xs font-bold text-emerald-200 block uppercase tracking-wider">
-                  Align QR inside frame
-                </span>
-                <span className="text-[9px] text-slate-300 block">
-                  Searching for QR pattern...
-                </span>
+              <div className="text-center pointer-events-none">
+                <Camera className="w-7 h-7 mx-auto" style={{ color: 'var(--color-accent-400)' }} />
+                <div className="text-xs font-bold text-white uppercase tracking-wider mt-2">Align QR inside frame</div>
               </div>
             ) : (
-              <div className="text-center space-y-3 p-4">
-                <Camera className="w-10 h-10 text-slate-500 mx-auto" />
-                <span className="text-xs font-bold text-slate-300 block">
-                  Camera inactive or unavailable
-                </span>
+              <div className="text-center">
+                <Camera className="w-8 h-8 mx-auto" style={{ color: 'rgba(255,255,255,0.4)' }} />
+                <div className="text-xs font-bold mt-2" style={{ color: 'rgba(255,255,255,0.6)' }}>Camera inactive or unavailable</div>
                 <button
                   type="button"
                   onClick={() => startCamera(facingMode)}
-                  className="bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-extrabold text-xs px-4 py-2 rounded-xl transition uppercase shadow-md active:scale-[0.97] transition-transform"
+                  className="awd-btn-primary justify-center mt-3 mx-auto"
+                  style={{ fontSize: 12 }}
                 >
-                  Retry Camera
+                  Retry camera
                 </button>
               </div>
             )}
           </div>
 
-          {/* Camera Error Message Overlay */}
           {cameraError && !scanSuccess && (
-            <div className="absolute inset-x-4 bottom-3 bg-amber-950/95 text-amber-200 text-xs p-3 rounded-2xl border border-amber-500/60 flex flex-col sm:flex-row items-center justify-between gap-2 z-20 shadow-xl animate-fadeIn">
+            <div className="absolute inset-x-4 bottom-3 text-xs p-3 flex flex-col sm:flex-row items-center justify-between gap-2 z-20" style={{ background: '#78350F', color: '#FDE68A', border: '1px solid #B45309' }}>
               <div className="flex items-center gap-2 text-left">
-                <AlertCircle className="w-5 h-5 text-amber-400 shrink-0" />
+                <AlertCircle className="w-5 h-5 shrink-0" />
                 <span>{cameraError}</span>
               </div>
-              <button
-                type="button"
-                onClick={() => fileInputRef.current?.click()}
-                className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold text-xs px-3.5 py-1.5 rounded-xl shrink-0 transition uppercase tracking-wider flex items-center gap-1 shadow-md active:scale-[0.97] transition-transform"
-              >
-                <Upload className="w-3.5 h-3.5" /> Upload Photo
+              <button type="button" onClick={() => fileInputRef.current?.click()} className="shrink-0 font-bold text-xs px-3 py-1.5 flex items-center gap-1 cursor-pointer" style={{ background: 'var(--color-warning)', color: '#fff' }}>
+                <Upload className="w-3.5 h-3.5" /> Upload photo
               </button>
             </div>
           )}
 
-          {/* Scanner Toast Error Overlay */}
           {scannerError && (
-            <div className="absolute top-3 inset-x-4 bg-red-950/95 text-red-200 text-xs p-3 rounded-2xl border border-red-500/80 flex items-center justify-between gap-2 z-30 shadow-2xl animate-fadeIn">
+            <div className="absolute top-3 inset-x-4 text-xs p-3 flex items-center justify-between gap-2 z-30" style={{ background: '#7F1D1D', color: '#FECACA', border: '1px solid var(--color-danger)' }}>
               <div className="flex items-center gap-2">
-                <AlertCircle className="w-5 h-5 text-red-400 shrink-0" />
+                <AlertCircle className="w-5 h-5 shrink-0" />
                 <span>{scannerError}</span>
               </div>
-              <button
-                type="button"
-                onClick={() => setScannerError(null)}
-                className="text-red-300 hover:text-white font-bold text-xs px-2 py-0.5 rounded bg-red-900/50 transition active:scale-[0.97] transition-transform"
-              >
+              <button type="button" onClick={() => setScannerError(null)} className="font-bold text-xs px-2 py-0.5 cursor-pointer" style={{ background: 'rgba(0,0,0,0.3)' }}>
                 Dismiss
               </button>
             </div>
@@ -418,44 +374,36 @@ export const QrCodeScannerModal: React.FC<QrCodeScannerModalProps> = ({
         </div>
 
         {/* MODAL CONTROLS & FALLBACKS */}
-        <div className="p-4 bg-slate-900 space-y-4">
-          
-          {/* Quick Photo Upload & Manual Entry Form */}
-          <div className="flex flex-col gap-3">
-            <button
-              type="button"
-              onClick={() => fileInputRef.current?.click()}
-              className="w-full bg-slate-800 hover:bg-slate-700 text-emerald-300 font-bold text-sm py-3 px-4 rounded-xl border border-emerald-500/30 transition flex items-center justify-center gap-2 shadow-sm min-h-[44px] active:scale-[0.97] transition-transform"
-            >
-              <Upload className="w-5 h-5 text-emerald-500" />
-              <span>Upload QR Photo / Screenshot</span>
-            </button>
+        <div className="p-4">
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            className="awd-btn-secondary justify-center w-full"
+            style={{ color: 'var(--color-accent-400)', borderColor: 'rgba(255,255,255,0.2)' }}
+          >
+            <Upload className="w-4 h-4" />
+            <span>Upload QR photo / screenshot</span>
+          </button>
 
-            <div className="relative flex items-center gap-3 py-1">
-              <div className="flex-1 h-px bg-slate-800"></div>
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">OR ENTER ID</span>
-              <div className="flex-1 h-px bg-slate-800"></div>
-            </div>
-
-            <form onSubmit={handleManualSubmit} className="flex gap-2 w-full">
-              <div className="relative flex-1">
-                <input
-                  type="text"
-                  value={manualCode}
-                  onChange={(e) => setManualCode(e.target.value.toUpperCase())}
-                  placeholder="e.g. AWD-0004"
-                  className="w-full bg-slate-800 text-white font-mono text-sm rounded-xl px-4 py-3 border border-slate-700 outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 uppercase min-h-[44px] transition-shadow"
-                />
-              </div>
-              <button
-                type="submit"
-                className="bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-extrabold text-sm px-6 py-3 rounded-xl transition shadow-md min-h-[44px] shrink-0 active:scale-[0.97] transition-transform flex items-center justify-center"
-              >
-                Verify
-              </button>
-            </form>
+          <div className="flex items-center gap-3 py-3">
+            <div className="flex-1 h-px" style={{ background: 'rgba(255,255,255,0.15)' }} />
+            <span className="text-[10px] font-bold uppercase tracking-widest" style={{ color: 'rgba(255,255,255,0.4)' }}>Or enter ID</span>
+            <div className="flex-1 h-px" style={{ background: 'rgba(255,255,255,0.15)' }} />
           </div>
 
+          <form onSubmit={handleManualSubmit} className="flex gap-2 w-full">
+            <input
+              type="text"
+              value={manualCode}
+              onChange={(e) => setManualCode(e.target.value.toUpperCase())}
+              placeholder="e.g. AWD-0004"
+              className="awd-mono flex-1 uppercase outline-none px-3 py-2.5 text-sm"
+              style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.2)', color: '#fff' }}
+            />
+            <button type="submit" className="awd-btn-primary shrink-0">
+              Verify
+            </button>
+          </form>
         </div>
 
       </div>

@@ -141,210 +141,160 @@ export const Navbar: React.FC<NavbarProps> = ({
 
   return (
     <>
-      {/* ── TOP HEADER ── */}
+      {/* ── TOP HEADER — flat, matches the design prototype's chrome ── */}
       <header
-        className={`sticky top-0 z-40 transition-all duration-300 bg-[color:var(--color-shell)]/90 backdrop-blur-xl border-b ${
-          scrolled
-            ? 'shadow-2xl shadow-black/70 border-emerald-500/20'
-            : 'border-white/[0.08]'
-        }`}
-        style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}
+        className="sticky top-0 z-40"
+        style={{
+          background: 'var(--color-shell)',
+          borderBottom: `2px solid ${scrolled ? 'var(--color-accent-500)' : 'rgba(255,255,255,0.12)'}`,
+          transition: 'border-color 0.2s',
+          paddingTop: 'env(safe-area-inset-top, 0px)',
+        }}
       >
-        {/* Ambient Top Glow Accent Line */}
-        <div className="absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-emerald-400/50 to-transparent" />
-
         <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-[60px] sm:h-[64px] gap-3">
+          <div className="flex items-center justify-between h-[56px] sm:h-[60px] gap-3">
 
-            {/* ── Brand Logo ── */}
+            {/* ── Brand ── */}
             <button
               onClick={() => handleTab('home')}
-              className="flex items-center gap-2.5 sm:gap-3 group shrink-0 cursor-pointer text-left focus:outline-none"
+              className="flex items-center gap-2.5 shrink-0 cursor-pointer text-left focus:outline-none"
             >
-              <div className="relative shrink-0">
-                <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-tr from-emerald-600 via-teal-500 to-lime-400 p-[1.5px] shadow-lg shadow-emerald-950/60 group-hover:shadow-emerald-500/30 transition-all duration-300 group-hover:scale-105">
-                  <div className="w-full h-full bg-[color:var(--color-shell-alt)] rounded-[10.5px] flex items-center justify-center">
-                    <Sprout className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-400 group-hover:text-emerald-300 transition-colors" />
-                  </div>
-                </div>
-                <span className="absolute -top-0.5 -right-0.5 w-2 h-2 sm:w-2.5 sm:h-2.5 bg-emerald-400 rounded-full border-2 border-[color:var(--color-shell)] animate-pulse shadow-sm shadow-emerald-400" />
+              <div className="w-8 h-8 flex items-center justify-center shrink-0" style={{ background: 'var(--color-accent-500)' }}>
+                <Sprout className="w-4 h-4 text-white" />
               </div>
               <div className="leading-tight shrink-0">
-                <div className="font-black text-xs sm:text-base tracking-tight text-white flex items-center gap-1 sm:gap-1.5">
-                  <span>AWD Pipe</span>
-                  <span className="bg-gradient-to-r from-emerald-400 via-teal-300 to-emerald-200 bg-clip-text text-transparent font-extrabold">
-                    Registry
-                  </span>
+                <div className="font-black text-xs sm:text-sm tracking-tight text-white">
+                  AWD Pipe <span style={{ color: 'var(--color-accent-400)' }}>Registry</span>
                 </div>
-                <div className="hidden sm:block text-[9px] sm:text-[10px] text-emerald-400/80 font-black uppercase tracking-widest">
+                <div className="hidden sm:block text-[9px] uppercase tracking-widest text-white/50 font-bold">
                   Dr. Reddy's Foundation
                 </div>
               </div>
             </button>
 
-            {/* ── Structured Desktop Navigation (No Sliding / Fixed Width) ── */}
+            {/* ── Desktop Navigation — flat bordered buttons, filled when active ── */}
             <nav className="hidden lg:flex items-center gap-1.5 flex-1 justify-center max-w-2xl px-2">
-              <div className="flex items-center gap-1 bg-slate-950/80 border border-white/10 rounded-2xl p-1 shadow-inner shadow-black/50">
-                
-                {/* Primary Core Operations Tabs */}
-                {primaryTabs.map((item) => {
-                  const Icon = item.icon;
-                  const isActive = activeTab === item.id;
-                  const theme = TAB_THEMES[item.color ?? 'emerald'];
+              {primaryTabs.map((item) => {
+                const Icon = item.icon;
+                const isActive = activeTab === item.id;
 
-                  return (
-                    <button
-                      key={item.id}
-                      onClick={() => handleTab(item.id)}
-                      className={`relative flex items-center gap-2 px-3.5 py-1.5 xl:py-2 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer whitespace-nowrap ${
-                        isActive
-                          ? `${theme.text} ${theme.bg} border ${theme.border} shadow-md shadow-black/30`
-                          : 'text-slate-400 hover:text-white hover:bg-white/[0.06] border border-transparent'
-                      }`}
-                    >
-                      <Icon className={`w-4 h-4 shrink-0 transition-transform duration-200 ${
-                        isActive ? `${theme.text} scale-110` : 'text-slate-400 opacity-80'
-                      }`} />
-                      <span className="min-w-0 truncate">{item.label}</span>
-                      {item.badge && (
-                        <span className={`text-[9px] font-mono font-extrabold px-1.5 py-0.5 rounded-full ${
-                          isActive
-                            ? 'bg-emerald-400 text-slate-950 shadow-xs'
-                            : 'bg-emerald-950/80 text-emerald-400 border border-emerald-800/60'
-                        }`}>
-                          {item.badge}
-                        </span>
-                      )}
-                    </button>
-                  );
-                })}
-
-                {/* Secondary Management Popover Dropdown (No sliding!) */}
-                {secondaryItems.length > 0 && (
-                  <div className="relative" ref={dropdownRef}>
-                    <button
-                      onClick={() => setManagementDropdownOpen((v) => !v)}
-                      className={`flex items-center gap-1.5 px-3 py-1.5 xl:py-2 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer border ${
-                        isSecondaryActive || managementDropdownOpen
-                          ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-300 shadow-md shadow-black/30'
-                          : 'text-slate-300 hover:text-white hover:bg-white/[0.06] border-transparent'
-                      }`}
-                    >
-                      <Layers className="w-3.5 h-3.5 text-emerald-400" />
-                      <span>Management</span>
-                      <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${managementDropdownOpen ? 'rotate-180 text-emerald-400' : 'opacity-60'}`} />
-                    </button>
-
-                    {/* Popover Card */}
-                    {managementDropdownOpen && (
-                      <div className="absolute top-full right-0 mt-2 w-64 bg-[color:var(--color-shell-alt)] border border-emerald-500/30 rounded-2xl p-2 shadow-2xl shadow-black/90 backdrop-blur-2xl animate-fadeIn z-50">
-                        <div className="text-[10px] font-black uppercase tracking-widest text-emerald-400/80 px-3 py-1.5 border-b border-white/5 flex items-center justify-between">
-                          <span>Workspace Modules</span>
-                          <Sparkles className="w-3 h-3 text-emerald-400" />
-                        </div>
-
-                        <div className="space-y-1 mt-1">
-                          {secondaryItems.map((item) => {
-                            const Icon = item.icon;
-                            const isActive = activeTab === item.id;
-                            const theme = TAB_THEMES[item.color ?? 'emerald'];
-
-                            return (
-                              <button
-                                key={item.id}
-                                onClick={() => handleTab(item.id)}
-                                className={`w-full flex items-start gap-3 p-2.5 rounded-xl transition-all cursor-pointer text-left ${
-                                  isActive
-                                    ? `${theme.bg} ${theme.text} border ${theme.border}`
-                                    : 'hover:bg-white/[0.06] text-slate-300 hover:text-white border border-transparent'
-                                }`}
-                              >
-                                <div className={`p-2 rounded-lg ${isActive ? 'bg-black/30' : 'bg-slate-900/80 border border-white/5'}`}>
-                                  <Icon className={`w-4 h-4 ${isActive ? theme.text : 'text-slate-400'}`} />
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                  <div className="text-xs font-bold flex items-center justify-between">
-                                    <span>{item.label}</span>
-                                    {isActive && <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />}
-                                  </div>
-                                  {item.description && (
-                                    <div className="text-[10px] text-slate-400 truncate mt-0.5 font-medium">
-                                      {item.description}
-                                    </div>
-                                  )}
-                                </div>
-                              </button>
-                            );
-                          })}
-                        </div>
-                      </div>
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => handleTab(item.id)}
+                    className="flex items-center gap-2 px-3 py-1.5 text-xs font-bold cursor-pointer whitespace-nowrap"
+                    style={{
+                      background: isActive ? 'var(--color-accent-500)' : 'transparent',
+                      color: isActive ? '#fff' : 'rgba(255,255,255,0.65)',
+                      border: `1px solid ${isActive ? 'var(--color-accent-500)' : 'rgba(255,255,255,0.18)'}`,
+                    }}
+                  >
+                    <Icon className="w-4 h-4 shrink-0" />
+                    <span className="min-w-0 truncate">{item.label}</span>
+                    {item.badge && (
+                      <span className="awd-mono text-[9px] font-extrabold px-1.5" style={{ background: isActive ? 'rgba(0,0,0,0.2)' : 'var(--color-accent-500)', color: '#fff' }}>
+                        {item.badge}
+                      </span>
                     )}
-                  </div>
-                )}
+                  </button>
+                );
+              })}
 
-              </div>
+              {/* Secondary "Management" dropdown */}
+              {secondaryItems.length > 0 && (
+                <div className="relative" ref={dropdownRef}>
+                  <button
+                    onClick={() => setManagementDropdownOpen((v) => !v)}
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold cursor-pointer"
+                    style={{
+                      background: isSecondaryActive || managementDropdownOpen ? 'var(--color-accent-500)' : 'transparent',
+                      color: isSecondaryActive || managementDropdownOpen ? '#fff' : 'rgba(255,255,255,0.65)',
+                      border: `1px solid ${isSecondaryActive || managementDropdownOpen ? 'var(--color-accent-500)' : 'rgba(255,255,255,0.18)'}`,
+                    }}
+                  >
+                    <Layers className="w-3.5 h-3.5" />
+                    <span>Management</span>
+                    <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${managementDropdownOpen ? 'rotate-180' : ''}`} />
+                  </button>
+
+                  {managementDropdownOpen && (
+                    <div className="absolute top-full right-0 mt-1 w-64 z-50" style={{ background: 'var(--color-shell-alt)', border: '1px solid rgba(255,255,255,0.15)' }}>
+                      <div className="text-[10px] font-black uppercase tracking-widest text-white/50 px-3 py-2" style={{ borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+                        Workspace modules
+                      </div>
+                      <div>
+                        {secondaryItems.map((item) => {
+                          const Icon = item.icon;
+                          const isActive = activeTab === item.id;
+
+                          return (
+                            <button
+                              key={item.id}
+                              onClick={() => handleTab(item.id)}
+                              className="w-full flex items-start gap-3 p-2.5 cursor-pointer text-left"
+                              style={{ background: isActive ? 'rgba(255,255,255,0.06)' : 'transparent' }}
+                            >
+                              <Icon className="w-4 h-4 mt-0.5" style={{ color: isActive ? 'var(--color-accent-400)' : 'rgba(255,255,255,0.5)' }} />
+                              <div className="flex-1 min-w-0">
+                                <div className="text-xs font-bold text-white">{item.label}</div>
+                                {item.description && (
+                                  <div className="text-[10px] text-white/45 truncate mt-0.5">{item.description}</div>
+                                )}
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
             </nav>
 
-            {/* ── Right Controls & Badges ── */}
+            {/* ── Right controls ── */}
             <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
 
-              {/* Manual Refresh Button */}
               <button
                 onClick={onRefresh}
                 disabled={isRefreshing}
                 aria-label="Refresh data"
                 title="Refresh data from server"
-                className="flex items-center justify-center w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-white/[0.04] border border-white/10 hover:bg-emerald-950/50 hover:border-emerald-500/30 text-slate-400 hover:text-emerald-400 transition-all duration-200 cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 shrink-0"
+                className="flex items-center justify-center w-8 h-8 cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 shrink-0"
+                style={{ border: '1px solid rgba(255,255,255,0.18)', color: 'rgba(255,255,255,0.7)' }}
               >
-                <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? 'animate-spin text-emerald-400' : ''}`} />
+                <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? 'animate-spin' : ''}`} style={isRefreshing ? { color: 'var(--color-accent-400)' } : undefined} />
               </button>
 
-              {/* Online/Offline Status Indicator */}
               <button
                 onClick={onOpenSyncModal}
                 aria-label="View Offline Sync Queue"
-                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-bold border transition-all duration-200 cursor-pointer ${
-                  offlineQueueCount > 0
-                    ? 'bg-amber-950/60 text-amber-300 border-amber-500/40 shadow-sm shadow-amber-950/50 animate-pulse'
-                    : isOnline
-                    ? 'bg-emerald-950/50 text-emerald-400 border-emerald-500/30 hover:bg-emerald-900/40'
-                    : 'bg-rose-950/50 text-rose-300 border-rose-500/30 hover:bg-rose-900/40'
-                }`}
+                className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-bold cursor-pointer"
+                style={{
+                  border: `1px solid ${offlineQueueCount > 0 ? '#B45309' : isOnline ? 'var(--color-accent-500)' : 'var(--color-danger)'}`,
+                  color: offlineQueueCount > 0 ? '#FCD34D' : isOnline ? 'var(--color-accent-400)' : '#FCA5A5',
+                }}
                 title="View Sync Status & Offline Queue"
               >
-                <div className="relative flex items-center justify-center shrink-0">
-                  {isOnline ? (
-                    <Wifi className="w-3.5 h-3.5 text-emerald-400" />
-                  ) : (
-                    <WifiOff className="w-3.5 h-3.5 text-rose-400" />
-                  )}
-                  <span className={`absolute -top-0.5 -right-0.5 w-1.5 h-1.5 rounded-full ${isOnline ? 'bg-emerald-400' : 'bg-rose-400'} animate-ping`} />
-                </div>
-
-                <span className="hidden sm:inline font-semibold">
-                  {isOnline ? 'Online' : 'Offline'}
-                </span>
-
+                {isOnline ? <Wifi className="w-3.5 h-3.5" /> : <WifiOff className="w-3.5 h-3.5" />}
+                <span className="hidden sm:inline font-semibold">{isOnline ? 'Online' : 'Offline'}</span>
                 {offlineQueueCount > 0 && (
-                  <span className="bg-amber-400 text-slate-950 px-1.5 py-0.5 rounded-md font-mono text-[10px] font-black shadow-xs">
+                  <span className="awd-mono px-1.5" style={{ background: 'var(--color-warning)', color: '#fff', fontSize: 10 }}>
                     {offlineQueueCount}
                   </span>
                 )}
               </button>
 
-
-              {/* User Profile Dropdown Badge */}
               <UserProfileBadge currentUser={currentUser} onLogout={onLogout} />
 
-              {/* Mobile Overflow Menu Toggle */}
               {mobileOverflowItems.length > 0 && (
                 <button
-                  className="lg:hidden p-2 rounded-xl bg-white/[0.04] border border-white/10 hover:bg-white/[0.08] text-slate-300 transition cursor-pointer min-w-[36px] min-h-[36px] flex items-center justify-center shrink-0 focus-visible:outline-2 focus-visible:outline-emerald-500 focus-visible:outline-offset-2"
+                  className="lg:hidden w-9 h-9 flex items-center justify-center cursor-pointer shrink-0"
+                  style={{ border: '1px solid rgba(255,255,255,0.18)' }}
                   onClick={() => setMobileMenuOpen(v => !v)}
                   aria-label={mobileMenuOpen ? 'Close navigation menu' : 'Open more navigation items'}
                   aria-expanded={mobileMenuOpen}
                 >
-                  {mobileMenuOpen ? <X className="w-5 h-5 text-white" aria-hidden="true" /> : <Menu className="w-5 h-5 text-slate-300" aria-hidden="true" />}
+                  {mobileMenuOpen ? <X className="w-5 h-5 text-white" aria-hidden="true" /> : <Menu className="w-5 h-5 text-white/70" aria-hidden="true" />}
                 </button>
               )}
             </div>
@@ -353,35 +303,31 @@ export const Navbar: React.FC<NavbarProps> = ({
 
         {/* ── Mobile Drawer for Overflow Items ── */}
         {mobileMenuOpen && mobileOverflowItems.length > 0 && (
-          <div className="lg:hidden border-t border-white/10 py-3 px-4 animate-fadeIn bg-[color:var(--color-shell-border)]/95 backdrop-blur-2xl">
-            <div className="text-[10px] font-black uppercase tracking-widest text-emerald-400/80 mb-2 px-1">
-              More Modules
+          <div className="lg:hidden px-4 py-3" style={{ borderTop: '1px solid rgba(255,255,255,0.12)', background: 'var(--color-shell-border)' }}>
+            <div className="text-[10px] font-black uppercase tracking-widest text-white/45 mb-2 px-1">
+              More modules
             </div>
-            <div className="space-y-1.5">
+            <div>
               {mobileOverflowItems.map((item) => {
                 const Icon = item.icon;
                 const isActive = activeTab === item.id;
-                const theme = TAB_THEMES[item.color ?? 'emerald'];
                 return (
                   <button
                     key={item.id}
                     onClick={() => handleTab(item.id)}
-                    className={`w-full flex items-center justify-between px-3.5 py-3 rounded-xl text-sm font-bold transition-all cursor-pointer min-h-[48px] ${
-                      isActive
-                        ? `${theme.bg} ${theme.text} border ${theme.border} shadow-md`
-                        : 'text-slate-300 hover:bg-white/[0.06] hover:text-white border border-transparent'
-                    }`}
+                    className="w-full flex items-center justify-between px-3 py-3 text-sm font-bold cursor-pointer min-h-[48px]"
+                    style={{ background: isActive ? 'var(--color-accent-500)' : 'transparent', color: isActive ? '#fff' : 'rgba(255,255,255,0.75)', borderTop: '1px solid rgba(255,255,255,0.08)' }}
                   >
                     <div className="flex items-center gap-3">
-                      <Icon className={`w-4 h-4 ${isActive ? theme.text : 'text-slate-400'}`} />
+                      <Icon className="w-4 h-4" />
                       <span>{item.label}</span>
                       {item.badge && (
-                        <span className="text-xs font-mono font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-2 py-0.5 rounded-md">
+                        <span className="awd-mono text-xs font-bold px-2" style={{ background: 'rgba(0,0,0,0.25)' }}>
                           {item.badge}
                         </span>
                       )}
                     </div>
-                    <ChevronRight className="w-4 h-4 opacity-40" />
+                    <ChevronRight className="w-4 h-4 opacity-50" />
                   </button>
                 );
               })}
