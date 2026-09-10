@@ -25,6 +25,8 @@ interface MobileRegistrationAppProps {
   setActivePipeId: (id: string) => void;
   onRegisterSuccess: (installation: Installation, updatedPipe: AWDPipe) => void;
   onAddMonitoring: (record: MonitoringRecord) => void;
+  onReplacePipe?: (oldPipeId: string, newPipeId: string, reason: 'Damaged' | 'Stolen') => Promise<{ ok: boolean; error?: string }>;
+  allPipes?: AWDPipe[];
 }
 
 export const MobileRegistrationApp: React.FC<MobileRegistrationAppProps> = ({
@@ -36,6 +38,8 @@ export const MobileRegistrationApp: React.FC<MobileRegistrationAppProps> = ({
   setActivePipeId,
   onRegisterSuccess,
   onAddMonitoring,
+  onReplacePipe,
+  allPipes,
 }) => {
   const today = new Date().toISOString().substring(0, 10);
 
@@ -723,6 +727,8 @@ export const MobileRegistrationApp: React.FC<MobileRegistrationAppProps> = ({
           installation={existingInstallation}
           monitoringList={monitoringList}
           allInstallations={installations}
+          availablePipes={(allPipes || pipes).filter((p) => p.Status === 'Available')}
+          onReplacePipe={onReplacePipe}
           onOpenMonitoringModal={() => setIsMonitoringModalOpen(true)}
           onClose={() => setActivePipeId('')}
         />

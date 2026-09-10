@@ -112,6 +112,10 @@ const PipeSchema = new mongoose.Schema({
   Village: { type: String },
   State: { type: String },
   District: { type: String },
+  Replaced_By_Pipe_ID: { type: String },
+  Replaces_Pipe_ID: { type: String },
+  Status_Reason: { type: String },
+  Status_Changed_Date: { type: String },
 }, { timestamps: true });
 
 const InstallationSchema = new mongoose.Schema({
@@ -144,6 +148,11 @@ const InstallationSchema = new mongoose.Schema({
   Photo_URL: { type: String },
   Remarks: { type: String },
   Plot_Boundary: { type: [[Number]], default: undefined },
+  Record_Status: { type: String },
+  Replaced_By_Pipe_ID: { type: String },
+  Replaced_Date: { type: String },
+  Replacement_Reason: { type: String },
+  Replaces_Pipe_ID: { type: String },
 }, { timestamps: true });
 
 const MonitoringSchema = new mongoose.Schema({
@@ -843,6 +852,107 @@ app.post('/api/installations', authenticateToken, async (req, res) => {
   } catch (err) {
     console.error('Error saving installation:', err);
     res.status(500).json({ error: 'Failed to save installation' });
+  }
+});
+
+// 2a. POST /api/pipes/replace -> Swap a damaged/stolen pipe for a fresh one,
+// keeping the farmer. Old pipe -> Damaged/Removed (with a link to its
+// replacement); the old installation is kept as history (Record_Status
+// 'Replaced'); a fresh installation carries the farmer's data onto the new pipe.
+app.post('/api/pipes/replace', authenticateToken, async (req, res) => {
+  const scope = await getScopeFilter(req.user);
+  const { oldPipeId, newPipeId, reason } = req.body || {};
+  if (!oldPipeId || !newPipeId) return res.status(400).json({ error: 'oldPipeId and newPipeId are required' });
+  if (oldPipeId === newPipeId) return res.status(400).json({ error: 'New pipe must be different from the old pipe' });
+  const swapReason = reason === 'Stolen' ? 'Stolen' : 'Damaged';
+  const newStatus = swapReason === 'Stolen' ? 'Removed' : 'Damaged';
+  const nowIso = new Date().toISOString();
+  const today = nowIso.split('T')[0];
+
+  try {
+    // Load the old installation, and both pipes, from Mongo or memory.
+    let oldInst, oldPipe, newPipe;
+    if (isDbReady()) {
+      const db = getDb();
+      oldInst = await db.collection('installations').findOne({ Pipe_ID: oldPipeId, Record_Status: { $ne: 'Replaced' } });
+      oldPipe = await db.collection('pipes').findOne({ Pipe_ID: oldPipeId });
+      newPipe = await db.collection('pipes').findOne({ Pipe_ID: newPipeId });
+    } else {
+      oldInst = inMemoryData.installations.find((i) => i.Pipe_ID === oldPipeId && i.Record_Status !== 'Replaced');
+      oldPipe = inMemoryData.pipes.find((p) => p.Pipe_ID === oldPipeId);
+      newPipe = inMemoryData.pipes.find((p) => p.Pipe_ID === newPipeId);
+    }
+
+    if (!oldInst) return res.status(404).json({ error: 'No active installation found for the old pipe' });
+    if (!newPipe) return res.status(404).json({ error: 'New pipe not found in inventory' });
+    if (newPipe.Status && newPipe.Status !== 'Available') {
+      return res.status(409).json({ error: `New pipe is ${newPipe.Status}, not Available` });
+    }
+    // Only let a user replace a pipe whose installation is within their scope.
+    if (!scope.memory(oldInst)) return res.status(403).json({ error: 'Out of scope' });
+
+    // Build the fresh installation from the old one (drop DB internals & photo).
+    const { _id, __v, Photo_URL, Record_Status, Replaced_By_Pipe_ID, Replaced_Date, Replacement_Reason, Replaces_Pipe_ID, ...carry } = oldInst;
+    const newInstallation = {
+      ...carry,
+      Pipe_ID: newPipeId,
+      Timestamp: nowIso,
+      Installation_Date: today,
+      Record_Status: 'Active',
+      Replaces_Pipe_ID: oldPipeId,
+    };
+    if (newInstallation.Plot_Boundary) newInstallation.Plot_Boundary = sanitizePlotBoundary(newInstallation.Plot_Boundary);
+
+    const newPipeUpdate = {
+      Status: 'Installed',
+      Farmer_Name: oldInst.Farmer_Name,
+      Village: oldInst.Village,
+      District: oldInst.District,
+      State: oldInst.State,
+      Installation_Date: today,
+      Replaces_Pipe_ID: oldPipeId,
+    };
+    const oldPipeUpdate = {
+      Status: newStatus,
+      Status_Reason: swapReason,
+      Status_Changed_Date: today,
+      Replaced_By_Pipe_ID: newPipeId,
+    };
+    const oldInstUpdate = {
+      Record_Status: 'Replaced',
+      Replaced_By_Pipe_ID: newPipeId,
+      Replaced_Date: today,
+      Replacement_Reason: swapReason,
+    };
+
+    if (isDbReady()) {
+      const db = getDb();
+      await new Installation(newInstallation).save();
+      await db.collection('installations').updateOne({ Pipe_ID: oldPipeId, Record_Status: { $ne: 'Replaced' } }, { $set: oldInstUpdate });
+      await db.collection('pipes').updateOne({ Pipe_ID: newPipeId }, { $set: newPipeUpdate });
+      await db.collection('pipes').updateOne({ Pipe_ID: oldPipeId }, { $set: oldPipeUpdate });
+    } else {
+      inMemoryData.installations.unshift(newInstallation);
+      const oi = inMemoryData.installations.find((i) => i.Pipe_ID === oldPipeId && i.Record_Status !== 'Replaced' && i !== newInstallation);
+      if (oi) Object.assign(oi, oldInstUpdate);
+      inMemoryData.pipes = inMemoryData.pipes.map((p) =>
+        p.Pipe_ID === newPipeId ? { ...p, ...newPipeUpdate } :
+        p.Pipe_ID === oldPipeId ? { ...p, ...oldPipeUpdate } : p
+      );
+    }
+
+    invalidateInitCache();
+    res.json({
+      success: true,
+      newInstallation,
+      newPipe: { ...newPipe, ...newPipeUpdate },
+      oldPipe: { ...oldPipe, ...oldPipeUpdate },
+      oldInstallation: { ...oldInst, ...oldInstUpdate },
+      dbStatus: isMongoConnected ? 'cloud' : 'local',
+    });
+  } catch (err) {
+    console.error('Error replacing pipe:', err);
+    res.status(500).json({ error: 'Failed to replace pipe' });
   }
 });
 

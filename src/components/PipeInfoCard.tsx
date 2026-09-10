@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { AWDPipe, Installation, MonitoringRecord } from '../types';
-import { MapPin, Plus, CheckCircle2, UserCheck, ShieldAlert, History, Calendar, Sprout, Phone, ZoomIn, Camera, X, Loader2, Hexagon } from 'lucide-react';
+import { MapPin, Plus, CheckCircle2, UserCheck, ShieldAlert, History, Calendar, Sprout, Phone, ZoomIn, Camera, X, Loader2, Hexagon, RefreshCw, ArrowRight } from 'lucide-react';
 import { PhotoLightbox } from './PhotoLightbox';
+import { ReplacePipeModal } from './ReplacePipeModal';
 
 const apiFetch = (url: RequestInfo | URL, options?: RequestInit) => {
   const token = localStorage.getItem('awd_auth_token');
@@ -15,6 +16,8 @@ interface PipeInfoCardProps {
   installation: Installation;
   monitoringList: MonitoringRecord[];
   allInstallations?: Installation[];
+  availablePipes?: AWDPipe[];
+  onReplacePipe?: (oldPipeId: string, newPipeId: string, reason: 'Damaged' | 'Stolen') => Promise<{ ok: boolean; error?: string }>;
   onOpenMonitoringModal: () => void;
   onClose?: () => void;
 }
@@ -24,9 +27,12 @@ export const PipeInfoCard: React.FC<PipeInfoCardProps> = ({
   installation,
   monitoringList,
   allInstallations = [],
+  availablePipes = [],
+  onReplacePipe,
   onOpenMonitoringModal,
   onClose,
 }) => {
+  const [showReplace, setShowReplace] = useState(false);
   const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
   const [lightboxCaption, setLightboxCaption] = useState<string>('');
   const [photoUrl, setPhotoUrl] = useState<string | null | undefined>(undefined); // undefined=not fetched, null=no photo
@@ -92,6 +98,16 @@ export const PipeInfoCard: React.FC<PipeInfoCardProps> = ({
         />
       )}
 
+      {showReplace && onReplacePipe && (
+        <ReplacePipeModal
+          oldPipe={pipe}
+          installation={installation}
+          availablePipes={availablePipes}
+          onClose={() => setShowReplace(false)}
+          onReplace={onReplacePipe}
+        />
+      )}
+
       {/* Top Action Bar — sticky, always visible */}
       {onClose && (
         <div className="sticky top-0 z-20 flex items-center justify-between bg-emerald-700 px-4 py-3 rounded-2xl shadow-lg border border-emerald-600">
@@ -113,6 +129,27 @@ export const PipeInfoCard: React.FC<PipeInfoCardProps> = ({
           <strong>Registered AWD Pipe:</strong> Sensitive farmer contact details are masked for privacy compliance.
         </span>
       </div>
+
+      {/* Pipe-replacement history */}
+      {installation.Replaces_Pipe_ID && (
+        <div className="bg-emerald-50 border border-emerald-200 text-emerald-900 rounded-xl p-3 text-xs flex items-center gap-2">
+          <History className="w-4 h-4 text-emerald-600 shrink-0" />
+          <span className="flex items-center gap-1.5 flex-wrap">
+            Replaced <code className="font-mono font-bold">{installation.Replaces_Pipe_ID}</code>
+            <ArrowRight className="w-3 h-3" /> this pipe for the same farmer.
+          </span>
+        </div>
+      )}
+      {installation.Replaced_By_Pipe_ID && (
+        <div className="bg-red-50 border border-red-200 text-red-900 rounded-xl p-3 text-xs flex items-center gap-2">
+          <RefreshCw className="w-4 h-4 text-red-600 shrink-0" />
+          <span className="flex items-center gap-1.5 flex-wrap">
+            This pipe was <strong>{installation.Replacement_Reason || 'replaced'}</strong>
+            {installation.Replaced_Date ? ` on ${installation.Replaced_Date}` : ''} — replaced by
+            <code className="font-mono font-bold">{installation.Replaced_By_Pipe_ID}</code>.
+          </span>
+        </div>
+      )}
 
       {/* Side-by-Side Desktop Grid Container */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
@@ -313,6 +350,15 @@ export const PipeInfoCard: React.FC<PipeInfoCardProps> = ({
                 <Plus className="w-4 h-4" />
                 Add Visit Log
               </button>
+              {onReplacePipe && (
+                <button
+                  onClick={() => setShowReplace(true)}
+                  className="w-full bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 font-bold py-3 px-3 rounded-xl text-xs flex items-center justify-center gap-2 transition min-h-[44px]"
+                >
+                  <RefreshCw className="w-4 h-4" />
+                  Replace pipe (damaged / stolen)
+                </button>
+              )}
             </div>
 
           </div>

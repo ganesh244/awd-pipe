@@ -29,6 +29,14 @@ export interface AWDPipe {
   Year?: string;
   Specification?: string;
   Security_Hash?: string;
+  /** Pipe-replacement history: if this pipe was replaced, the new pipe that took over. */
+  Replaced_By_Pipe_ID?: string;
+  /** If this pipe was installed as a replacement, the old pipe it replaced. */
+  Replaces_Pipe_ID?: string;
+  /** Why the status last changed, e.g. 'Damaged' or 'Stolen'. */
+  Status_Reason?: string;
+  /** ISO date the status last changed. */
+  Status_Changed_Date?: string;
 }
 
 export interface Installation {
@@ -65,6 +73,16 @@ export interface Installation {
   Remarks?: string;
   /** Plot boundary polygon — array of [lat, lng] pairs drawn by field worker */
   Plot_Boundary?: [number, number][];
+  /** 'Active' (current) or 'Replaced' (kept as history after the pipe was swapped). Absent = Active. */
+  Record_Status?: 'Active' | 'Replaced';
+  /** If replaced: the new pipe that took over for this farmer. */
+  Replaced_By_Pipe_ID?: string;
+  /** If replaced: ISO date of the replacement. */
+  Replaced_Date?: string;
+  /** If replaced: why — 'Damaged' or 'Stolen'. */
+  Replacement_Reason?: string;
+  /** If this record was created as a replacement, the old pipe it replaced. */
+  Replaces_Pipe_ID?: string;
 }
 
 export interface MonitoringRecord {

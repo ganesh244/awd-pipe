@@ -729,6 +729,39 @@ export default function App() {
     }
   };
 
+  // Replace a farmer's damaged/stolen pipe with a fresh one from inventory.
+  // Online-only (a swap touches four records atomically on the server); the
+  // server is authoritative and returns the resulting records, which we apply
+  // to local state so the map, inventory and directory update at once.
+  const handleReplacePipe = async (oldPipeId: string, newPipeId: string, reason: 'Damaged' | 'Stolen'): Promise<{ ok: boolean; error?: string }> => {
+    if (!isOnline) return { ok: false, error: 'You must be online to replace a pipe.' };
+    try {
+      const res = await apiFetch('/api/pipes/replace', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ oldPipeId, newPipeId, reason }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data?.success) return { ok: false, error: data?.error || 'Replacement failed' };
+
+      setInstallations((prev) => {
+        const marked = prev.map((i) =>
+          i.Pipe_ID === oldPipeId && i.Record_Status !== 'Replaced' ? { ...i, ...data.oldInstallation } : i
+        );
+        return [data.newInstallation as Installation, ...marked];
+      });
+      setPipes((prev) => prev.map((p) =>
+        p.Pipe_ID === newPipeId ? { ...p, ...data.newPipe } :
+        p.Pipe_ID === oldPipeId ? { ...p, ...data.oldPipe } : p
+      ));
+      setLastSynced(new Date());
+      return { ok: true };
+    } catch (err) {
+      console.error('Replace pipe failed:', err);
+      return { ok: false, error: 'Network error — please try again.' };
+    }
+  };
+
   // Handler: Update Farmer Installation Details
   const handleUpdateInstallation = (updated: Installation) => {
     setInstallations((prev) =>
@@ -1404,6 +1437,8 @@ export default function App() {
             setActivePipeId={setActivePipeId}
             onRegisterSuccess={handleRegisterSuccess}
             onAddMonitoring={handleAddMonitoring}
+            onReplacePipe={handleReplacePipe}
+            allPipes={pipes}
           />
         )}
 
