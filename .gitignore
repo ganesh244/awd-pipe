@@ -27,3 +27,4 @@ form_generator*.py
 replace_classes.py
 update_mobile_reg.py
 update_typography.py
+.claude/
